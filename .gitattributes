@@ -1,0 +1,18 @@
+# Normalize line endings on commit so cross-platform checks don't break.
+# Pattern: <glob> text eol=<lf|crlf|native>
+
+# Shell scripts: must be LF (executed on Linux/macOS CI runners)
+*.sh text eol=lf
+
+# PowerShell scripts: CRLF is conventional and what PowerShell expects
+*.ps1 text eol=crlf
+
+# Python scripts: LF (executed cross-platform)
+*.py text eol=lf
+
+# YAML / JSON / Markdown: LF (canonical, easier to diff)
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.jsonc text eol=lf
+*.md text eol=lf

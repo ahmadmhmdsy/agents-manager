@@ -1,5 +1,7 @@
 # agents-manager
 
+[![CI](https://github.com/ahmadmhmdsy/agents-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmadmhmdsy/agents-manager/actions/workflows/ci.yml)
+
 > **Status:** v0.1.0 — early-stage. API may change between minor versions until v1.0.0.
 
 A multi-agent task orchestration system built on [OpenCode](https://opencode.ai)'s agent system. One **master agent** routes work through four **specialist agents** (research → planning → coder → review), each with its own context window and hard permission walls.

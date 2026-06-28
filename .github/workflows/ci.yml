@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-config:
+    name: validate-config (opencode.jsonc parses)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Strip // comments + parse opencode.jsonc
+        run: |
+          python3 - <<'PY'
+          import re, json, sys
+          p = "opencode.jsonc"
+          with open(p, "r", encoding="utf-8") as f:
+              raw = f.read()
+          stripped = re.sub(r"(?m)^\s*//.*$", "", raw)
+          try:
+              data = json.loads(stripped)
+          except json.JSONDecodeError as e:
+              print(f"FAIL: {p} is not valid JSONC after stripping comments: {e}")
+              sys.exit(1)
+          agents = data.get("agent", {})
+          print(f"OK: {p} parsed; agents registered: {', '.join(agents.keys())}")
+          for name, cfg in agents.items():
+              if "prompt" not in cfg or "permission" not in cfg:
+                  print(f"FAIL: agent '{name}' missing prompt or permission")
+                  sys.exit(1)
+          print(f"OK: all {len(agents)} agents have prompt + permission")
+          PY
+
+  validate-frontmatter:
+    name: validate-frontmatter (SKILL.md files)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run frontmatter validator (strict on /skills/ paths, lenient elsewhere)
+        run: |
+          set -e
+          python3 scripts/validate-frontmatter.py \
+            agents_manager/SKILL.md \
+            agents_manager/research/SKILL.md \
+            agents_manager/planning/SKILL.md \
+            agents_manager/coder/SKILL.md \
+            agents_manager/review/SKILL.md \
+            .agents/skills/mavis-team/SKILL.md
+
+  bash-lint:
+    name: bash-lint (shellcheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Lint bin/*.sh
+        run: |
+          set -e
+          shellcheck bin/install.sh
+          shellcheck bin/check.sh
+
+  ps-lint:
+    name: ps-lint (PowerShell syntax check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PowerShell
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https software-properties-common
+          wget -q https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb
+          sudo dpkg -i packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo apt-get install -y powershell
+      - name: Syntax-check bin/*.ps1
+        shell: pwsh
+        run: |
+          $files = @("bin/install.ps1", "bin/check.ps1")
+          foreach ($f in $files) {
+              $errs = $null
+              [System.Management.Automation.Language.Parser]::ParseFile($f, [ref]$null, [ref]$errs) | Out-Null
+              if ($errs.Count -gt 0) {
+                  Write-Host "FAIL: $f has $($errs.Count) parse errors"
+                  $errs | ForEach-Object { Write-Host "  $_" }
+                  exit 1
+              }
+              Write-Host "OK: $f parses cleanly"
+          }
+
+  install-dryrun:
+    name: install-dryrun (install.sh against /tmp/fixture)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up git config (so install dry-run is realistic)
+        run: |
+          git config --global user.email "ci@example.com"
+          git config --global user.name "CI"
+      - name: Run install.sh into fixture
+        run: |
+          set -e
+          FIXTURE=/tmp/am-fixture
+          rm -rf "$FIXTURE"
+          mkdir -p "$FIXTURE"
+          chmod +x bin/install.sh
+          ./bin/install.sh "$FIXTURE"
+      - name: Verify fixture has all controller paths
+        run: |
+          set -e
+          FIXTURE=/tmp/am-fixture
+          for p in opencode.jsonc CLAUDE.md agents_manager share tasks .agents/skills/mavis-team; do
+              if [[ ! -e "$FIXTURE/$p" ]]; then
+                  echo "FAIL: $FIXTURE/$p missing"
+                  exit 1
+              fi
+              echo "OK: $p present"
+          done
+
+  check-script:
+    name: check-script (bin/check.sh runs without error)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run bin/check.sh
+        run: |
+          chmod +x bin/check.sh
+          ./bin/check.sh .

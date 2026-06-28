@@ -41,7 +41,7 @@ function Test-ControllerDir {
     }
 }
 
-Write-Host "Controller files in $TargetAbs:"
+Write-Host "Controller files in ${TargetAbs}:"
 Test-ControllerFile "opencode.jsonc"
 Test-ControllerFile "CLAUDE.md"
 Test-ControllerDir  "agents_manager"
@@ -69,7 +69,7 @@ foreach ($s in $Skills) {
     if (Test-Path $Path -PathType Container) {
         Write-Host "  OK   ~/$s"
     } else {
-        Write-Host "  MISS npx --yes skills add https://github.com/obra/superpowers --skill $s -g -y"
+        Write-Host "  MISS npx --yes skills add https://github.com/obra/superpowers --skill ${s} -g -y"
     }
 }
 
