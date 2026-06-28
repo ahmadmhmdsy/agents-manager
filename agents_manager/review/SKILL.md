@@ -42,6 +42,17 @@ The master will give you:
 - Optionally: a prior review report if this is a re-review
 - Optionally: paths to `coder/resources/` for documented test/build commands
 
+## If tasks/<task-id>.md is missing (v0.4.1+ fallback)
+
+If, on receiving a dispatch, `tasks/<task-id>.md` does NOT exist:
+
+1. Derive scope from the coder summary (`share/notes/03_coder_summary_<task-id>_<phase>.md`) and the plan files. The coder summary should list which task ids were assigned.
+2. Create a minimal `tasks/<task-id>.md` with header + the assigned task rows from the coder summary using the schema in `tasks/README.md`.
+3. Proceed with the review against the coder summary + code.
+4. Surface in return: `TASK-FILE-WAS-MISSING: created minimal task row from coder summary`.
+
+Do NOT block on the missing file. Proceed with the review, create the row, surface the fact.
+
 ## What you must produce
 
 A single report at:

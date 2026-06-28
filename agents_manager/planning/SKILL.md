@@ -40,6 +40,17 @@ The master will give you:
 - Any user answers to clarifying questions
 - A task id
 
+## If tasks/<task-id>.md is missing (v0.4.1+ fallback)
+
+If, on receiving a dispatch, `tasks/<task-id>.md` does NOT exist:
+
+1. Derive scope from the research note (`share/notes/01_research_<task-id>.md`) and the dispatch prompt.
+2. Create a minimal `tasks/<task-id>.md` with header + one row (Phase 1, Task P1T1 — research findings) using the schema in `tasks/README.md`.
+3. Append your new task rows for Phases 2+ per your normal plan output.
+4. Surface in return: `TASK-FILE-WAS-MISSING: created minimal task row from research + dispatch prompt`.
+
+Do NOT block on the missing file. Proceed with the plan, create the row, surface the fact.
+
 ## What you must produce
 
 Three artifacts. **All three. Always.**

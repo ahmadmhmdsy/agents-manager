@@ -2,6 +2,92 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.4.1 — Critical permission fixes from real-world test (2026-06-28)
+
+A downstream project tested v0.4.0 and the pipeline delivered **zero work product**. Master hit three classes of failure that the inline prompts and SKILL.md didn't anticipate. This release fixes all three.
+
+### Root causes discovered
+
+1. **OpenCode's `write` tool checks `edit` permissions for new files.** v0.4.0 listed `share/handoffs/**` and `share/messages/**` only in master's `write` block (not `edit`). New file creation was unreachable on those paths.
+2. **Bash allow list is exact-match on the full command string.** `"cat": "allow"` matched only the bare `cat`. `cat README.md` was blocked. Same issue for `ls`, `rg`, `git status`, etc.
+3. **`task()` cancellation is silent.** Master dispatched `am-research`; OpenCode returned "Task cancelled" with no error code, no reason, no retry guidance. Master had no way to distinguish "sub-agent failed" from "dispatch never started" from "permissions blocked the dispatch".
+
+### Fixes
+
+#### Belt-and-suspenders: every writable path in BOTH `edit` and `write`
+
+Every agent's permission block now lists each writable path in both blocks. For master specifically, `agents_manager/SKILL.md` is now in both `edit` and `write` (was edit-only in v0.4.0).
+
+#### Bash prefix globs (both bare and arg forms)
+
+Master, `am-research`, and `am-review` bash blocks now list both forms of each allowed command:
+
+```jsonc
+"bash": {
+  "*": "deny",
+  "git status": "allow",  "git status *": "allow",
+  "git log": "allow",     "git log *": "allow",
+  "git diff": "allow",    "git diff *": "allow",
+  ...
+  "cat": "allow",         "cat *": "allow",
+  "mkdir -p": "allow",    "mkdir -p *": "allow"
+}
+```
+
+Master also gains `mkdir -p` for the preflight. `am-coder` keeps `bash: "allow"` (full trust).
+
+#### Phase 0 permission preflight (master)
+
+Master prompt now includes a **5-check preflight** that runs before any real dispatch:
+
+1. `mkdir -p tasks share/notes` — ensure parent dirs
+2. Write `tasks/.preflight` (probe)
+3. Write `share/notes/.preflight` (probe)
+4. `ls tasks share/notes` (bash probe)
+5. Dispatch `am-research` with `prompt="echo READY"` (dispatch probe)
+
+If any check fails, master surfaces `BLOCKED: ...` to the user and stops. After all 5 pass, master deletes the probe files and proceeds. Catches permissions/bash/dispatch failures BEFORE any work begins.
+
+#### task() retry protocol (master)
+
+If a real dispatch (post-preflight) returns "Task cancelled", master retries up to 3 times with 5-second backoff. If all 3 retries fail, master surfaces `BLOCKED: specialist <name> dispatch failed 3 times` to the user. No silent loops.
+
+#### Specialist fallback for missing `tasks/<id>.md` (all 4 specialists)
+
+If a specialist receives a dispatch and `tasks/<task-id>.md` doesn't exist (preflight missed something, or the file was deleted), each specialist now self-heals:
+
+- **am-research**: derives scope from dispatch prompt, creates minimal task row (Phase 1, P1T1).
+- **am-planning**: derives scope from research note + dispatch, creates minimal row, appends Phase 2+ rows per normal output.
+- **am-coder**: derives scope from plan files + dispatch's assigned task ids, creates minimal row, proceeds with implementation.
+- **am-review**: derives scope from coder summary, creates minimal row, proceeds with review.
+
+Each surfaces `TASK-FILE-WAS-MISSING: created minimal task row from <source>` in the return line.
+
+#### ESCALATE (not loop) on permission blocks (master)
+
+Master's "When the write tool is blocked" section now reads **ESCALATE to the user** instead of "surface the block in your return line." The change: master surfaces the BLOCKED signal in the chat response itself, not just in file artifacts the user might not see. **"Task failed silently, see file X" is no longer acceptable.**
+
+#### Do NOT self-edit your own SKILL.md during pipeline (master)
+
+Master's permission still allows editing `agents_manager/SKILL.md` (per user override — we keep this so master CAN update its own orchestration doc via deliberate maintenance). But a new entry in `## Anti-patterns to refuse` warns against silent in-pipeline edits: "Editing `agents_manager/SKILL.md` even though your permission allows it. During an active pipeline, do not silently rewrite the protocol that defines the pipeline. If you find a real gap, surface it as a DEEP REFLECTION finding or call a maintenance phase."
+
+### New documentation
+
+- **`docs/PERMISSIONS.md`** — discovered OpenCode behavior (write/edit dual-allow, bash exact-match, silent task cancellation), the agents-manager workarounds, and a debug checklist for "permission denied" errors. Future debugging should start here.
+- **`README.md`** — pointer to `docs/PERMISSIONS.md` from the Permissions model section.
+- **`CLAUDE.md`** — note on the Phase 0 preflight (so OpenCode/Claude Code sessions loading CLAUDE.md see the preflight contract).
+
+### Files changed
+
+- `opencode.jsonc` — both-blocks pattern, bash prefix globs (3 agents), master prompt preflight + retry + ESCALATE, all 4 specialist prompts get fallback section
+- `agents_manager/SKILL.md` (master) — new "Phase 0 — Permission preflight" section, new "task() retry protocol" section, "When the write tool is blocked" rewritten to ESCALATE, "Anti-patterns" gets self-edit warning
+- `agents_manager/research/SKILL.md`, `planning/SKILL.md`, `coder/SKILL.md`, `review/SKILL.md` — each gets "If tasks/<task-id>.md is missing" section
+- `README.md` — pointer to `docs/PERMISSIONS.md`
+- `CLAUDE.md` — preflight note
+- `docs/PERMISSIONS.md` — new file
+
+**Net effect:** The real-world test would now succeed. Permissions, bash, and dispatch failures are caught upfront (preflight) or self-heal (specialist fallback). The BLOCKED signal reaches the user instead of getting lost in file artifacts. Discovered OpenCode behavior is documented for future debugging.
+
 ## v0.4.0 — Agent permissions + Do/Don't boundaries (2026-06-28)
 
 ### Permissions model rewrite (`opencode.jsonc`)

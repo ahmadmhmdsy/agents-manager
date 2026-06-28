@@ -80,6 +80,8 @@ Every agent has a **hard permission wall** declared in `opencode.jsonc`. The wal
 
 The full Can/Can't/When-blocked sections for every agent are in each `agents_manager/<role>/SKILL.md`.
 
+**Discovered OpenCode behavior** (write/edit dual-allow requirement, bash exact-match, silent task cancellation) is documented in [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md). Read that file before debugging any permission issue.
+
 ## Quick start
 
 ### Option A — git subtree (recommended for downstream projects with their own git history)

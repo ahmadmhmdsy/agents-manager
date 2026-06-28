@@ -41,6 +41,17 @@ The master will give you:
 - Paths to the confirmed plan files
 - Optionally: a fix-list from a prior review (if this is a loop-back)
 
+## If tasks/<task-id>.md is missing (v0.4.1+ fallback)
+
+If, on receiving a dispatch, `tasks/<task-id>.md` does NOT exist:
+
+1. Derive scope from the plan files (`share/notes/02_plan_high_<task-id>.md` + `02_plan_phases_<task-id>.md`) and the dispatch prompt's assigned task ids.
+2. Create a minimal `tasks/<task-id>.md` with header + the assigned task rows (Phase N, Task X — one row per assigned id) using the schema in `tasks/README.md`.
+3. Proceed with implementation per the plan + assigned rows.
+4. Surface in return: `TASK-FILE-WAS-MISSING: created minimal task row from plan + dispatch prompt`.
+
+Do NOT block on the missing file. Proceed with the build, create the row, surface the fact.
+
 ## What you must produce
 
 ### 1. The code

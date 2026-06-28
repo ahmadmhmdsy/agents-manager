@@ -177,6 +177,27 @@ If any answer is "I don't know," pause and resolve before dispatching. "Just see
 
 **Override of mavis-team's "smallest sufficient plan":** our pipeline is the plan. We always use the 5-agent roster; we don't dynamically add or remove specialists per task. This is by design (hard walls, declarative config).
 
+## Phase 0 (v0.4.1+) — Permission preflight (REQUIRED before any specialist dispatch)
+
+Before dispatching ANY specialist — single or parallel — run these 5 checks. If ANY fails, surface the failure to the user and STOP. Do not dispatch.
+
+1. **Bash:** `mkdir -p tasks share/notes` — ensures parent dirs exist for probe writes (idempotent).
+2. **Write probe:** `tasks/.preflight` — if blocked, surface `BLOCKED: cannot write tasks/ — pipeline cannot start`.
+3. **Write probe:** `share/notes/.preflight` — if blocked, surface `BLOCKED: cannot write share/notes/ — pipeline cannot start`.
+4. **Bash probe:** `ls tasks share/notes` — if blocked, surface `BLOCKED: bash allow list too narrow`.
+5. **Dispatch probe:** `task(subagent_type="am-research", prompt="echo READY")` — if returns "Task cancelled", surface `BLOCKED: task() dispatch not working — pipeline cannot start` and STOP. Do not retry the dispatch.
+
+After all 5 succeed, delete the probe files and proceed to the user-task-capture PHASE 0 (below).
+
+**Why this exists (v0.4.0 → v0.4.1 lesson):** A real downstream project hit the wall hard — master's write tool was blocked on paths listed only in `write` (not `edit`), bash failed on `cat README.md` because `"cat": "allow"` is exact-match, and `task()` returned "Task cancelled" silently with no retry/escalation path. The preflight catches all three classes of failure BEFORE any work begins, so you don't burn tokens discovering the wall mid-pipeline.
+
+## task() retry protocol (v0.4.1+)
+
+If a specialist dispatch (after preflight passes) returns "Task cancelled" or fails to return within expected time:
+
+1. Retry up to 3 times with 5-second backoff between attempts.
+2. If all 3 retries fail, surface `BLOCKED: specialist <name> dispatch failed 3 times` to the user with the last error. Do not loop silently.
+
 ## Subagent dispatch contract
 
 Each specialist is a fresh OpenCode agent dispatched via `task()`. Follows the `subagent-driven-development` protocol (installed at `~/.agents/skills/subagent-driven-development/`) with **explicit overrides for our design** below.
@@ -339,7 +360,7 @@ The specialist runs in its own context window with its own permission block (see
 - Run non-read-only bash (`npm install`, `git commit`, `git push`, file edits via shell). If you need a side-effecting command, ask the user.
 - Dispatch non-specialist agents (no `task()` to anything other than `am-research` / `am-planning` / `am-coder` / `am-review`).
 
-## When the write tool is blocked
+## When the write tool is blocked — ESCALATE, don't loop
 
 OpenCode's permission layer may reject a write call — that means you are trying to edit outside your lane. When that happens:
 
@@ -347,7 +368,9 @@ OpenCode's permission layer may reject a write call — that means you are tryin
 2. **Do NOT work around it.** No "different filename in same dir", no "copy-then-rename", no "write to /tmp and move". Each is also blocked and creates mess.
 3. **Do NOT pretend it succeeded.** No "I edited `agents_manager/coder/SKILL.md`" if you didn't.
 4. **CONTINUE with what you CAN do.** Write to your allowed paths only. If the task genuinely requires an out-of-lane edit, stop and tell the user.
-5. **SURFACE the block** in your return line: `BLOCKED: tried to <X>, permission denied — route to user`.
+5. **ESCALATE to the user.** Include `BLOCKED: tried to <X>, permission denied — route to user` in your response. Do not silently swallow or assume the user will read file artifacts.
+
+The escalation is mandatory. "Task failed silently, see file X" is not acceptable — the user needs the BLOCKED signal in the chat.
 
 ## Anti-patterns to refuse
 
@@ -359,3 +382,4 @@ OpenCode's permission layer may reject a write call — that means you are tryin
 - Re-using a stale plan after the user changed it — re-confirm.
 - Looping a chunk past `max_fix_loops` without escalating to the user.
 - Adding sub-agents or patterns that aren't justified by measured need (Anthropic's simplicity principle).
+- **Editing `agents_manager/SKILL.md` during pipeline execution**, even though your permission allows it. The permission exists so you CAN update your own orchestration doc via a deliberate maintenance task (with user review). During an active pipeline, do not silently rewrite the protocol that defines the pipeline. If you find a real gap, surface it as a `DEEP REFLECTION` finding or call a maintenance phase.

@@ -16,6 +16,8 @@ The master handles everything: writing the task capture, calling specialists, en
 
 For single-step work (a quick file edit, a one-off question), do it directly — no need to invoke the master.
 
+**Master runs a Phase 0 preflight before dispatching any specialist** — 5 probe checks (mkdir parents, write probe files, ls probe, echo-READY dispatch). If any fails, master surfaces the failure to the user and stops — does not dispatch real work. This catches permission-layer / bash / `task()` failures before they burn tokens. See `agents_manager/SKILL.md` for the full preflight protocol.
+
 ## Available agents
 
 Defined in `opencode.jsonc` with hard permission walls enforced by OpenCode.

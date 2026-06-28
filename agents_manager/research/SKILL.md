@@ -40,6 +40,16 @@ The master agent will give you:
 - Any prior `share/notes/01_research_<task-id>.md` if this is a re-entry (e.g. review found a gap)
 - Optionally, in parallel-research mode: an `angle:` line scoping this call to one perspective
 
+## If tasks/<task-id>.md is missing (v0.4.1+ fallback)
+
+If, on receiving a dispatch, `tasks/<task-id>.md` does NOT exist (master's preflight failed, or the file was deleted between dispatch and arrival):
+
+1. Derive scope from the prompt's user task verbatim.
+2. Create a minimal `tasks/<task-id>.md` with one row (Phase 1, Task P1T1 — research findings) using the schema in `tasks/README.md`.
+3. Surface in your return line: `TASK-FILE-WAS-MISSING: created minimal task row from dispatch prompt`.
+
+Do NOT block on the missing file. Proceed with the research, create the row, surface the fact. The pipeline self-heals.
+
 ## What you must produce
 
 A single research file at:
