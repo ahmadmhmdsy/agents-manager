@@ -1,131 +1,96 @@
-# OpenCode Permissions — Discovered Behavior
+# Permissions — Soft-Wall Architecture (v0.5.0+)
 
-> **Why this file exists (v0.4.1):** A downstream project reported that several v0.4.0
-> permissions and bash patterns did not behave as written. After investigation, we
-> found three OpenCode behaviors not stated explicitly in the docs we read at the
-> time. This document records those behaviors and how `agents-manager` works around
-> them. Future agents and humans debugging permission failures should start here.
+> **v0.5.0 architectural change:** all 5 agents have `permission: "allow"`. OpenCode's permission layer is **not used**. Walls are now soft — enforced by each agent reading its `SKILL.md` "Boundaries" section and the inline prompt's "Can/Can't" list. The only enforcement is LLM discipline.
 
-## TL;DR
+## What this means
 
-| Behavior | Impact | agents-manager workaround |
+- All agents can read any file
+- All agents can write/edit any file
+- All agents can run any bash command
+- All agents can dispatch subagents (those that have the `task` tool)
+
+The walls are now **prose contracts**, not mechanical guarantees. The architecture relies on each specialist reading its own `SKILL.md` boundaries and choosing to honor them.
+
+## Why this design
+
+**v0.4.0 → v0.4.1 era:** OpenCode's permission layer was used to enforce hard walls. A real-world downstream test exposed three classes of failure:
+1. `write` tool requires `edit` permission for new file creation (paths only in `write` were unreachable)
+2. Bash allow list is exact-match on the full command string (`"cat": "allow"` doesn't match `cat README.md`)
+3. `task()` cancellation is silent (no diagnostic, no retry signal)
+
+The v0.4.1 fixes added belt-and-suspenders (both blocks), prefix globs (`cat` AND `cat *`), a 5-check Phase 0 preflight, and a 3-retry task() protocol. The config grew from ~30 lines to 88 lines.
+
+**v0.5.0 decision:** rather than continue patching the permission layer (more configurations, more edge cases, more debugging), accept the trade-off and remove the layer. Trust the SKILL.md prose.
+
+## Trade-offs
+
+| Aspect | v0.4.1 (hard walls) | v0.5.0 (soft walls) |
 |---|---|---|
-| `write` tool checks **edit** permissions for new files | Paths only in `write` (not `edit`) are unreachable | Every writable path is in **both** `edit` and `write` blocks |
-| Bash allow list is **exact-match on the full command string** | `cat README.md` ≠ `cat` | Bash blocks list both bare form AND prefix-glob form (`cat` and `cat *`) |
-| `task()` cancellation is silent — no diagnostic, no retry signal | Master had to discover this by losing work | Master prompt includes Phase 0 preflight + explicit retry protocol |
+| Config size | 88 lines of `opencode.jsonc` | ~30 lines (just prompts) |
+| Debugging permission failures | Common (3 known classes, more likely lurking) | Not applicable |
+| Mechanical wall enforcement | Yes (with edge cases) | No |
+| am-research can write code | No (blocked) | Yes (only SKILL.md stops it) |
+| am-coder can edit the controller | No (blocked) | Yes (only SKILL.md stops it) |
+| am-review can fix source code | No (blocked) | Yes (only SKILL.md stops it) |
+| Trust model | Mechanical | Prose + LLM discipline |
+| "When blocked" protocol | 5-step, mandatory | Retired (no blocks to handle) |
+| Phase 0 preflight | Required (5 checks) | Retired (nothing to fail) |
+| task() retry protocol | 3 retries with backoff | Retired (OpenCode surfaces errors directly) |
+| "Both blocks" pattern | Required (write + edit) | Retired (no glob matching) |
+| Bash prefix globs | Required | Retired (no glob matching) |
 
----
+## What survives
 
-## 1. The `write` tool checks `edit` permissions for new files
+- The 5-agent pipeline (research → planning → coder → review) — still useful as separation of concerns
+- The file-based bus (`share/`, `tasks/`) — still useful for cross-agent coordination
+- The phase gates (PHASE 0–4) — still useful for quality control
+- The "brutally honest" review standard — still useful for review quality
+- The Can/Can't prose in each SKILL.md — still useful as soft guidance
+- The "If tasks/<id>.md is missing" specialist fallback — still useful as robustness
 
-**Symptom (from real-world failure):** A path was listed only in the agent's `write` block. The write tool rejected it.
+## What new agents should do
 
-**Discovery:** OpenCode's write tool requires edit permission for creating new files. Path-only-in-write is unreachable for file creation. Existing files may still be writable through `write` alone — the behavior is per-file.
+If you add a 6th agent:
+1. Add it to `opencode.jsonc` with `"permission": "allow"`
+2. Write a SKILL.md with clear `## Boundaries (soft walls)` section
+3. Write an inline prompt that includes `## Boundaries (soft walls — enforced by you reading the boundaries, not by OpenCode)`
+4. Include a "When a write fails" section modeled on the v0.5.0 wording in the existing 5 SKILL.md files
+5. Reference the new agent from the master's prompt + dispatch contract
 
-**Workaround in `agents-manager`:** Every writable path is duplicated in BOTH the `edit` and `write` blocks. For example, master's permission block has:
+## When to opt back into hard walls
 
-```jsonc
-"edit":  { "*": "deny", "agents_manager/SKILL.md": "allow", "tasks/**": "allow", "share/**": "allow", "share/notes/99_decisions.md": "allow" },
-"write": { "*": "deny", "agents_manager/SKILL.md": "allow", "tasks/**": "allow", "share/**": "allow", "share/notes/99_decisions.md": "allow" }
-```
+If your downstream project finds soft walls insufficient (e.g., a real bug where am-research wrote code by mistake), you can opt back in:
+1. Set `permission: { ... }` instead of `permission: "allow"` for the offending agent
+2. Whitelist only what the agent actually needs
+3. Re-introduce the v0.4.1 patterns: both-blocks, bash prefix globs
+4. Re-introduce the Phase 0 preflight in the master prompt
 
-The duplication is intentional and belt-and-suspenders. If OpenCode's write semantics change in a future version, the redundant allow still covers us.
+The architecture is **soft by default, hard by opt-in** — opposite of v0.4.0.
 
-**Why we didn't notice before:** In our internal testing the master always wrote to paths that were already in both blocks (`share/handoffs/00_user_task.md`, `tasks/<id>.md`). The path-matcher misconfiguration only surfaced when a downstream project tried to use `share/messages/<from>-to-<to>-<topic>.md` paths that we'd added only to `write` in v0.4.0.
+## Debugging when something goes wrong
 
----
+Since walls are soft now, "agent did something out of lane" looks like a normal completion, not a blocked tool call. Debug steps:
 
-## 2. Bash allow list is exact-match on the full command string
+1. **Re-read the agent's SKILL.md boundaries.** Did the agent follow them?
+2. **Check the agent's return line.** Does it surface the boundary choice? (Soft-wall agents should be explicit about out-of-lane actions.)
+3. **If the pattern recurs, opt the agent back into hard walls** (see above). Soft walls are an experiment — if they fail in practice, the architecture supports partial roll-back per agent.
+4. **Check the master's review of the agent's work.** The review step is now the primary quality gate.
 
-**Symptom (from real-world failure):** Master had `"cat": "allow"` in its bash block. `cat README.md` was blocked.
+## Historical notes (v0.4.0 → v0.4.1 era)
 
-**Discovery:** OpenCode's bash permission matching is exact-match against the full command string. Glob `*` works only when written explicitly: `"cat *"` matches `cat foo`, `cat "My File"`, etc., but does NOT match bare `cat` (no space, no args). Bare `cat` would only be allowed by an explicit `"cat": "allow"` entry.
+The v0.4.0 release added broader permissions (each specialist can write to its own `agents_manager/<role>/**`, all agents can write anywhere in `share/**`). v0.4.1 added:
 
-**Workaround in `agents-manager`:** Each bash allow entry appears in **both** forms:
+- Belt-and-suspenders: every writable path in BOTH `edit` and `write`
+- Bash prefix globs (both bare and arg forms)
+- 5-check Phase 0 preflight in master
+- 3-retry task() protocol
+- Specialist "If tasks/<id>.md missing" fallback
+- ESCALATE wording in master When-blocked
 
-```jsonc
-"bash": {
-  "*": "deny",
-  "git status": "allow",  "git status *": "allow",
-  "git log": "allow",     "git log *": "allow",
-  "git diff": "allow",    "git diff *": "allow",
-  "git show": "allow",    "git show *": "allow",
-  "ls": "allow",          "ls *": "allow",
-  "cat": "allow",         "cat *": "allow",
-  "rg": "allow",          "rg *": "allow",
-  "mkdir -p": "allow",    "mkdir -p *": "allow"
-}
-```
-
-Same pattern in `am-research` and `am-review` bash blocks. `am-coder` has `bash: "allow"` so it isn't affected.
-
-**Why we didn't notice before:** In our internal dry-runs, `git status` (bare) was the common case — that worked. The first failure was when master needed to read a specific file: `cat share/notes/01_research_T-001.md`.
-
----
-
-## 3. `task()` cancellation is silent — no diagnostic, no retry signal
-
-**Symptom (from real-world failure):** Master dispatched `am-research`; OpenCode returned "Task cancelled" with no error code, no reason, no retry guidance. Master had no way to distinguish "the sub-agent failed" from "the dispatch never started" from "OpenCode's permissions blocked the dispatch".
-
-**Discovery:** `task()` does not currently surface failure diagnostics. The text "Task cancelled" is the only signal, and it can mean any of several failure modes.
-
-**Workaround in `agents-manager` (two layers):**
-
-### Layer 1 — Phase 0 preflight in master prompt
-
-Before dispatching any specialist, master runs 5 probe checks. If any probe fails, master surfaces the failure to the user and STOPS — does not dispatch the real specialist.
-
-1. `mkdir -p tasks share/notes` — ensure parent dirs exist
-2. Write `tasks/.preflight` (probe file)
-3. Write `share/notes/.preflight` (probe file)
-4. `ls tasks share/notes` (bash probe)
-5. `task(subagent_type="am-research", prompt="echo READY")` (dispatch probe)
-
-After all 5 succeed, master deletes the probe files and proceeds.
-
-### Layer 2 — Retry protocol after preflight passes
-
-If a real dispatch (post-preflight) returns "Task cancelled":
-
-1. Retry up to 3 times with 5-second backoff between attempts.
-2. If all 3 retries fail, surface `BLOCKED: specialist <name> dispatch failed 3 times` to the user with the last error.
-
-The combination means:
-- If permissions or bash are broken, preflight catches it before any work begins.
-- If a real dispatch fails mid-pipeline (a more subtle issue), retry catches transient issues and surfaces persistent ones.
-
----
-
-## Path-matcher behavior — notes
-
-These are observations from v0.4.0/v0.4.1 testing. They may be OpenCode-specific or general; we don't know which without reading more of OpenCode's source.
-
-| Pattern | Matches | Doesn't match |
-|---|---|---|
-| `share/**` | `share/notes/foo.md`, `share/messages/x/y.md`, `share/anything/deep` | `sharefile/foo` (no slash) |
-| `agents_manager/coder/**` | `agents_manager/coder/notes/x.md`, `agents_manager/coder/resources/build.md` | `agents_manager/coder_skills.md` (extra chars after `coder`) |
-| `{a,b}` brace expansion | **Not supported.** Each path must be enumerated. | `share/{notes,reports}/**` is treated as a literal path |
-| `*` (bare) | Everything | Nothing |
-| `*` (in path segment) | Any chars including `/` | Empty (depends — see bash section) |
-| Case sensitivity | Case-sensitive (Linux paths) | — |
-| Windows-style backslashes | **Not supported.** Forward slashes only. | `share\notes\foo.md` |
-
-For downstream projects on Windows: paths in `opencode.jsonc` use forward slashes regardless of OS. The bash/permission matcher normalizes them.
-
----
-
-## What to check when permission is denied
-
-If an agent gets "permission denied" unexpectedly:
-
-1. **Check both `edit` AND `write` blocks.** Path only in `write`? Add to `edit`.
-2. **Check bash allow list.** Is the exact command string listed? Does the version with args need a separate entry?
-3. **Check the path is glob-correct.** No brace expansion. Use `**` for deep matches. Last-match-wins means explicit allows must come AFTER a broader deny.
-4. **Re-read `docs/PERMISSIONS.md`.** This file is the source of truth for discovered OpenCode behavior. If the behavior here contradicts what you observe, the discrepancy is a bug — open an issue.
-
----
+The v0.4.1 CHANGELOG entry, the v0.4.1 commit (`8a999f1`), and the original `docs/PERMISSIONS.md` content are preserved in git history if you want to see the full evolution.
 
 ## History
 
-- **v0.4.0** (2026-06-28): Initial permission rewrite with broader `share/**` + own-folder writes. Did NOT include the belt-and-suspenders for write/edit, bash prefix globs, or preflight. Real-world test exposed the gaps.
-- **v0.4.1** (2026-06-28): This document + the three fixes (both blocks, prefix globs, preflight + retry). All discovered behaviors are now documented and worked around.
+- **v0.5.0** (2026-06-28): Soft-wall architecture. All 5 agents have `permission: "allow"`. Permission layer is unused. This document rewritten.
+- **v0.4.1** (2026-06-28): Discovered OpenCode behavior (write/edit dual-allow, bash exact-match, silent task cancel) + workarounds. Hard walls with belt-and-suspenders.
+- **v0.4.0** (2026-06-28): Initial permission rewrite with broader `share/**` + own-folder writes. Hard walls.

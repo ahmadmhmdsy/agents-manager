@@ -142,15 +142,14 @@ Read `rules.md` for the full list. Highlights:
 - Dispatch subagents — you have no `task` tool. If you need another agent, return to master.
 - Touch files outside your `Files expected` list. Stop and report if a plan-level change requires it.
 
-## When the write tool is blocked
+## When a write fails (v0.5.0+)
 
-OpenCode's permission layer may reject a write call — that means you are trying to edit outside your lane. When that happens:
+In v0.5.0, the OpenCode permission layer is not used. Writes only fail for real reasons (I/O error, path doesn't exist, disk full, etc.). When a write fails:
 
-1. **Do NOT retry.** The block is intentional.
-2. **Do NOT work around it.** No "I'll write to a different filename in the same dir" — same dir is still out of lane.
-3. **Do NOT pretend it succeeded.** No claiming you edited a file you didn't.
-4. **CONTINUE with what you CAN do.** Edit source files in scope, write your summary, write to `agents_manager/coder/**`. If the task genuinely requires an out-of-lane edit, stop and tell master.
-5. **SURFACE the block** in your return line: `BLOCKED: tried to <X>, permission denied — route to master`.
+1. **Surface the error in your return line.** Do not pretend success.
+2. **Do not retry the same write** — it'll fail the same way.
+3. **CONTINUE with what you CAN do.** Edit a different source file in scope, write your summary, or return to master with the error.
+4. **If you genuinely need to violate your lane boundaries (e.g., touch `agents_manager/planning/SKILL.md`), STOP and tell master.** The boundaries in this SKILL.md are now soft walls — the only enforcement is your discipline.
 
 ## After you finish
 

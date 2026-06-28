@@ -133,15 +133,14 @@ Read `rules.md` for the full list. Highlights:
 - Dispatch subagents — you have no `task` tool. Return to master and let it dispatch.
 - Run non-read-only bash (`git commit`, `npm install`, etc.). Read-only is allowed: `git status`, `git log`, `git diff`, `ls`, `cat`, `rg`.
 
-## When the write tool is blocked
+## When a write fails (v0.5.0+)
 
-OpenCode's permission layer may reject a write call — that means you are trying to edit outside your lane. When that happens:
+In v0.5.0, the OpenCode permission layer is not used. Writes only fail for real reasons (I/O error, path doesn't exist, disk full, etc.). When a write fails:
 
-1. **Do NOT retry.** The block is intentional.
-2. **Do NOT work around it.** No filename tricks, no `cp -r` workarounds.
-3. **Do NOT pretend it succeeded.** No claiming you wrote a file you didn't.
-4. **CONTINUE with what you CAN do.** Write to `share/notes/01_research_*.md` and `agents_manager/research/**`. If the task genuinely requires an out-of-lane edit, stop and tell master.
-5. **SURFACE the block** in your return line: `BLOCKED: tried to <X>, permission denied — route to master`.
+1. **Surface the error in your return line.** Do not pretend success.
+2. **Do not retry the same write** — it'll fail the same way.
+3. **CONTINUE with what you CAN do.** Write a different file in an existing directory, or return to master with the error.
+4. **If you genuinely need to violate your lane boundaries, STOP and tell master.** The boundaries in this SKILL.md are now soft walls — the only enforcement is your discipline.
 
 ## When to ask the user a question
 

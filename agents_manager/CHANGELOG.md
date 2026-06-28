@@ -2,6 +2,53 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.5.0 — Soft-wall architecture (2026-06-28)
+
+**Architectural change.** All 5 agents in `opencode.jsonc` now have `permission: "allow"`. OpenCode's permission layer is **not used** to enforce walls. Boundaries are now soft contracts — each agent's `SKILL.md` declares what it should/shouldn't do, and the LLM is expected to honor the contract.
+
+### Why
+
+The v0.4.0 → v0.4.1 era exposed three classes of OpenCode permission-layer edge cases (write/edit dual-allow requirement, bash exact-match, silent task cancellation). The v0.4.1 fixes added belt-and-suspenders patterns, but the config grew from ~30 lines to 88 lines and the work felt like patching the layer rather than using it.
+
+This release trades mechanical enforcement for simpler config and LLM-disciplined boundaries. Hard walls are still possible (opt back in per agent, see `docs/PERMISSIONS.md`).
+
+### What changed
+
+- **`opencode.jsonc`**: every agent's permission block became `"permission": "allow"`. The 88-line config with detailed `permission: { edit, write, bash, task, read, grep, glob }` blocks is now ~30 lines (just the prompts). The agent table is trivially auditable.
+- **Inline prompts (all 5)**: removed the "When the write tool is blocked" sections (no longer applicable). Added explicit "soft walls — enforced by you reading the boundaries, not by OpenCode" framing in each Boundaries section.
+- **Master prompt**: removed the Phase 0 permission preflight (5 probe checks) and the task() retry protocol (3 retries with 5s backoff). If a `task()` dispatch fails now, OpenCode surfaces the error in the chat and master surfaces it to the user. No silent loops.
+- **All 4 specialist prompts**: kept the "If tasks/<task-id>.md is missing" fallback but reframed its rationale from "permission might block" to "file might be missing for other reasons" (robustness, not permission).
+- **`agents_manager/SKILL.md` (master)**: removed the Phase 0 preflight section + task() retry section + "When blocked — ESCALATE" section. Replaced with a single "When the write tool fails (v0.5.0+)" section that handles real I/O failures (not permission blocks). Added an anti-pattern bullet: "Treating the v0.5.0 soft walls as mechanical guarantees. They are prose contracts."
+- **4 specialist SKILL.md files**: replaced "When the write tool is blocked" with "When a write fails (v0.5.0+)" sections. `am-review` SKILL.md adds a CRITICAL reminder: "do not fix source code even though you technically could now. The reviewer's job is to report, not to fix."
+- **`docs/PERMISSIONS.md`**: rewritten. The v0.4.0–v0.4.1 era notes are preserved as historical context. New content: trade-off matrix, "what survives" / "what new agents should do" / "when to opt back into hard walls" / "debugging when something goes wrong."
+- **`README.md`**: the "Permissions model" section now leads with "All 5 agents have `permission: "allow"`. OpenCode's permission layer is not used to enforce walls." The agent table shows "by convention" instead of specific allowed paths.
+- **`CLAUDE.md`**: auto-routing note updated to mention the v0.5.0 architecture.
+
+### What survives (unchanged)
+
+- 5-agent pipeline (research → planning → coder → review) — separation of concerns
+- File-based bus (`share/`, `tasks/`) — cross-agent coordination
+- Phase gates (PHASE 0–4) — quality control
+- "Brutally honest" review standard
+- Can/Can't prose in each SKILL.md — now soft guidance instead of redundant with permission layer
+- "If tasks/<id>.md is missing" specialist fallback — robustness, not permission
+
+### What was retired
+
+- Phase 0 preflight (5 probe checks)
+- task() retry protocol (3 retries with backoff)
+- "Both blocks" pattern (every writable path in edit + write)
+- Bash prefix globs (both bare `cat` and `cat *`)
+- "When the write tool is blocked — ESCALATE" 5-step protocol
+
+These were all mechanical workarounds for the OpenCode permission layer's edge cases. With the layer not used, the workarounds aren't needed.
+
+### Breaking change note
+
+v0.5.0 is a minor version bump but a breaking change: downstream projects that relied on hard walls (e.g., a script that assumed `am-research` literally cannot write code) need to either trust the SKILL.md boundaries or opt back into hard walls per agent. See `docs/PERMISSIONS.md` for opt-in instructions.
+
+**Net effect:** simpler config, easier debugging, less mechanical enforcement. The LLM is now the wall. If a real failure shows the soft walls are insufficient, the architecture supports partial roll-back per agent without a full revert.
+
 ## v0.4.1 — Critical permission fixes from real-world test (2026-06-28)
 
 A downstream project tested v0.4.0 and the pipeline delivered **zero work product**. Master hit three classes of failure that the inline prompts and SKILL.md didn't anticipate. This release fixes all three.

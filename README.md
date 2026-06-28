@@ -53,34 +53,27 @@ USER TASK
 | **am-coder** | specialist | Implement assigned tasks | Cannot edit other specialists' folders or controller config; only its own `agents_manager/coder/**` |
 | **am-review** | specialist | Per-task verdicts with evidence | Cannot edit source code; tests only |
 
-Walls are enforced in `opencode.jsonc` via `permission` blocks.
+Walls are soft — enforced by each agent reading its `SKILL.md` boundaries + the inline prompt's Can/Can't list, not by OpenCode's permission layer. See `docs/PERMISSIONS.md` for the v0.5.0 architectural change rationale.
 
-## Permissions model
+## Permissions model (v0.5.0+ — soft walls)
 
-Every agent has a **hard permission wall** declared in `opencode.jsonc`. The wall is enforced by OpenCode *before* the agent's prompt is consulted — if an agent tries to write outside its lane, the tool call is rejected and the agent is told.
+All 5 agents have `permission: "allow"` in `opencode.jsonc`. OpenCode's permission layer is **not used** to enforce walls. Each agent's `SKILL.md` declares its boundaries as a soft contract — the LLM is expected to honor them.
 
 | Agent | Reads | Writes | Dispatches | Bash |
 |---|---|---|---|---|
-| **master** | anything | `share/**`, `tasks/**`, `agents_manager/SKILL.md` (own only) | all 4 specialists | read-only |
-| **am-research** | anything | `share/**`, `agents_manager/research/**` | — | read-only |
-| **am-planning** | anything | `share/**`, `tasks/**`, `agents_manager/planning/**` | — | deny |
-| **am-coder** | anything | `share/**`, source files, `agents_manager/coder/**` | — | allow |
-| **am-review** | anything | `share/**`, `agents_manager/review/**` | — | test commands only |
+| **master** | anything | anything (own orchestration doc by convention) | all 4 specialists | read-only by convention |
+| **am-research** | anything | anything (own folder by convention) | — | read-only by convention |
+| **am-planning** | anything | anything (own folder by convention) | — | read-only by convention |
+| **am-coder** | anything | anything (own folder by convention) | — | allow (full) |
+| **am-review** | anything | anything (own folder by convention) | — | test commands by convention |
 
 **Cross-agent coordination** goes through `share/messages/<from>-to-<to>-<topic>.md` (a free-form folder; the naming convention makes intent obvious — e.g. `research-to-planning-T-001-clarify.md`).
 
-**Last-match-wins on globs:** in `am-coder`'s block, `agents_manager/**` is denied first, then `agents_manager/coder/**` is explicitly allowed — the allow wins because it comes last. This is how the coder can maintain its own `notes/` + `resources/` without editing other specialists' folders.
+**Why soft walls?** The v0.4.0 → v0.4.1 era exposed several OpenCode permission-layer edge cases (write/edit dual-allow requirement, bash exact-match, silent task cancellation). Hard walls required continuous patching. v0.5.0 trades mechanical enforcement for simpler config and LLM-disciplined boundaries. If a downstream project finds soft walls insufficient, the architecture supports opt-in hard walls per agent — see `docs/PERMISSIONS.md`.
 
-**Every agent follows the same "when blocked" protocol:**
-1. Do **NOT** retry — the block is intentional.
-2. Do **NOT** work around it (no filename tricks, no copying-and-renaming).
-3. Do **NOT** pretend the edit succeeded.
-4. **CONTINUE** with what you CAN do (write to your allowed paths only).
-5. **SURFACE** the block in your return line: `BLOCKED: tried to <X>, permission denied — route to master`.
+The full Can/Can't/When-fails sections for every agent are in each `agents_manager/<role>/SKILL.md`. Each SKILL.md has a `## Boundaries (soft walls)` section that the LLM is expected to honor.
 
-The full Can/Can't/When-blocked sections for every agent are in each `agents_manager/<role>/SKILL.md`.
-
-**Discovered OpenCode behavior** (write/edit dual-allow requirement, bash exact-match, silent task cancellation) is documented in [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md). Read that file before debugging any permission issue.
+For the v0.4.0 → v0.4.1 hard-wall era (now retired) and the discovered OpenCode behavior, see [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md).
 
 ## Quick start
 

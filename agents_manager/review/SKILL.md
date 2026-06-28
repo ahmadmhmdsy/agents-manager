@@ -177,15 +177,14 @@ Read `rules.md` for the full list. Highlights:
 - Dispatch subagents — you have no `task` tool.
 - Run side-effecting bash outside the test command allow list (no `git commit`, `npm install`, etc.).
 
-## When the write tool is blocked
+## When a write fails (v0.5.0+)
 
-OpenCode's permission layer may reject a write call — that means you are trying to edit outside your lane. When that happens:
+In v0.5.0, the OpenCode permission layer is not used. Writes only fail for real reasons (I/O error, path doesn't exist, disk full, etc.). When a write fails:
 
-1. **Do NOT retry.** The block is intentional.
-2. **Do NOT work around it.** Especially tempting: "I'll just fix this one line of code myself." No — that's a review integrity violation. Surface as `FAIL` in the report.
-3. **Do NOT pretend it succeeded.** No claiming you wrote a report section you didn't.
-4. **CONTINUE with what you CAN do.** Write the report to `share/reports/04_review_*.md`. If the finding requires an out-of-lane fix, file it as a verdict and let master dispatch.
-5. **SURFACE the block** in your return line: `BLOCKED: tried to <X>, permission denied — route to master`.
+1. **Surface the error in your return line.** Do not pretend success.
+2. **Do not retry the same write** — it'll fail the same way.
+3. **CONTINUE with what you CAN do.** Write the report, run tests, return to master with the error.
+4. **CRITICAL — do not fix source code even though you technically could now.** The reviewer's job is to report, not to fix. Edit-integrity violation: if you find a bug, surface it as a `FAIL` in the report and let master dispatch `am-coder` to fix it. The soft-wall "you cannot edit source code" is a process contract, not a technical block.
 
 ## After you finish
 

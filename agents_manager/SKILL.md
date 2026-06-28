@@ -175,28 +175,9 @@ Before dispatching any specialist — single or parallel — answer these 5 ques
 
 If any answer is "I don't know," pause and resolve before dispatching. "Just see what they say" is not a preflight answer.
 
-**Override of mavis-team's "smallest sufficient plan":** our pipeline is the plan. We always use the 5-agent roster; we don't dynamically add or remove specialists per task. This is by design (hard walls, declarative config).
+**Override of mavis-team's "smallest sufficient plan":** our pipeline is the plan. We always use the 5-agent roster; we don't dynamically add or remove specialists per task. This is by design.
 
-## Phase 0 (v0.4.1+) — Permission preflight (REQUIRED before any specialist dispatch)
-
-Before dispatching ANY specialist — single or parallel — run these 5 checks. If ANY fails, surface the failure to the user and STOP. Do not dispatch.
-
-1. **Bash:** `mkdir -p tasks share/notes` — ensures parent dirs exist for probe writes (idempotent).
-2. **Write probe:** `tasks/.preflight` — if blocked, surface `BLOCKED: cannot write tasks/ — pipeline cannot start`.
-3. **Write probe:** `share/notes/.preflight` — if blocked, surface `BLOCKED: cannot write share/notes/ — pipeline cannot start`.
-4. **Bash probe:** `ls tasks share/notes` — if blocked, surface `BLOCKED: bash allow list too narrow`.
-5. **Dispatch probe:** `task(subagent_type="am-research", prompt="echo READY")` — if returns "Task cancelled", surface `BLOCKED: task() dispatch not working — pipeline cannot start` and STOP. Do not retry the dispatch.
-
-After all 5 succeed, delete the probe files and proceed to the user-task-capture PHASE 0 (below).
-
-**Why this exists (v0.4.0 → v0.4.1 lesson):** A real downstream project hit the wall hard — master's write tool was blocked on paths listed only in `write` (not `edit`), bash failed on `cat README.md` because `"cat": "allow"` is exact-match, and `task()` returned "Task cancelled" silently with no retry/escalation path. The preflight catches all three classes of failure BEFORE any work begins, so you don't burn tokens discovering the wall mid-pipeline.
-
-## task() retry protocol (v0.4.1+)
-
-If a specialist dispatch (after preflight passes) returns "Task cancelled" or fails to return within expected time:
-
-1. Retry up to 3 times with 5-second backoff between attempts.
-2. If all 3 retries fail, surface `BLOCKED: specialist <name> dispatch failed 3 times` to the user with the last error. Do not loop silently.
+> **v0.5.0 architecture change:** permission preflight and task() retry protocol were retired. All 5 agents now have `permission: "allow"` (see `opencode.jsonc`). Walls are soft — enforced by you reading the SKILL.md boundaries + the inline prompt's Can/Can't list, not by OpenCode. If a `task()` dispatch fails, OpenCode surfaces the error in the chat; surface it to the user. Do not loop silently.
 
 ## Subagent dispatch contract
 
@@ -360,17 +341,18 @@ The specialist runs in its own context window with its own permission block (see
 - Run non-read-only bash (`npm install`, `git commit`, `git push`, file edits via shell). If you need a side-effecting command, ask the user.
 - Dispatch non-specialist agents (no `task()` to anything other than `am-research` / `am-planning` / `am-coder` / `am-review`).
 
-## When the write tool is blocked — ESCALATE, don't loop
+## When the write tool fails (v0.5.0+ — no permission layer to block)
 
-OpenCode's permission layer may reject a write call — that means you are trying to edit outside your lane. When that happens:
+In v0.5.0, all agents have `permission: "allow"`. The OpenCode permission layer will not block writes. If a write fails, it's a real I/O / filesystem / path-doesn't-exist error, not a permission denial.
 
-1. **Do NOT retry.** The block is intentional, not a transient error.
-2. **Do NOT work around it.** No "different filename in same dir", no "copy-then-rename", no "write to /tmp and move". Each is also blocked and creates mess.
-3. **Do NOT pretend it succeeded.** No "I edited `agents_manager/coder/SKILL.md`" if you didn't.
-4. **CONTINUE with what you CAN do.** Write to your allowed paths only. If the task genuinely requires an out-of-lane edit, stop and tell the user.
-5. **ESCALATE to the user.** Include `BLOCKED: tried to <X>, permission denied — route to user` in your response. Do not silently swallow or assume the user will read file artifacts.
+When a write or dispatch fails for any reason:
 
-The escalation is mandatory. "Task failed silently, see file X" is not acceptable — the user needs the BLOCKED signal in the chat.
+1. **Surface the error in the chat.** Do not silently swallow. The user needs to see the failure.
+2. **Do not loop trying the same operation.** If it failed once, it will fail the same way again.
+3. **CONTINUE with what you CAN do** (a different write to an existing directory, a different dispatch, etc.).
+4. **If you genuinely need an out-of-lane edit (a real edge case the SKILL.md boundaries didn't anticipate), STOP and tell the user.** Don't silently expand your lane.
+
+The "When the write tool is blocked" protocol from v0.4.1 is retired. In v0.5.0 the boundaries are soft walls — the only enforcement is your own discipline in reading this SKILL.md.
 
 ## Anti-patterns to refuse
 
@@ -383,3 +365,4 @@ The escalation is mandatory. "Task failed silently, see file X" is not acceptabl
 - Looping a chunk past `max_fix_loops` without escalating to the user.
 - Adding sub-agents or patterns that aren't justified by measured need (Anthropic's simplicity principle).
 - **Editing `agents_manager/SKILL.md` during pipeline execution**, even though your permission allows it. The permission exists so you CAN update your own orchestration doc via a deliberate maintenance task (with user review). During an active pipeline, do not silently rewrite the protocol that defines the pipeline. If you find a real gap, surface it as a `DEEP REFLECTION` finding or call a maintenance phase.
+- **Treating the v0.5.0 soft walls as mechanical guarantees.** They are prose contracts. The only enforcement is your discipline in reading each agent's SKILL.md boundaries. If you would do something that violates the boundary, do it intentionally and surface the choice to the user — not silently.
