@@ -2,6 +2,57 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.4.0 — Agent permissions + Do/Don't boundaries (2026-06-28)
+
+### Permissions model rewrite (`opencode.jsonc`)
+
+All 5 agents now have **broader, more honest write permissions** so each agent can maintain its own persistent memory (notes/, resources/) and so cross-agent coordination has a clear, free-form zone.
+
+**Key changes from v0.3.0:**
+
+- **`share/` zone is now free-form for all agents.** Every agent can write anywhere under `share/**`. Convention (not enforcement) for naming: `share/messages/<from>-to-<to>-<task-id>-<topic>.md` for cross-agent notes (e.g. `research-to-planning-T-001-clarify.md`). Structured artifacts (`01_research_*.md`, `02_plan_*.md`, `03_coder_summary_*.md`, `04_review_*.md`, `99_progress_*.md`, `handoffs/`) retain their prefix conventions.
+- **`agents_manager/<role>/**` is now writeable by each specialist** for that specialist only — `am-research` can edit `agents_manager/research/**`, etc. Each specialist can maintain its own `notes/`, `resources/`, `SKILL.md`, and `rules.md` without asking master.
+- **Master can edit only `agents_manager/SKILL.md`** (its own orchestration doc) — it cannot edit other specialists' `SKILL.md` or `rules.md`. This enforces separation of concerns: the user (or a dedicated maintenance task) edits the controller.
+- **`am-coder`'s allow rule is `agents_manager/coder/**`** — the coder can write to its own `notes/` and `resources/`. Last-match-wins on globs means the explicit allow comes *after* the broader `agents_manager/**` deny, so the coder still can't edit siblings.
+
+### "When blocked" protocol (5 steps)
+
+Every agent's inline prompt + SKILL.md now includes an explicit protocol for when the OpenCode permission layer rejects a write call:
+
+1. **Do NOT retry** — the block is intentional.
+2. **Do NOT work around it** — no filename tricks, no copying-and-renaming.
+3. **Do NOT pretend it succeeded** — no claiming you wrote a file you didn't.
+4. **CONTINUE** with what you CAN do.
+5. **SURFACE** the block in your return line: `BLOCKED: tried to <X>, permission denied — route to master`.
+
+This makes the permission layer's enforcement visible to the user and prevents agents from silently failing or, worse, bypassing the wall.
+
+### Can/Can't + When-blocked sections in all 5 SKILL.md files
+
+Every `SKILL.md` now has three new sections (consistent wording across all 5):
+
+- **`## What you can do (your lane)`** — bulleted list of permitted actions with concrete examples.
+- **`## What you cannot do (out of lane)`** — bulleted list of forbidden actions with what to do instead (route to master, dispatch a different agent, surface to user).
+- **`## When the write tool is blocked`** — the 5-step protocol above.
+
+The SKILL.md sections are read on agent startup, so they reinforce the inline prompt's Can/Can't list. Both layers must agree; if they ever drift, the inline prompt (which sets context first) wins.
+
+### README updates
+
+- Status banner updated to v0.4.0.
+- New `## Permissions model` section in `README.md` with the full agent → permissions table.
+- The five-agents table's Hard wall column updated to reflect the new walls (e.g. master can now edit its own SKILL.md; am-coder can now edit agents_manager/coder/**).
+
+### `docs/INSTALL.md` updates
+
+- New `## Folder conventions (added in v0.4.0)` section listing all standardized paths (`share/notes/01_*`, `02_*`, `03_*`, `04_*`, `99_*`, `share/messages/*`, `tasks/*`) so downstream users know where to find each artifact.
+
+### CI
+
+- The CI pipeline (7 jobs from v0.3.0) exercises the new permissions via `validate-frontmatter` (which reads each `SKILL.md` and confirms the new sections exist). No CI changes were needed for v0.4.0 — the validation already covers the additions.
+
+**Net effect:** Each agent can now maintain its own persistent memory and coordinate via `share/messages/` without round-tripping through master. Permission walls are now visible (via the "when blocked" protocol) instead of silent. The controller (`agents_manager/SKILL.md` and others) is protected from accidental edits by any agent except the user (or a maintenance task).
+
 ## v0.3.0 — Examples directory + obra-sync maintenance (2026-06-28)
 
 ### Examples directory (3 worked examples)

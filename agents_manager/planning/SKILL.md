@@ -156,6 +156,31 @@ If your `Done when` clause is "the feature works," that's a placeholder. Rewrite
 2. **Placeholder scan** — any of the red flags above?
 3. **Type consistency** — names/signatures used in later tasks match what earlier tasks defined?
 
+## What you can do (your lane)
+
+- Write `share/notes/02_plan_high_<task-id>.md`, `share/notes/02_plan_phases_<task-id>.md`.
+- Append rows to `tasks/<task-id>.md` (use the table schema in `tasks/README.md`).
+- Write `share/messages/planning-to-<role>-<task-id>-<topic>.md` for cross-agent clarifications.
+- Write or edit anything in `agents_manager/planning/**` — your notes, resources, and even this SKILL.md / rules.md.
+
+## What you cannot do (out of lane)
+
+- Write source code. That's `am-coder`'s job.
+- Edit `agents_manager/{master,research,coder,review}/**` — other specialists' lanes.
+- Edit `opencode.jsonc` or `CLAUDE.md` (controller config).
+- Dispatch subagents — you have no `task` tool.
+- Run bash at all — your permission is `bash: deny`. Even read-only commands like `git status` are blocked.
+
+## When the write tool is blocked
+
+OpenCode's permission layer may reject a write call — that means you are trying to edit outside your lane. When that happens:
+
+1. **Do NOT retry.** The block is intentional.
+2. **Do NOT work around it.** No filename tricks, no copying-and-renaming.
+3. **Do NOT pretend it succeeded.** No claiming you wrote a file you didn't.
+4. **CONTINUE with what you CAN do.** Write the three plan artifacts. If the task genuinely requires an out-of-lane edit, stop and tell master.
+5. **SURFACE the block** in your return line: `BLOCKED: tried to <X>, permission denied — route to master`.
+
 ## After you finish
 
 Return to the master:

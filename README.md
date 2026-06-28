@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/ahmadmhmdsy/agents-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmadmhmdsy/agents-manager/actions/workflows/ci.yml)
 
-> **Status:** v0.1.0 — early-stage. API may change between minor versions until v1.0.0.
+> **Status:** v0.4.0 — early-stage. API may change between minor versions until v1.0.0.
 
 A multi-agent task orchestration system built on [OpenCode](https://opencode.ai)'s agent system. One **master agent** routes work through four **specialist agents** (research → planning → coder → review), each with its own context window and hard permission walls.
 
@@ -47,13 +47,38 @@ USER TASK
 
 | Agent | Type | What it does | Hard wall |
 |---|---|---|---|
-| **master** | orchestrator | Routes work, gates on user confirmation, enforces `max_fix_loops = 3` | Cannot implement, plan, code, or review |
+| **master** | orchestrator | Routes work, gates on user confirmation, enforces `max_fix_loops = 3` | Cannot implement, plan, code, or review; only edits its own `agents_manager/SKILL.md` |
 | **am-research** | specialist | Brainstorm, analyze, surface unknowns | Read-only — cannot write code or configs |
 | **am-planning** | specialist | Phased plan + task table | No bash, no code edits |
-| **am-coder** | specialist | Implement assigned tasks | Cannot edit `agents_manager/**` |
+| **am-coder** | specialist | Implement assigned tasks | Cannot edit other specialists' folders or controller config; only its own `agents_manager/coder/**` |
 | **am-review** | specialist | Per-task verdicts with evidence | Cannot edit source code; tests only |
 
 Walls are enforced in `opencode.jsonc` via `permission` blocks.
+
+## Permissions model
+
+Every agent has a **hard permission wall** declared in `opencode.jsonc`. The wall is enforced by OpenCode *before* the agent's prompt is consulted — if an agent tries to write outside its lane, the tool call is rejected and the agent is told.
+
+| Agent | Reads | Writes | Dispatches | Bash |
+|---|---|---|---|---|
+| **master** | anything | `share/**`, `tasks/**`, `agents_manager/SKILL.md` (own only) | all 4 specialists | read-only |
+| **am-research** | anything | `share/**`, `agents_manager/research/**` | — | read-only |
+| **am-planning** | anything | `share/**`, `tasks/**`, `agents_manager/planning/**` | — | deny |
+| **am-coder** | anything | `share/**`, source files, `agents_manager/coder/**` | — | allow |
+| **am-review** | anything | `share/**`, `agents_manager/review/**` | — | test commands only |
+
+**Cross-agent coordination** goes through `share/messages/<from>-to-<to>-<topic>.md` (a free-form folder; the naming convention makes intent obvious — e.g. `research-to-planning-T-001-clarify.md`).
+
+**Last-match-wins on globs:** in `am-coder`'s block, `agents_manager/**` is denied first, then `agents_manager/coder/**` is explicitly allowed — the allow wins because it comes last. This is how the coder can maintain its own `notes/` + `resources/` without editing other specialists' folders.
+
+**Every agent follows the same "when blocked" protocol:**
+1. Do **NOT** retry — the block is intentional.
+2. Do **NOT** work around it (no filename tricks, no copying-and-renaming).
+3. Do **NOT** pretend the edit succeeded.
+4. **CONTINUE** with what you CAN do (write to your allowed paths only).
+5. **SURFACE** the block in your return line: `BLOCKED: tried to <X>, permission denied — route to master`.
+
+The full Can/Can't/When-blocked sections for every agent are in each `agents_manager/<role>/SKILL.md`.
 
 ## Quick start
 

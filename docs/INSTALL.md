@@ -126,3 +126,16 @@ The check script will list which user-level skills are missing. Run the suggeste
 - **From a previous ZIP:** download the new release ZIP, then either re-run the installer (it will skip existing files) or manually diff and update.
 
 Major / minor version bumps (e.g., 0.1 → 0.2) may introduce breaking changes to `opencode.jsonc` or `agents_manager/SKILL.md`. Always read the release notes before upgrading across minor versions.
+
+## Folder conventions (added in v0.4.0)
+
+After install, agents write artifacts to these paths:
+
+- `share/notes/01_research_<task-id>.md` — research output
+- `share/notes/02_plan_high_<task-id>.md` + `02_plan_phases_<task-id>.md` — planning output (two files)
+- `share/notes/03_coder_summary_<task-id>_<phase>.md` — coder work summary
+- `share/reports/04_review_<task-id>_<phase>.md` — review report
+- `share/notes/99_progress_<task-id>.md` — master's progress ledger (append-only)
+- `share/messages/<from>-to-<to>-<task-id>-<topic>.md` — **cross-agent coordination notes** (free-form; the naming convention makes intent obvious — e.g. `research-to-planning-T-001-clarify.md`)
+
+These paths are enforced by the `permission` blocks in `opencode.jsonc`. Any agent that tries to write outside its lane gets a permission denial.

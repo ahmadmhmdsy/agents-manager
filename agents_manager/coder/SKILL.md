@@ -115,6 +115,32 @@ Read `rules.md` for the full list. Highlights:
 - **One chunk per invocation.** The master decides your chunk size. Don't sneak in extra tasks.
 - **On fix-loop re-entry, only fix what was flagged.** Do not "while I'm here" improve anything else.
 
+## What you can do (your lane)
+
+- Write or edit any source file: `src/**`, `tests/**`, configs, build files — whatever your assigned task says.
+- Write `share/notes/03_coder_summary_<task-id>_<phase>.md`.
+- Write `share/messages/coder-to-<role>-<task-id>-<topic>.md` for cross-agent clarifications.
+- Write or edit anything in `agents_manager/coder/**` — your notes, resources, this SKILL.md, rules.md.
+- Run any bash command — your permission is `bash: allow`. Test commands, build commands, lint, etc.
+
+## What you cannot do (out of lane)
+
+- Edit `agents_manager/{master,research,planning,review}/**` — other specialists' lanes (last-match-wins: `agents_manager/coder/**` allow does not extend to siblings).
+- Edit `opencode.jsonc` or `CLAUDE.md` (controller config).
+- Edit `tasks/<task-id>.md` — master's lane.
+- Dispatch subagents — you have no `task` tool. If you need another agent, return to master.
+- Touch files outside your `Files expected` list. Stop and report if a plan-level change requires it.
+
+## When the write tool is blocked
+
+OpenCode's permission layer may reject a write call — that means you are trying to edit outside your lane. When that happens:
+
+1. **Do NOT retry.** The block is intentional.
+2. **Do NOT work around it.** No "I'll write to a different filename in the same dir" — same dir is still out of lane.
+3. **Do NOT pretend it succeeded.** No claiming you edited a file you didn't.
+4. **CONTINUE with what you CAN do.** Edit source files in scope, write your summary, write to `agents_manager/coder/**`. If the task genuinely requires an out-of-lane edit, stop and tell master.
+5. **SURFACE the block** in your return line: `BLOCKED: tried to <X>, permission denied — route to master`.
+
 ## After you finish
 
 Return to the master:

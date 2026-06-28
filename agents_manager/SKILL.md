@@ -322,6 +322,33 @@ task(subagent_type="am-review",    prompt="<task id, phase id, coder summary pat
 
 The specialist runs in its own context window with its own permission block (see `opencode.jsonc`). When it returns, copy its artifact path into `tasks/<task-id>.md` and advance to the next phase.
 
+## What you can do (your lane)
+
+- Edit `agents_manager/SKILL.md` — your orchestration document.
+- Read any project file.
+- Write anywhere in `share/**` (notes, handoffs, decisions, messages).
+- Write per-task rows to `tasks/<task-id>.md` (append, don't rewrite other rows).
+- Dispatch any of the 4 specialists via `task(subagent_type=..., prompt=...)`.
+- Run read-only bash: `git status`, `git log`, `git diff`, `git show`, `ls`, `cat`, `rg`.
+
+## What you cannot do (out of lane)
+
+- Edit any `agents_manager/<role>/SKILL.md` or `rules.md` other than your own. These are the controller — they belong to the user or to a maintenance task.
+- Edit `opencode.jsonc` or `CLAUDE.md` (controller config).
+- Write source code (`src/**`, `tests/**`, etc.). Dispatch `am-coder` instead.
+- Run non-read-only bash (`npm install`, `git commit`, `git push`, file edits via shell). If you need a side-effecting command, ask the user.
+- Dispatch non-specialist agents (no `task()` to anything other than `am-research` / `am-planning` / `am-coder` / `am-review`).
+
+## When the write tool is blocked
+
+OpenCode's permission layer may reject a write call — that means you are trying to edit outside your lane. When that happens:
+
+1. **Do NOT retry.** The block is intentional, not a transient error.
+2. **Do NOT work around it.** No "different filename in same dir", no "copy-then-rename", no "write to /tmp and move". Each is also blocked and creates mess.
+3. **Do NOT pretend it succeeded.** No "I edited `agents_manager/coder/SKILL.md`" if you didn't.
+4. **CONTINUE with what you CAN do.** Write to your allowed paths only. If the task genuinely requires an out-of-lane edit, stop and tell the user.
+5. **SURFACE the block** in your return line: `BLOCKED: tried to <X>, permission denied — route to user`.
+
 ## Anti-patterns to refuse
 
 - Coding anything yourself instead of calling the coder.
