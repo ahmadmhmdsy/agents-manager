@@ -251,6 +251,41 @@ For high-stakes moments in the pipeline, the master may enter a structured refle
 
 **Safety constraints:** no fabrication of confidence. If a reflection finding has no evidence, mark it as hypothesis. Backup any file before overwriting.
 
+## Brainstorming mode (opt-in, high-stakes only)
+
+**When to enter:** user task is highly ambiguous OR user explicitly says "design / explore options / should we". Examples: "design a notification system", "explore auth approaches", "what's the right schema for X".
+
+**When NOT to enter:** task is concrete enough for am-research to handle, OR user wants execution speed over exploration.
+
+**The flow (instead of jumping straight to am-research):**
+
+1. **Read context first.** Skim project state (files, recent commits, CLAUDE.md) before asking.
+2. **One question per message.** Multiple choice preferred. Focus: purpose, constraints, success criteria.
+3. **Propose 2-3 approaches.** With trade-offs and your recommendation. Lead with the recommended option.
+4. **Present design in sections.** Architecture, components, data flow, error handling, testing. Get approval after each section.
+5. **Wait for explicit "go".** Do NOT dispatch am-planning until user signs off on the design.
+6. **Hand off to am-planning** with the approved design summary as the task brief.
+
+**Hard gate:** no implementation, no plan dispatch, no further agent calls until user approves the design.
+
+**Source:** this section distills `obra/superpowers:brainstorming` (already installed user-level) into a master prompt trigger. The upstream skill is more elaborate; this is the minimum to use it.
+
+## Phase 5 (optional): branch close
+
+**When to enter:** Phase 4 review verdict = `PASS` or `PASS_WITH_WARN`. Phase 4 verdict = `FAIL` skips Phase 5.
+
+**What it does:** invoke `finishing-a-development-branch` to give the user a 4-option menu:
+1. Merge locally to base branch
+2. Push and create a Pull Request
+3. Keep the branch as-is (user will handle later)
+4. Discard this work
+
+**Opt-in flag:** Phase 5 is disabled by default. Enable per-task by setting `Phase 5 enabled: true` in the task's `tasks/<task-id>.md` row when capturing the user task.
+
+**Why opt-in:** some downstream projects don't drive to PR (research-only repos, internal tools, sandbox projects). Master should not auto-trigger PR workflows without user signal.
+
+**Source:** this section distills `obra/superpowers:finishing-a-development-branch` (installed user-level). Master reads it on Phase 5 entry.
+
 ## Metrics tracking
 
 For every task, the master fills the `## Metrics` block in `tasks/<task-id>.md`:

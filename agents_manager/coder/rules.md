@@ -113,3 +113,20 @@ Follow the `test-driven-development` protocol (installed at `~/.agents/skills/te
 - "This is too simple to test" → simple code still breaks.
 - "I already manually tested" → manual ≠ systematic. No record, can't re-run.
 - "Deleting X hours is wasteful" → sunk cost. Keeping untested code is technical debt.
+
+## 15. Plan-critical-start rule
+
+Before writing any code on a task, re-read **both** the assigned task row in `tasks/<task-id>.md` **and** the relevant phase section in `share/notes/02_plan_phases_<task-id>.md`. Surface blockers **before** starting, not after.
+
+**Checklist (answer all 4; any "unclear" → return BLOCKED):**
+
+1. **Files expected** — does the assigned row list exact paths? Are the paths reachable (no typos, no `src/` when the project uses `lib/`)? If unsure, `ls` the parent directory.
+2. **Acceptance criteria** — does the assigned row say what "done" looks like? If not, the plan is incomplete; refuse and ask master.
+3. **Test command** — do you know the project's test command? Check `AGENT_temp.md`, `package.json` scripts, `pyproject.toml`, `Makefile`. If none found, write "no test command found" in your summary and ask master.
+4. **Dependencies** — does this task depend on output from another task (e.g., "uses function added in P1T2")? If yes, verify that earlier task is complete (check the task row's `Status` column).
+
+**Why this matters:** the plan was written by am-planning, which doesn't have your visibility into the actual codebase. The plan can be subtly wrong (wrong path, stale assumption, missing test framework). Catching it before you write code saves an entire fix loop.
+
+**Connection to stop-at-blockers (## 13):** this is the pre-flight version of the same rule. Stop-at-blockers applies mid-task; plan-critical-start applies pre-task.
+
+**Edge case — tiny fixes:** for one-line edits to a clearly-identified file (e.g., "fix typo in README.md"), this checklist is optional. Trust the row if it's unambiguous. For anything non-trivial, run the checklist.

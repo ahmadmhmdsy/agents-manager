@@ -2,6 +2,25 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.2.0 — Tier 3 skill integrations + CI pipeline (2026-06-28)
+
+### Tier 3 skill integrations
+- Installed `finishing-a-development-branch` (113.9K installs) via `npx skills add https://github.com/obra/superpowers --skill finishing-a-development-branch -g -y`.
+- `agents_manager/SKILL.md` (master) now includes:
+  - **New `## Brainstorming mode (opt-in, high-stakes only)`** — 6-step flow (read context → one question per message → 2-3 approaches → design sections → wait for go → hand off to am-planning). Hard gate: no implementation/plan until user approves. Pattern from `obra/superpowers:brainstorming`. Activation triggers: user says "design", "explore options", "should we", or task ambiguity is high.
+  - **New `## Phase 5 (optional): branch close`** — 4-option menu (merge / PR / keep / discard) via `finishing-a-development-branch`. Opt-in via `Phase 5 enabled: true` flag in `tasks/<task-id>.md` row. Skipped if Phase 4 verdict = FAIL.
+- `agents_manager/coder/rules.md` now includes:
+  - **New `## 15. Plan-critical-start rule`** — before writing any code, re-read the assigned row in `tasks/<id>.md` AND the relevant phase section in `share/notes/02_plan_phases_<id>.md`. 4-item checklist (files / acceptance / test command / dependencies). Any "unclear" → return BLOCKED. Edge case: tiny fixes can skip. Connection to stop-at-blockers (## 13) is the pre-flight analog.
+
+### CI pipeline (added under this release)
+- **`.github/workflows/ci.yml`** — 6 jobs on push/PR: validate-config (opencode.jsonc parses), validate-frontmatter (all SKILL.md files), bash-lint (shellcheck on install.sh + check.sh), ps-lint (pwsh syntax check on install.ps1 + check.ps1), install-dryrun (install.sh against /tmp fixture), check-script (check.sh against self).
+- **`scripts/validate-frontmatter.py`** — stdlib-only YAML frontmatter validator. Strict mode for OpenCode-discoverable skills (paths containing `/skills/`); lenient mode for internal files (description length only). Underscore names and dir-name mismatches in internal files are allowed; the same in `/skills/` files fail.
+- **`.gitattributes`** — enforce LF for shell/yaml/json/md, CRLF for PowerShell.
+- **`bin/check.ps1`** — fixed PowerShell variable expansion (`$Var:` → `${Var}:`). Both `bin/*.ps1` and `bin/*.sh` now pass syntax checks locally.
+- **`README.md`** — added CI status badge near the top.
+
+**Net effect:** v0.1.0 install is now CI-verifiable across platforms. v0.2.0 adds two new opt-in pipeline modes (brainstorming for high-stakes tasks; branch-close for projects driving to merge) and a hard pre-flight gate on the coder before implementation begins.
+
 ## Unreleased
 
 ### Migration — Agent-based orchestration (2026-06-28)
