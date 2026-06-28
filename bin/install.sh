@@ -56,6 +56,8 @@ echo "Directories:"
 copy_dir  agents_manager
 copy_dir  share
 copy_dir  tasks
+# .agents/skills/mavis-team requires the parent dirs to exist (cp -r doesn't create them)
+mkdir -p "$TARGET_ABS/.agents/skills"
 copy_dir  .agents/skills/mavis-team
 
 echo ""

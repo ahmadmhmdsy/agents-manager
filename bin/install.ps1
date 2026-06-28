@@ -60,6 +60,8 @@ Write-Host "Directories:"
 Copy-DirSafe  "agents_manager"
 Copy-DirSafe  "share"
 Copy-DirSafe  "tasks"
+# .agents/skills/mavis-team requires the parent dirs (defensive — Copy-Item usually creates them, but explicit is safer)
+New-Item -Path (Join-Path $TargetAbs ".agents/skills") -ItemType Directory -Force | Out-Null
 Copy-DirSafe  ".agents/skills/mavis-team"
 
 Write-Host ""
