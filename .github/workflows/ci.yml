@@ -133,3 +133,31 @@ jobs:
         run: |
           chmod +x bin/check.sh
           ./bin/check.sh .
+
+  examples-consistency:
+    name: examples-consistency (3 examples have required structure)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify each example has user-task + README + expected-output
+        run: |
+          set -e
+          FAIL=0
+          for ex in node-markdown-linter python-csv-summarizer docs-restructure; do
+            echo "Checking examples/$ex/"
+            for f in README.md user-task.md expected-output; do
+              if [[ ! -e "examples/$ex/$f" ]]; then
+                echo "  FAIL: examples/$ex/$f missing"
+                FAIL=1
+              else
+                echo "  OK:   examples/$ex/$f"
+              fi
+            done
+          done
+          if [[ ! -f examples/README.md ]]; then
+            echo "FAIL: examples/README.md missing"
+            FAIL=1
+          else
+            echo "OK: examples/README.md"
+          fi
+          exit $FAIL

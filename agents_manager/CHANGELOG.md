@@ -2,6 +2,23 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.3.0 — Examples directory + obra-sync maintenance (2026-06-28)
+
+### Examples directory (3 worked examples)
+- **`examples/node-markdown-linter/`** — full pipeline trace for "add a no-consecutive-h1 rule" task. Includes `original/` (starting state), `user-task.md`, full `share/` artifacts (00–04), `tasks/T-2026-06-28-001.md`, and `expected-output/` (rule + 5 new tests). This is the canonical demonstration of the agents-manager pipeline end-to-end.
+- **`examples/python-csv-summarizer/`** — compact example for "add a `mean` aggregation alongside `sum` and `count`". Demonstrates the Python/pytest loop. Compact format (no full share/ trace).
+- **`examples/docs-restructure/`** — pure-markdown example (no source code). Demonstrates Phases 1+2+4 without Phase 3 (no code to write). Useful for projects that are documentation-only.
+- **`examples/README.md`** — index of all 3 examples with how-to-read and how-to-replay instructions.
+
+### CI: new examples-consistency job
+- **`.github/workflows/ci.yml`** now has 7 jobs. The new `examples-consistency` job verifies each of the 3 examples has the required structure (`README.md`, `user-task.md`, `expected-output/`) and that `examples/README.md` exists. Catches example drift as the controller evolves.
+
+### obra/superpowers sync infrastructure
+- **`.github/workflows/obra-sync-reminder.yml`** — quarterly cron (1st of Jan/Apr/Jul/Oct at 09:00 UTC) opens a GitHub issue titled "obra/superpowers sync — `<Month>` `<Year>`" with a 10-item checklist. Also manually triggerable via `workflow_dispatch`.
+- **`docs/MAINTENANCE.md`** — full procedure for quarterly sync, release-cadence guidance (minor vs patch vs major bumps), pre-release checklist, and contingency procedures (when upstream skills are removed, when downstream projects need help).
+
+**Net effect:** Three runnable examples demonstrate the pipeline for Node, Python, and docs-only projects. CI catches example drift. obra/superpowers updates are surfaced quarterly via an automated issue rather than relying on memory.
+
 ## v0.2.0 — Tier 3 skill integrations + CI pipeline (2026-06-28)
 
 ### Tier 3 skill integrations

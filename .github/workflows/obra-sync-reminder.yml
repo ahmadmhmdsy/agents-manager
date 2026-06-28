@@ -1,0 +1,53 @@
+name: obra-sync-reminder
+
+on:
+  schedule:
+    # Quarterly: 1st of Jan, Apr, Jul, Oct at 09:00 UTC
+    - cron: '0 9 1 1,4,7,10 *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  open-issue:
+    name: Open quarterly obra/superpowers sync reminder
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create reminder issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const month = new Date().toLocaleString('en-US', { month: 'long' });
+            const year = new Date().getFullYear();
+            const body = [
+              '## obra/superpowers quarterly sync — ' + month + ' ' + year,
+              '',
+              'Reminder to sync with upstream skills used by agents-manager:',
+              '',
+              '- [ ] Run `npx --yes skills check` (or open each skill\'s repo)',
+              '- [ ] Read CHANGELOG / diffs for each updated skill:',
+              '  - dispatching-parallel-agents',
+              '  - subagent-driven-development',
+              '  - verification-before-completion',
+              '  - systematic-debugging',
+              '  - test-driven-development',
+              '  - requesting-code-review',
+              '  - writing-plans',
+              '  - executing-plans',
+              '  - brainstorming',
+              '- [ ] For each updated skill: re-read SKILL.md, check for new iron laws / rules',
+              '- [ ] Update `agents_manager/SKILL.md` overrides section if upstream changes conflict with our decisions',
+              '- [ ] Add CHANGELOG entry under Unreleased with date + skill versions',
+              '- [ ] Tag a patch release (v0.x.Y) if any user-facing change',
+              '',
+              'See `docs/MAINTENANCE.md` for the full procedure.',
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'obra/superpowers sync — ' + month + ' ' + year,
+              body,
+              labels: ['maintenance', 'obra-sync'],
+            });

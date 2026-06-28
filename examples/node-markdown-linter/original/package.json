@@ -1,0 +1,10 @@
+{
+  "name": "markdown-linter",
+  "version": "0.1.0",
+  "description": "A tiny markdown linter with a few opinionated rules.",
+  "main": "src/linter.js",
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "license": "MIT"
+}
