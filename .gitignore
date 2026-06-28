@@ -1,0 +1,34 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
+
+# Node / Bun
+node_modules/
+.bun/
+bun.lockb
+
+# Local-only scratchpad (per .agents/README.md — never commit)
+.agents/agent/planning-mode.md
+.agents/agent/SELF_REFLECTIVE_*
+.agents/agent/skills_guide*
+.agents/check-review/
+.agents/python/
+.agents/react/
+.agents/shopify/
+.agents/design/
+.agents/ci-validation.md
+.agents/drift-detection.md
+.agents/Appendix A_*
+.agents/README.md
+
+# Project-specific working notes (not part of the controller)
+AGENT_temp.md
+research_doc/
+
+# OS temp
+*.tmp
+*.bak

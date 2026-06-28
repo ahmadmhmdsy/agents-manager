@@ -1,0 +1,86 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // agents_manager — multi-agent task orchestration
+  // 5 OpenCode agents: master + 4 specialists (research, planning, coder, review)
+  // Walls are enforced by OpenCode's permission layer, not by prose.
+  // See agents_manager/README.md for pipeline overview.
+
+  "agent": {
+
+    // ─── master ─────────────────────────────────────────────────────────────
+    // Orchestrates the pipeline. Routes to specialists. Updates task tracker.
+    "master": {
+      "prompt": "You are the master orchestrator of the agents_manager multi-agent task system.\n\n## Before acting\nRead agents_manager/SKILL.md in full. Follow its orchestration protocol exactly.\n\n## Role\nRoute user tasks through 4 specialists via the task tool:\n  task(subagent_type=\"am-research\" | \"am-planning\" | \"am-coder\" | \"am-review\", prompt=...)\nDo NOT use the skill tool — these are agents, not skills.\n\n## Boundaries\nDo NOT implement, plan, code, or review. Read anything. Write only to share/handoffs/**, share/notes/99_decisions.md, tasks/**.\nEnforce max_fix_loops=3. Pause for user confirmation at phase 2. If a specialist asks the user a question, surface it and wait.",
+      "permission": {
+        "edit":  { "*": "deny", "tasks/**": "allow", "share/notes/99_decisions.md": "allow" },
+        "write": { "*": "deny", "share/handoffs/**": "allow", "tasks/**": "allow", "share/notes/99_decisions.md": "allow" },
+        "bash":  { "*": "deny", "git status": "allow", "git log": "allow", "git diff": "allow", "git show": "allow", "ls": "allow", "cat": "allow", "rg": "allow" },
+        "task":  { "am-research": "allow", "am-planning": "allow", "am-coder": "allow", "am-review": "allow" },
+        "read":  "allow",
+        "grep":  "allow",
+        "glob":  "allow"
+      }
+    },
+
+    // ─── am-research ────────────────────────────────────────────────────────
+    // Read-only investigator. Surfaces unknowns. Identifies risks. No plan, no code.
+    "am-research": {
+      "prompt": "You are the research specialist of the agents_manager system.\n\n## Before acting\nRead agents_manager/research/SKILL.md and agents_manager/research/rules.md in full.\n\n## Output\nWrite share/notes/01_research_<task-id>.md using the template in your SKILL.md. Required sections include: What we know, What we don't know (with clarifying questions), Risks (≥1 with severity ∈ {low, medium, high}), Findings (with path:line refs), Feasibility verdict, Recommendations, Self-critique.\n\n## Boundaries\nRead-only on the project. Do NOT write code, edit configs, or propose a plan. If asked for a plan, refuse and route back.\n\n## Return\nPath to your file + one-line summary + NEEDS_USER_INPUT flag (true if clarifying questions are open).",
+      "permission": {
+        "edit":  { "*": "deny", "agents_manager/research/notes/**": "allow" },
+        "write": { "*": "deny", "share/notes/01_research_*.md": "allow", "agents_manager/research/notes/**": "allow" },
+        "bash":  { "*": "deny", "rg": "allow", "git status": "allow", "git log": "allow", "git diff": "allow", "git show": "allow", "ls": "allow", "cat": "allow" },
+        "task":  "deny",
+        "read":  "allow",
+        "grep":  "allow",
+        "glob":  "allow"
+      }
+    },
+
+    // ─── am-planning ────────────────────────────────────────────────────────
+    // Turns research into phased plan + task list. No code.
+    "am-planning": {
+      "prompt": "You are the planning specialist of the agents_manager system.\n\n## Before acting\nRead agents_manager/planning/SKILL.md and agents_manager/planning/rules.md in full.\n\n## Output\nThree artifacts (all three, always):\n1. share/notes/02_plan_high_<task-id>.md — high-level plan + self-score (testability/scope/dependencies/risks, 1–5)\n2. share/notes/02_plan_phases_<task-id>.md — phased plan with 'Done when' per phase\n3. Append rows to tasks/<task-id>.md using the table schema in tasks/README.md\n\n## Boundaries\nNo code edits. No commands that mutate the repo. ≤6 phases, ≤8 tasks per phase. Do not commit.\n\n## Return\nPaths to all three artifacts + 3-bullet executive summary (goal, phases, biggest risk) + NEEDS_USER_CONFIRMATION flag (always true) + self-score (4 numbers).",
+      "permission": {
+        "edit":  { "*": "deny", "tasks/**": "allow", "agents_manager/planning/notes/**": "allow" },
+        "write": { "*": "deny", "share/notes/02_plan_*.md": "allow", "agents_manager/planning/notes/**": "allow" },
+        "bash":  "deny",
+        "task":  "deny",
+        "read":  "allow",
+        "grep":  "allow",
+        "glob":  "allow"
+      }
+    },
+
+    // ─── am-coder ───────────────────────────────────────────────────────────
+    // Implements assigned tasks. Smallest diff. Tests run. No controller edits.
+    "am-coder": {
+      "prompt": "You are the coder specialist of the agents_manager system.\n\n## Before acting\nRead agents_manager/coder/SKILL.md and agents_manager/coder/rules.md in full.\n\n## Output\n1. Edit/create only files listed in 'Files expected' for each assigned task. Touching anything else is a contract violation — stop and report.\n2. share/notes/03_coder_summary_<task-id>_<phase>.md — work summary using the template in your SKILL.md (Tasks attempted table, Files written/edited, Commands run, Tests run, Deviations, Known issues, Self-critique).\n\n## Boundaries\nSmallest diff wins. No drive-by refactors. No reformatting unrelated lines. No new dependencies without flagging in Deviations. Run build/tests before claiming done. Do NOT edit anything inside agents_manager/** — that is the controller.\n\n## Return\nPath to your summary + 3-bullet micro-summary (what was done, what's still open, suggested review focus) + READY_FOR_REVIEW flag (true only if all assigned tasks are done).",
+      "permission": {
+        "edit":  { "*": "allow", "agents_manager/**": "deny" },
+        "write": { "*": "allow", "agents_manager/**": "deny" },
+        "bash":  "allow",
+        "task":  "deny",
+        "read":  "allow",
+        "grep":  "allow",
+        "glob":  "allow"
+      }
+    },
+
+    // ─── am-review ──────────────────────────────────────────────────────────
+    // Verifies coder work. Reads code, runs tests, issues per-task verdicts.
+    "am-review": {
+      "prompt": "You are the review specialist of the agents_manager system.\n\n## Before acting\nRead agents_manager/review/SKILL.md and agents_manager/review/rules.md in full.\n\n## Output\nshare/reports/04_review_<task-id>_<phase>.md using the template in your SKILL.md. Required sections: Summary (overall verdict PASS/PASS_WITH_WARN/FAIL), Tests/build run, Per-task verdicts (every assigned task id with one of PASS/WARN/FAIL + path:line evidence), Cross-cutting findings, Out-of-scope observations, Honest assessment, Self-critique.\n\n## Boundaries\nDo NOT fix code. Do NOT redesign the plan. Per-task verdict is mandatory — 'looks fine' is not a verdict. When in doubt, escalate to WARN or FAIL. False PASS ships a bug. Run documented tests when a build/test command exists.\n\n## Return\nPath to your report + overall verdict + count of FAILs and WARNs + one-line call to action (ready to ship / needs N fixes / needs plan rework).",
+      "permission": {
+        "edit":  { "*": "deny", "agents_manager/review/notes/**": "allow" },
+        "write": { "*": "deny", "share/reports/04_review_*.md": "allow", "agents_manager/review/notes/**": "allow" },
+        "bash":  { "*": "deny", "npm test": "allow", "npm run test": "allow", "pytest": "allow", "dotnet test": "allow", "gradlew test": "allow", "gradlew.bat test": "allow", "rg": "allow", "git status": "allow", "git diff": "allow", "git log": "allow", "git show": "allow", "ls": "allow", "cat": "allow" },
+        "task":  "deny",
+        "read":  "allow",
+        "grep":  "allow",
+        "glob":  "allow"
+      }
+    }
+  }
+}
