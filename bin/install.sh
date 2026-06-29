@@ -88,6 +88,7 @@ if [[ "$UNINSTALL" == "true" ]]; then
   fi
   for rel in opencode.jsonc CLAUDE.md agents_manager share tasks .agents/skills/mavis-team; do
     if [[ -e "${TARGET_ABS}/${rel}" ]]; then
+      # shellcheck disable=SC2115  # ${TARGET_ABS:?} would fail closed; we already guarded above
       rm -rf "${TARGET_ABS}/${rel}"
       echo "  REMOVED $rel"
     fi
