@@ -2,6 +2,62 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.7.2 — Install guide + scripts polish (2026-06-29)
+
+Documentation and installer polish. No controller changes. No CI changes (existing `install-dryrun` + `check-script` jobs already exercise the scripts).
+
+### Files changed
+
+- **NEW: `bin/README.md`** — in-folder docs for all 4 scripts (`install.sh`, `install.ps1`, `check.sh`, `check.ps1`). Covers arguments, exit codes, what scripts do NOT do, and shell coverage matrix.
+- **`docs/INSTALL.md`** — comprehensive refresh:
+  - Folder conventions updated to include v0.6.0 additions (`share/screenshots/`, `share/notes/02_secrets_*.md`, `04_warns_register_*.md`)
+  - New "Recommended `.gitignore` additions" section
+  - New "First task to try" recipe (smallest viable task to verify pipeline)
+  - Expanded "Updating from a previous version" with CHANGELOG-first guidance + 3 update paths (subtree pull / ZIP / fresh install)
+  - "What if the install doesn't work" — converted from flat list to decision tree
+  - New "CI integration" section with GitHub Actions example
+  - New "Shell coverage" matrix (bash 4+, PowerShell 5.1, PowerShell 7+)
+- **`bin/install.sh`** — rewritten with:
+  - Version stamp (`agents-manager installer v0.7.2`)
+  - `--dry-run` flag (print changes without writing)
+  - `--uninstall` flag (remove controller files, with confirmation)
+  - `--yes` / `-y` flag (skip confirmation prompt)
+  - `--help` / `-h` flag (usage info)
+  - Auto-write starter `.gitignore` with `share/notes/02_secrets_*.md`, `share/screenshots/`, `share/notes/99_progress_*.md` entries (additive — never overwrites existing `.gitignore`)
+  - Marker line `# agents-manager v0.7.2` prevents duplicate appends on re-run
+- **`bin/install.ps1`** — PowerShell parity: same flags, same gitignore logic, version stamp.
+- **`README.md`** — small pointer to `bin/README.md` for script documentation.
+
+### Usage examples
+
+```bash
+# Default install (Unix)
+bash bin/install.sh /path/to/project
+
+# Preview changes without writing
+bash bin/install.sh /path/to/project --dry-run
+
+# Uninstall (with confirmation)
+bash bin/install.sh /path/to/project --uninstall
+
+# CI: verify install is intact
+bash bin/check.sh .
+```
+
+```powershell
+# PowerShell parity
+.\bin\install.ps1 -Target C:\path\to\project
+.\bin\install.ps1 -Target C:\path\to\project -DryRun
+.\bin\install.ps1 -Target C:\path\to\project -Uninstall
+```
+
+### Why version stamp + flags
+
+- **Version stamp** lets users see at a glance which `agents-manager` release they're installing. Critical for support / issue triage.
+- **`--dry-run`** is the standard safety net for installers. Users running this in CI or in production directories need a way to see what would change.
+- **`--uninstall`** is the missing opposite of install. Without it, users have to manually delete 6 paths.
+- **Auto-`.gitignore`** solves a real footgun: `share/notes/02_secrets_*.md` contains API keys; without explicit gitignore, users commit secrets. The installer now creates the safe entries by default.
+
 ## v0.7.0 — Chunk-size protocol: per-phase complexity estimation + master re-ask (2026-06-29)
 
 **Structural feature.** Catches "Phase 4 looks too big" at plan time, when it's actionable — not at review time, when it's discovered. Composes with v0.6.0's metrics (same `## Metrics` table) and the WARN register (same flag discipline).

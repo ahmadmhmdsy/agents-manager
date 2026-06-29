@@ -127,15 +127,135 @@ The check script will list which user-level skills are missing. Run the suggeste
 
 Major / minor version bumps (e.g., 0.1 → 0.2) may introduce breaking changes to `opencode.jsonc` or `agents_manager/SKILL.md`. Always read the release notes before upgrading across minor versions.
 
-## Folder conventions (added in v0.4.0)
+## Folder conventions
 
 After install, agents write artifacts to these paths:
+
+**Per-phase artifacts:**
 
 - `share/notes/01_research_<task-id>.md` — research output
 - `share/notes/02_plan_high_<task-id>.md` + `02_plan_phases_<task-id>.md` — planning output (two files)
 - `share/notes/03_coder_summary_<task-id>_<phase>.md` — coder work summary
 - `share/reports/04_review_<task-id>_<phase>.md` — review report
+- `share/notes/04_warns_register_<task-id>.md` — consolidated WARN register (created at first Phase 4 review, appended per review)
 - `share/notes/99_progress_<task-id>.md` — master's progress ledger (append-only)
-- `share/messages/<from>-to-<to>-<task-id>-<topic>.md` — **cross-agent coordination notes** (free-form; the naming convention makes intent obvious — e.g. `research-to-planning-T-001-clarify.md`)
 
-These paths are enforced by the `permission` blocks in `opencode.jsonc`. Any agent that tries to write outside its lane gets a permission denial.
+**Cross-agent coordination:**
+
+- `share/messages/<from>-to-<to>-<task-id>-<topic>.md` — free-form coordination notes. The naming convention makes intent obvious (e.g. `research-to-planning-T-001-clarify.md`).
+
+**Optional (v0.6.0+):**
+
+- `share/screenshots/` — browser preflight screenshots for UI tasks. Created on demand by the master when running a UI-phase review.
+- `share/notes/02_secrets_<task-id>.md` — API keys / credentials the user supplies at Phase 0 Ingest. **Gitignored** by the installer's starter `.gitignore`.
+
+**Tracker:**
+
+- `tasks/<task-id>.md` — one per task. Created by master at Phase 0; appended by planner + coder; reviewed by master.
+
+All paths are project-root relative. agents-manager does not currently support being nested under another directory (e.g., `tools/agents-manager/`).
+
+## Recommended `.gitignore` additions
+
+The installer's starter `.gitignore` includes these entries (additive — never overwrites your existing `.gitignore`):
+
+```gitignore
+# agents-manager runtime artifacts
+share/notes/02_secrets_*.md
+share/screenshots/
+share/notes/99_progress_*.md
+```
+
+If you don't use the installer, add these manually. `share/screenshots/` and `02_secrets_*.md` can contain sensitive data (API keys, browser state) and should never be committed.
+
+## First task to try
+
+After verifying the install with `bin/check`, try a small task first to confirm the pipeline works end-to-end:
+
+> "Add a one-line comment at the top of README.md that says 'managed by agents-manager'."
+
+This task is small enough that all 5 phases complete in ~5 minutes. You can verify each phase's output:
+
+1. Check `share/handoffs/00_user_task.md` — your task captured
+2. Check `share/notes/01_research_T-...md` — research output (probably "this is trivial, just edit the file")
+3. Confirm the plan with master when prompted
+4. Check `share/notes/03_coder_summary_T-...md` — coder wrote the edit
+5. Check `share/reports/04_review_T-...md` — review verdict (likely PASS)
+6. Look at `README.md` — the new comment should be at the top
+
+Once this works, try `examples/` (in the agents-manager repo) for fuller pipelines.
+
+## Updating from a previous version
+
+**Read the CHANGELOG first.** Open `agents_manager/CHANGELOG.md` and scan the entries between your installed version and the latest. Major / minor bumps (0.X → 0.Y) may introduce breaking changes to `opencode.jsonc`, `agents_manager/SKILL.md`, or the file conventions. Patch versions (0.X.Y → 0.X.Z) are safe to drop in.
+
+**From git subtree:**
+
+```bash
+git subtree pull --prefix=agents-manager-src \
+  https://github.com/ahmadmhmdsy/agents-manager.git main --squash
+```
+
+Then re-run `bash bin/install.sh .` — existing files are skipped, new ones (CHANGELOG entries, examples/, etc.) are added.
+
+**From a previous ZIP:**
+
+Download the new release ZIP, extract it, then either re-run the installer (it will skip existing files and add new ones) or manually diff and update. Use `git diff` on `opencode.jsonc` and `agents_manager/SKILL.md` for the safest cross-version upgrade.
+
+**From a fresh install (cleanest):**
+
+Back up your `tasks/`, `share/`, and any modifications to `agents_manager/`. Then re-install fresh and copy back your customizations. This is the safest path for major-version bumps.
+
+## What if the install doesn't work
+
+Decision tree:
+
+```
+install failed
+├── "ERROR: ... opencode.jsonc missing"
+│   └── You're not in an agents-manager checkout. Run the installer
+│       from inside the cloned/ extracted repo, not from your project.
+│
+├── "ERROR: target directory ... does not exist"
+│   └── Create the directory first: mkdir -p /path/to/your-project
+│
+├── install succeeds but bin/check shows MISS files
+│   └── The check script lists which ones. If a controller file
+│       is MISS, the installer's SKIP path kicked in (you had
+│       a previous version). Either: (a) delete the missing paths
+│       and re-run install, or (b) manually copy from the source.
+│
+├── install succeeds but bin/check shows MISS user-level skills
+│   └── The check script prints the npx commands. Run each one.
+│       Skills install to ~/.agents/skills/ which must be writable.
+│
+└── OpenCode can't find agents after install
+    └── Confirm opencode.jsonc is at YOUR PROJECT ROOT (not nested,
+        not in a subfolder). OpenCode's loader reads it from the
+        working directory.
+```
+
+If you're still stuck after following the decision tree, open an issue at <https://github.com/ahmadmhmdsy/agents-manager/issues> with the output of `bin/check` and the version of OpenCode you're running.
+
+## CI integration
+
+If your downstream project has CI, you can run `bin/check` as a CI step to verify the install is intact on every push:
+
+```yaml
+# .github/workflows/agents-manager-check.yml
+- name: Verify agents-manager install
+  run: bash bin/check.sh .
+```
+
+The check exits non-zero if any controller file or required user-level skill is missing. This catches accidental deletions or broken `~/.agents/skills/` symlinks.
+
+## Shell coverage
+
+| Script | Tested on |
+|---|---|
+| `install.sh` | bash 4+ (Linux, macOS, WSL) |
+| `install.ps1` | PowerShell 5.1 (Windows PowerShell) and PowerShell 7+ (pwsh, cross-platform) |
+| `check.sh` | bash 4+ |
+| `check.ps1` | PowerShell 5.1 and 7+ |
+
+`fish` and `zsh` are NOT tested. If you use one of those, fall back to `bash` explicitly: `bash bin/install.sh .`. PowerShell Core (`pwsh`) on Linux/macOS is supported via `pwsh bin/install.ps1`.

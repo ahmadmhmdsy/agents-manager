@@ -216,6 +216,8 @@ npx --yes skills add https://github.com/obra/superpowers --skill brainstorming -
 
 Verify your install: `bash bin/check.sh .`
 
+The install scripts support `--dry-run` (preview without writing) and `--uninstall` (remove the controller). For full script documentation, see [`bin/README.md`](bin/README.md). PowerShell parity via `.\bin\install.ps1 -Target <path>`.
+
 ## Usage
 
 Once installed, open your project in OpenCode and describe your task. The `master` agent auto-routes to specialists based on your request. See [`agents_manager/SKILL.md`](agents_manager/SKILL.md) for the full orchestration protocol and [`agents_manager/README.md`](agents_manager/README.md) for the system overview.
