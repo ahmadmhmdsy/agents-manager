@@ -63,9 +63,14 @@ echo ""
 
 # ─── UNINSTALL MODE ───────────────────────────────────────────────────────
 if [[ "$UNINSTALL" == "true" ]]; then
+  # Safety check: ensure TARGET_ABS is non-empty (avoid `rm -rf /share` if shellcheck warns)
+  if [[ -z "${TARGET_ABS:-}" ]]; then
+    echo "ERROR: TARGET_ABS is empty; refusing to uninstall." >&2
+    exit 1
+  fi
   echo "Uninstall mode. The following paths will be removed from $TARGET_ABS:"
   for rel in opencode.jsonc CLAUDE.md agents_manager share tasks .agents/skills/mavis-team; do
-    if [[ -e "$TARGET_ABS/$rel" ]]; then
+    if [[ -e "${TARGET_ABS}/${rel}" ]]; then
       echo "  - $rel"
     fi
   done
@@ -82,8 +87,8 @@ if [[ "$UNINSTALL" == "true" ]]; then
     exit 0
   fi
   for rel in opencode.jsonc CLAUDE.md agents_manager share tasks .agents/skills/mavis-team; do
-    if [[ -e "$TARGET_ABS/$rel" ]]; then
-      rm -rf "$TARGET_ABS/$rel"
+    if [[ -e "${TARGET_ABS}/${rel}" ]]; then
+      rm -rf "${TARGET_ABS}/${rel}"
       echo "  REMOVED $rel"
     fi
   done
