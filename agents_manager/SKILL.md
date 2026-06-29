@@ -90,6 +90,43 @@ Every user task flows through these phases. **Do not skip a phase. Do not reorde
 - The coder writes code AND a work summary → `share/notes/03_coder_summary_<task-id>_<phase>.md`.
 - A coder call is bounded: either one phase, one task, or one logical chunk. You decide the granularity.
 
+### Phase 3 dispatch — Complexity check + re-ask protocol (v0.7.0+)
+
+Before dispatching am-coder, read the per-phase `### Complexity` block written by am-planning (see `agents_manager/planning/rules.md` § 12).
+
+**The complexity check is a forcing function, not a global rule.** Hard triggers (LOC > 1200 OR files > 15 OR novel_abstractions length ≥ 2) are a safety floor — if a trigger fires without `split_recommended: true`, the planner did not flag it and you should treat that as a planning gap, not a passthrough.
+
+**Re-ask loop (≤ 2× per phase):**
+
+If you disagree with the planner's estimate or with the split recommendation:
+1. Dispatch `am-planning` with a refinement ask. Be specific:
+   - "Phase 4 estimate is 1500 LOC + 23 files + 3 novel abstractions. Your `split_recommended: true` — propose a sub-phase boundary at the natural seam (Monaco vs. AppBuilder-shell vs. sample-app). Update `02_plan_phases_<task-id>.md` with the sub-phases and a Complexity block for each."
+2. Re-read the updated Complexity blocks. Decide again.
+3. If still disagreeing, dispatch one more refinement ask (≤ 2 total re-asks).
+4. After 2 re-asks you MUST either:
+   - **Accept the planner's recommendation** (and dispatch per it), OR
+   - **Override with your own reasoning** (and document the override in `tasks/<task-id>.md` `## Loop history`).
+
+**Dispatching after split:**
+
+If `split_recommended: true` in the plan, dispatch the **first sub-phase** (do not dispatch all sub-phases at once — each gets its own review + complexity check).
+
+**Loop history template (in `tasks/<task-id>.md`):**
+
+After every dispatch (split or whole), append one line:
+
+```
+### Dispatch — <YYYY-MM-DD HH:MM> — Phase <N>
+- Pl Complexity: <LOC> LOC / <files> files / <n> novel — `split_recommended: <bool>` (reason: <one line>)
+- Re-asks performed: <0 | 1 | 2>
+- Decision: <dispatch whole | dispatch sub-phase <X> | override: <reason>>
+- Notes: <optional>
+```
+
+**Hard dispatch gate (v0.7.0+):**
+
+Do not dispatch am-coder without a `### Complexity` block in the plan for the assigned phase. If absent, re-ask planner to add one (counts toward the 2× limit).
+
 ### Phase 3 → 4 handoff — Browser visual preflight (UI phases only, v0.6.0+)
 
 For phases that touch **visible UI**, take a screenshot before dispatching review:

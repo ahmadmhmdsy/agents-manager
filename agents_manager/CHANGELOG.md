@@ -2,6 +2,76 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.7.0 — Chunk-size protocol: per-phase complexity estimation + master re-ask (2026-06-29)
+
+**Structural feature.** Catches "Phase 4 looks too big" at plan time, when it's actionable — not at review time, when it's discovered. Composes with v0.6.0's metrics (same `## Metrics` table) and the WARN register (same flag discipline).
+
+### Why
+
+The upstream user's Phase 4 was: 7 tasks, 23 files, ~1500 LOC, 3 novel abstractions (Monaco + iframe + sub-app), 6 issue-WARNs (vs 1-4 elsewhere). Plan agent self-rated Feasibility 4/5 with note "Phase 4 is the heaviest" — master downplayed it. The fix: planner estimates complexity per phase; master re-asks with concrete feedback; metrics surface anomalies at close.
+
+### What changed (3 features)
+
+#### C1 — Per-phase complexity estimation (planner)
+- New rule #12 in `agents_manager/planning/rules.md`: schema for `### Complexity` block on every phase.
+- New bullet in `agents_manager/planning/SKILL.md` "What you must produce" section.
+- Fields: `novel_abstractions` (drawn from seed list), `LOC_estimate`, `files_estimate`, `review_difficulty` (low/medium/high), `split_recommended` (bool), `reason` (one sentence).
+- **Trigger logic:** if `LOC > 1200` OR `files > 15` OR `length(novel_abstractions) ≥ 2` → must set `split_recommended: true` (can override with justification).
+
+#### C2 — Master re-ask + dispatch-decision protocol
+- New sub-section "Phase 3 dispatch — Complexity check + re-ask protocol (v0.7.0+)" in `agents_manager/SKILL.md` master.
+- Master reads Complexity block at dispatch time; can re-ask planner ≤ 2× with concrete feedback; has final say.
+- **Loop history template** — each dispatch decision logged to `tasks/<task-id>.md` `## Loop history` block (one line per dispatch with: Planner Complexity estimate, re-asks performed, decision, notes).
+- **Hard dispatch gate** — no `### Complexity` block in plan → no am-coder dispatch. Master re-asks planner to add one.
+
+#### C3 — Per-phase LOC + WARN metric extension
+- `tasks/README.md` Phase timings table extended with `LOC written` + `WARNs` columns (same table as v0.6.0's H1 fix-loop counter).
+- New `## Phase productivity` block in the Completion template — LOC/WARN ratio per phase.
+- **Framing:** sanity check at task close, not a quality score. Cross-phase signal: any single phase tripping `(LOC/WARN > 2× project median) OR (LOC > 1200 AND WARNs > 4)` without a documented split decision → user should review whether the chunk-size protocol is working.
+
+### Files touched (6 modified + 1 new)
+
+- **NEW:** `agents_manager/planning/resources/novel-abstractions-seed-list.md` — 8 curated entries + "NOT" list (patterns that look novel but aren't) + how-to-extend guidance.
+- `agents_manager/planning/rules.md` — appended Rule 12 (Complexity estimation).
+- `agents_manager/planning/SKILL.md` — bullet in "What you must produce" (per-phase complexity block required).
+- `agents_manager/SKILL.md` (master) — new sub-section "Phase 3 dispatch — Complexity check + re-ask protocol" + Loop history template.
+- `tasks/README.md` — Phase timings table extended + Phase productivity block + Loop history hint + data-collection rule.
+- `README.md` + `agents_manager/CHANGELOG.md` — v0.7.0 entry + "What's new" section.
+
+### My modifications to the upstream patch
+
+1. **Seed list as extendable examples** — the 8 curated entries are framed as "extendable examples" with explicit guidance on how to extend. The "NOT" list (Tailwind classes, React context, etc.) prevents the failure mode where planners dump garden-variety patterns to inflate `novel_abstractions`.
+2. **Defer "consult am-review" brainstorm** — marked as optional/discouraged in the SKILL.md text. Adds overhead and token cost; the re-ask loop with the planner is the primary mechanism.
+3. **C3 as sanity check, not a score** — explicit framing in the Phase productivity block + README. No leaderboard, no automated thresholds, no "quality score" UX.
+
+### Composition with v0.6.0 (Patch-1)
+
+| Patch-1 (v0.6.0) feature | Patch-2 (v0.7.0) interaction |
+|---|---|
+| H1 per-phase fix-loop counter (tasks/README.md `## Metrics`) | C3 extends the same table with LOC + WARNs columns |
+| WARN register (C1) | C3's WARNs column pulls from the same register |
+| Browser visual preflight (C2) | C2's re-ask protocol runs at the same Phase 3 → 4 handoff |
+| Multi-agent preflight user-visible (G6) | C2's re-ask is a more specialized pre-dispatch version |
+
+**No conflicts.** v0.7.0 is pure additions on top of v0.6.0.
+
+### Hard trigger safety floor
+
+LOC > 1200 OR files > 15 OR ≥2 novel abstractions → `split_recommended: true` mandatory.
+
+### Re-ask limit
+
+≤ 2× per phase. After 2 re-asks, master must accept the planner's recommendation OR override with own reasoning (documented in `## Loop history`).
+
+### Source attribution
+
+- **Generator:** MiniMax-M3 via opencode CLI on Windows pwsh 7+
+- **Source project:** google_ai_studio_clone_1 (downstream consumer of `agents_manager v0.5.0`)
+- **Source task:** T-2026-06-29-001 (Phase 4 oversized: 23 new files, ~1500 LOC, 3 novel abstractions, 6 issue-WARNs in one chunk)
+- **Source date:** 2026-06-29
+- **Patch text:** `agents_manager/upstream-contrib/PROPOSED_PATCH_v0.5.x_2026-06-29_part2_chunk-size.md`
+- **License:** inherits the agents_manager license. Contribution, not obligation.
+
 ## v0.6.0 — Upstream-contribution patch: WARN register, preflights, non-git Phase 5 (2026-06-29)
 
 **Feature release.** Six new features from a real-world end-to-end run by MiniMax-M3 (downstream consumer running google_ai_studio_clone_1). All opt-in by default. See [`docs/UPSTREAM-CONTRIB.md`](../../docs/UPSTREAM-CONTRIB.md) for the upstream attribution + patch source.

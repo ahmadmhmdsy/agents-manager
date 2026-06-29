@@ -51,3 +51,43 @@ If you can't define a task now, drop it from this plan and put it in a `## Defer
 ## 11. Phases ≤ 6, tasks per phase ≤ 8.
 
 If you exceed these, you're micro-planning. Re-bundle.
+
+## 12. Complexity estimation (v0.7.0+)
+
+For every phase you propose, attach a `### Complexity` block to the phase section in `02_plan_phases_<task-id>.md`. The schema:
+
+| Field | Type | Notes |
+|---|---|---|
+| `novel_abstractions` | array | Each entry draws from the [seed list](resources/novel-abstractions-seed-list.md) (curated + extendable). If none apply, leave as `[]` — do NOT dump garden-variety patterns. |
+| `LOC_estimate` | integer (approx) | Tighter upper bound is better; round to nearest 100. |
+| `files_estimate` | integer | New + modified. |
+| `review_difficulty` | word ∈ {low, medium, high} | Your qualitative call based on the above. |
+| `split_recommended` | bool | See trigger logic below. |
+| `reason` | string | One sentence explaining the recommendation. |
+
+**Trigger logic (safety floor — do not skip these):**
+
+If ANY of the following is true, you MUST set `split_recommended: true`:
+- `LOC_estimate > 1200`
+- `files_estimate > 15`
+- `length(novel_abstractions) ≥ 2`
+
+You may set `split_recommended: true` for other reasons (e.g. cross-team dependencies, blocking tests not yet written) — explain in `reason`.
+
+You may also set `split_recommended: false` while still tripping a trigger, IF you write a `reason` justifying it (e.g. "LOC=1300 but pure CRUD over known patterns; novel=[] — recommend NOT splitting"). Master will re-evaluate this in the re-ask protocol.
+
+**Placement in the plan file:**
+```markdown
+### Phase N — <title>
+[... existing phase description ...]
+
+### Complexity
+- novel_abstractions: [...]
+- LOC_estimate: 1500
+- files_estimate: 23
+- review_difficulty: high
+- split_recommended: true
+- reason: "novel_count=3 (Monaco + iframe + sub-app), LOC > 1200, files > 15 — all 3 triggers fire"
+```
+
+**Discipline:** master reads this block at PHASE 3 dispatch. If `split_recommended: true` is false but a trigger condition is met, master pauses and re-asks you (this is in scope, not a violation). See `agents_manager/SKILL.md` "Phase 3 dispatch — Complexity check + re-ask protocol (v0.7.0+)".

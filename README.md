@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/ahmadmhmdsy/agents-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmadmhmdsy/agents-manager/actions/workflows/ci.yml)
 
-> **Status:** v0.6.0 — early-stage. API may change between minor versions until v1.0.0.
+> **Status:** v0.7.0 — early-stage. API may change between minor versions until v1.0.0.
 
 A multi-agent task orchestration system built on [OpenCode](https://opencode.ai)'s agent system. One **master agent** routes work through four **specialist agents** (research → planning → coder → review), each with its own context window and a dedicated role.
 
@@ -27,6 +27,16 @@ Six new features from an upstream-contribution patch (`docs/UPSTREAM-CONTRIB.md`
 - **Phase 5 non-git menu** — auto-detects git vs non-git at task close; sandbox projects get a 4-option menu (run smoke / polish WARNs / build follow-up / close out) instead of dead-branching on merge/PR.
 - **Browser visual preflight** (opt-in when browser tools are available) — master takes screenshots before review for UI phases.
 - **Optional flags** (`auto_accept_warns`, `git_initialized`, `phase_5_enabled`, `run_smoke_at_close`) — task tracker header.
+
+## What's new in v0.7.0
+
+Three new features from the Part 2 upstream-contribution patch (chunk-size protocol, builds on v0.6.0):
+
+- **Per-phase complexity estimation (planner)** — every phase in `02_plan_phases_<task-id>.md` gets a `### Complexity` block: novel abstractions, LOC/files estimates, review-difficulty word, split recommendation + reason. Hard triggers (LOC > 1200 OR files > 15 OR ≥2 novel abstractions) force `split_recommended: true`.
+- **Master re-ask protocol at dispatch** — before dispatching am-coder, master reads the Complexity block; can re-ask planner ≤ 2× with concrete feedback; has final say. Each dispatch decision lands in `## Loop history` (appended to `tasks/<task-id>.md`) for auditability.
+- **Phase productivity metric** — `tasks/README.md` Phase timings table gets `LOC written` + `WARNs` columns; new `## Phase productivity` block at close with LOC/WARN ratio as a sanity check, not a score.
+
+Seed list for novel abstractions lives in `agents_manager/planning/resources/novel-abstractions-seed-list.md` — extend it as you encounter new patterns (it lists 8 curated + a "NOT" list of patterns that look novel but aren't).
 
 ## Operational characteristics (v0.5.1+)
 

@@ -19,13 +19,14 @@ One markdown file per task id, e.g. `tasks/T-2026-06-28-001.md`. This file is th
 **Started:** YYYY-MM-DD HH:MM
 **Closed:** —
 **Phase timings:**
-| Phase | Started | Ended | Duration |
-|-------|---------|-------|----------|
-| 0 Ingest   | — | — | — |
-| 1 Research | — | — | — |
-| 2 Planning | — | — | — |
-| 3 Build    | — | — | — |
-| 4 Review   | — | — | — |
+| Phase | Started | Ended | Duration | LOC written | WARNs |
+|-------|---------|-------|----------|-------------|-------|
+| 0 Ingest   | — | — | — | — | — |
+| 1 Research | — | — | — | — | — |
+| 2 Planning | — | — | — | — | — |
+| 3 Build    | — | — | — | — | — |
+| 4 Review   | — | — | — | — | — |
+| 5 Next-steps (opt) | — | — | — | — | — |
 
 **Loop counts:**
 - Research re-entries: 0
@@ -70,6 +71,20 @@ One markdown file per task id, e.g. `tasks/T-2026-06-28-001.md`. This file is th
 **Final commit / branch:** ...
 **Last clean review:** share/reports/04_review_<task-id>_<phase>.md
 **Open WARNs accepted by user:** <list or "none">
+
+## Phase productivity (v0.7.0+)
+<!-- Master fills at task close with a one-line summary per phase. -->
+<!-- Sanity check, not a quality score. -->
+| Phase | Wall-clock min | LOC | WARNs | LOC/WARN | Notes |
+|-------|---------------|-----|-------|-----------|-------|
+| 0 Ingest   | | | | | — |
+| 1 Research | | | | | — |
+| 2 Planning | | | | | — |
+| 3 Build    | | | | | — |
+| 4 Review   | | | | | — |
+| 5 Next-steps (opt) | | | | | — |
+
+**Cross-phase signal:** if any single phase trips `(LOC/WARN > 2× project median) OR (LOC > 1200 AND WARNs > 4)` without a documented split decision in `## Loop history`, the user should review whether the chunk-size protocol (v0.7.0+) is working.
 ```
 
 ## Optional flags (v0.6.0+)
@@ -88,6 +103,7 @@ These flags live in the task tracker header (on a `## Optional flags` block, set
 - **One file per task id.** No cross-file references in the table.
 - **No agent edits the `Completion` block except the master.**
 - **Metrics are filled by the master only.** Sub-agents do not edit `## Metrics`; the master reads coder summaries and stamps the file.
+- **Phase timings data is filled by the master at task close.** Sub-agents do not write `LOC written` or `WARNs` columns — master reads coder summaries + review reports + runs `find <scope> -name '*.ts*' -newer <phase_start_marker> | xargs wc -l` to count LOC. Mark `—` if data is unavailable.
 
 ## When to create a task file
 

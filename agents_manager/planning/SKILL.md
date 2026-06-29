@@ -122,6 +122,8 @@ Append rows to `tasks/<task-id>.md` in this exact format:
 | P1T2 | 1 | ... | ... | todo | — | — |
 ```
 
+**Per-phase complexity block (v0.7.0+):** Every phase section in `02_plan_phases_<task-id>.md` includes a `### Complexity` block (novel abstractions, LOC estimate, files estimate, review difficulty word, split recommendation + reason). See `rules.md` § 12 for the schema and trigger logic. Master will not dispatch am-coder for a phase without this block.
+
 ## Plan self-score (required)
 
 Fill the `## Plan self-score` section with a 1–5 score for each dimension. The master uses this to decide whether to surface the plan or ask you to revise first. Be honest — a 3 is fine if it really is a 3.
