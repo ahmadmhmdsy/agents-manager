@@ -52,17 +52,43 @@ Prints `OK` / `MISS` for each. Exits non-zero if anything is missing. Lists the 
 
 Same checks, PowerShell-flavoured output.
 
+## `update.sh` (Unix / macOS / WSL)
+
+```bash
+bash bin/update.sh [--check] [--yes|-y] [--from <ver>] [--target <ver>]
+```
+
+Fetches the latest `agents-manager` release from GitHub, compares to your installed version (read from `agents_manager/CHANGELOG.md`), and applies the upgrade by overwriting the 6 controller paths after backing up your current install.
+
+- `--check` — print local vs. remote version + the new CHANGELOG excerpt. Exit 0 if up-to-date, exit 1 if a newer version exists, exit 2 on network error.
+- `--yes`, `-y` — apply the upgrade without prompting (for CI / scripted use).
+- `--from <ver>` — override the local version detection (useful after partial upgrades).
+- `--target <ver>` — pin to a specific version instead of "latest".
+
+Default behavior: print version info, show what will change, prompt `[yes/no]`. On yes: creates `.agents-manager-backup-<timestamp>/`, downloads the release ZIP, extracts the 6 paths, runs `bin/check.sh`, prints what changed.
+
+## `update.ps1` (Windows PowerShell)
+
+```powershell
+.\bin\update.ps1 [-Check] [-Yes] [-From <ver>] [-Target <ver>]
+```
+
+PowerShell parity. Same flags (`-Check` / `-Yes` PascalCase).
+
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
 | 0 | success (all OK) |
 | 1 | sanity check failed (target missing, source not an agents-manager checkout, etc.) |
-| 2 | some controller files / skills missing (check script) |
-| 3 | user declined confirmation (--uninstall) |
+| 2 | some controller files / skills missing (check script) or newer version available (update --check) |
+| 3 | user declined confirmation (--uninstall, update prompt) |
+| 4 | network error during update (GitHub unreachable, ZIP malformed) |
+| 5 | active pipeline detected (update refused to avoid mid-pipeline corruption) |
 
 ## What these scripts do NOT do
 
 - They do **not** install the 9 required user-level skills (run `npx skills add` manually — see `README.md`).
 - They do **not** modify `opencode.jsonc` permission globs for nested installs. agents-manager installs at the project root only.
-- They do **not** delete user-modified files. Existing controller files are **skipped** to protect your edits.
+- They do **not** delete user-modified files. Existing controller files are **skipped** to protect your edits (unless `update.sh` is overwriting them, in which case a backup is created first).
+- `update.sh` does **not** touch user-level skills (`~/.agents/skills/`). It only updates the 6 controller paths. Run `npx skills add` for any new skill requirements after upgrading.

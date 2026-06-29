@@ -216,6 +216,8 @@ npx --yes skills add https://github.com/obra/superpowers --skill brainstorming -
 
 Verify your install: `bash bin/check.sh .`
 
+**Upgrading:** `bash bin/update.sh --check` (dry run) or `bash bin/update.sh` (apply). The master agent also prompts once per day if a newer release is available. PowerShell parity via `.\bin\update.ps1 -Check`.
+
 The install scripts support `--dry-run` (preview without writing) and `--uninstall` (remove the controller). For full script documentation, see [`bin/README.md`](bin/README.md). PowerShell parity via `.\bin\install.ps1 -Target <path>`.
 
 ## Usage

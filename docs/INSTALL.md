@@ -187,9 +187,33 @@ Once this works, try `examples/` (in the agents-manager repo) for fuller pipelin
 
 ## Updating from a previous version
 
-**Read the CHANGELOG first.** Open `agents_manager/CHANGELOG.md` and scan the entries between your installed version and the latest. Major / minor bumps (0.X → 0.Y) may introduce breaking changes to `opencode.jsonc`, `agents_manager/SKILL.md`, or the file conventions. Patch versions (0.X.Y → 0.X.Z) are safe to drop in.
+Three ways to upgrade, in order of convenience:
 
-**From git subtree:**
+### Option 1 — `bin/update.sh` (v0.8.0+, recommended for most downstream projects)
+
+```bash
+# Check for updates (prints version diff + new CHANGELOG excerpt, no changes)
+bash bin/update.sh --check
+
+# Apply the upgrade (backs up + overwrites + verifies)
+bash bin/update.sh
+```
+
+The script:
+1. Fetches the latest release metadata from GitHub
+2. Compares to the local version (read from `agents_manager/CHANGELOG.md`)
+3. Shows the new CHANGELOG excerpt and prompts `[yes/no]`
+4. On yes: creates `.agents-manager-backup-<timestamp>/` containing your current 6 controller paths, downloads the release ZIP, extracts the 6 paths into your project root, runs `bin/check.sh`, prints what changed
+
+**PowerShell parity:** `.\bin\update.ps1 -Check` and `.\bin\update.ps1 -Yes`.
+
+**What gets backed up:** all 6 controller paths (`opencode.jsonc`, `CLAUDE.md`, `agents_manager/`, `share/`, `tasks/`, `.agents/skills/mavis-team/`). Backups are NOT auto-cleaned — delete them once you've verified the upgrade.
+
+**Active pipeline protection:** refuses to run if any `share/notes/03_coder_summary_*.md` was updated within the last hour (exit 5). Run during a quiet moment.
+
+**Once-per-day auto-prompt (v0.8.0+):** the master agent reads `.agents-manager/.last-update-check` on session start and prompts you to upgrade if the marker is older than 24 hours. You don't need to remember to check — the prompt surfaces it.
+
+### Option 2 — git subtree
 
 ```bash
 git subtree pull --prefix=agents-manager-src \
@@ -198,13 +222,17 @@ git subtree pull --prefix=agents-manager-src \
 
 Then re-run `bash bin/install.sh .` — existing files are skipped, new ones (CHANGELOG entries, examples/, etc.) are added.
 
-**From a previous ZIP:**
+### Option 3 — manual ZIP
 
 Download the new release ZIP, extract it, then either re-run the installer (it will skip existing files and add new ones) or manually diff and update. Use `git diff` on `opencode.jsonc` and `agents_manager/SKILL.md` for the safest cross-version upgrade.
 
-**From a fresh install (cleanest):**
+### Option 4 — fresh install (cleanest, for major-version bumps)
 
-Back up your `tasks/`, `share/`, and any modifications to `agents_manager/`. Then re-install fresh and copy back your customizations. This is the safest path for major-version bumps.
+Back up your `tasks/`, `share/`, and any modifications to `agents_manager/`. Then re-install fresh and copy back your customizations.
+
+### Pre-update checklist
+
+**Always read the CHANGELOG first.** Open `agents_manager/CHANGELOG.md` and scan the entries between your installed version and the latest. Major / minor bumps (0.X → 0.Y) may introduce breaking changes to `opencode.jsonc`, `agents_manager/SKILL.md`, or the file conventions. Patch versions (0.X.Y → 0.X.Z) are safe to drop in.
 
 ## What if the install doesn't work
 

@@ -2,6 +2,35 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.8.0 — Auto-updater (2026-06-29)
+
+New: the controller can now check for and apply upstream updates without manual ZIP downloads.
+
+### What's new
+
+- **`bin/update.sh`** (Unix) + **`bin/update.ps1`** (PowerShell) — fetch the latest release from GitHub, compare to the local version (read from `agents_manager/CHANGELOG.md`), and apply the upgrade by overwriting the 6 controller paths after backing up the current install to `.agents-manager-backup-<timestamp>/`.
+  - Flags: `--check` (print version + changelog excerpt only), `--yes`/`-y` (apply without prompting), `--from <ver>` (override local detection), `--target <ver>` (pin to specific version).
+  - Default behavior: show version diff + new changelog excerpt, prompt `[yes/no]`, on yes back up + overwrite + run `bin/check.sh` + report.
+  - Edge cases handled: GitHub unreachable (exit 4), ZIP malformed (exit 4), active pipeline detected (exit 5), first-time install with no CHANGELOG (treated as 0.0.0 → upgrade).
+- **Once-per-day auto-prompt** (in master SKILL.md) — master reads `.agents-manager/.last-update-check` (a marker file) on session start. If missing or older than 24 hours, prompts the user ONCE to run `bin/update.sh`. Writes a fresh timestamp after the prompt (regardless of answer) so the cadence is "at most once per day."
+- **`bin/README.md`** — added `update.sh` / `update.ps1` sections + 2 new exit codes (4 = network error, 5 = active pipeline).
+- **`docs/INSTALL.md`** — "Updating from a previous version" expanded with three update paths (subtree pull / `bin/update.sh` / fresh install), the auto-prompt explanation, and a "what gets backed up" section.
+- **`README.md`** — small Usage note pointing to `bin/update.sh` for upgrades.
+
+### Why
+
+Before v0.8.0, updating required either `git subtree pull` (manual) or downloading a release ZIP (also manual). Users on smaller downstream projects (sandbox / non-git / one-off) had no friction-free upgrade path. v0.8.0 makes "check for updates" a single command (`bash bin/update.sh --check`) and surfaces the prompt automatically once per session-day.
+
+### Scope limits
+
+- `update.sh` only updates the 6 controller paths. User-level skills (`~/.agents/skills/`) are NOT updated — run `npx skills add` manually for any new skill requirements.
+- The script refuses to run if an active pipeline is detected (any `share/notes/03_coder_summary_*.md` updated within the last hour → exit 5). Run it during a quiet moment.
+- Backups go to `.agents-manager-backup-<timestamp>/` at the project root. They are NOT auto-cleaned — delete them once you've verified the upgrade.
+
+### Tag / commit
+
+Backwards compatible. v0.8.0 ships a new script + a new section in master SKILL.md. No controller logic changes.
+
 ## v0.7.2 — Install guide + scripts polish (2026-06-29)
 
 Documentation and installer polish. No controller changes. No CI changes (existing `install-dryrun` + `check-script` jobs already exercise the scripts).
