@@ -2,6 +2,32 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.5.1 — Tool usage efficiency (2026-06-28)
+
+Both rules reduce wall-clock time and improve context hygiene:
+
+1. **Batch parallel edits** in a single message when independent. Only sequence when later edits depend on earlier (line shifts, shared context).
+2. **Batch parallel reads** in a single message when you know what to read and the files fit in the context window. Discovery (grep/glob) goes in its own message, then reads in a follow-up batch.
+
+**Combined pattern:** read once, edit many — two messages, not N.
+
+### Coverage
+
+- All 5 `agents_manager/<role>/SKILL.md` files get a new `## Tool usage efficiency (v0.5.1+)` section with the full text + caveats.
+- All 5 inline prompts in `opencode.jsonc` get a 1-line reminder appended.
+- `CLAUDE.md` (project root) gets the rules encoded — so future Claude Code / OpenCode sessions loading it apply them to this LLM, not just to the 5 agents.
+- `README.md` gets a short note in a new "Operational characteristics" section. Status banner updated to v0.5.1. The "Why" section + agent table are updated to match the v0.5.0 soft-wall reality (the v0.4.0-era "hard permission walls" wording was outdated).
+
+### Caveats documented in each agent's SKILL.md
+
+- **oldString uniqueness within a batch** must be verified before issuing. Silent failure mode if collisions.
+- **Read batching only helps when you already know what files you need.** Speculative batching of "files you might need" wastes context.
+- **Context window is a hard limit.** Batching 50 files when the window holds 20 is worse than batching 10.
+
+### Why v0.5.1 ships as a minor (not patch)
+
+The new section is a substantive new capability, not a bugfix. Tagged `v0.5.1` to make it easy to bisect if a downstream project finds the rule changes behavior in unexpected ways.
+
 ## v0.5.0 — Soft-wall architecture (2026-06-28)
 
 **Architectural change.** All 5 agents in `opencode.jsonc` now have `permission: "allow"`. OpenCode's permission layer is **not used** to enforce walls. Boundaries are now soft contracts — each agent's `SKILL.md` declares what it should/shouldn't do, and the LLM is expected to honor the contract.

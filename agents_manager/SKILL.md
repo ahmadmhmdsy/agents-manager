@@ -366,3 +366,32 @@ The "When the write tool is blocked" protocol from v0.4.1 is retired. In v0.5.0 
 - Adding sub-agents or patterns that aren't justified by measured need (Anthropic's simplicity principle).
 - **Editing `agents_manager/SKILL.md` during pipeline execution**, even though your permission allows it. The permission exists so you CAN update your own orchestration doc via a deliberate maintenance task (with user review). During an active pipeline, do not silently rewrite the protocol that defines the pipeline. If you find a real gap, surface it as a `DEEP REFLECTION` finding or call a maintenance phase.
 - **Treating the v0.5.0 soft walls as mechanical guarantees.** They are prose contracts. The only enforcement is your discipline in reading each agent's SKILL.md boundaries. If you would do something that violates the boundary, do it intentionally and surface the choice to the user — not silently.
+
+## Tool usage efficiency (v0.5.1+)
+
+Reduce wall-clock time and improve context hygiene by batching tool calls. Honor these rules when independent; ignore them when dependency-forced.
+
+### Batch parallel reads
+
+When you know which files you need (and they fit in your context window), issue all the read tool calls in a single message. Examples:
+- am-research: read 5–10 source files for codebase context → one message, N reads.
+- am-review: read coder summary + plan files + the changed source files → one message.
+- am-coder: read task row + plan section + the surrounding code you're editing → one message.
+
+**Only batch when you know what to read.** If discovery is needed (grep/glob first to find the right files), do the discovery in one message, then read the discovered files in one follow-up message. Don't speculatively batch reads of files you might need.
+
+### Batch parallel edits
+
+When you have multiple edits to make across files (or to independent regions of the same file), issue all `edit` tool calls in a single message instead of one per turn.
+
+**Only sequence when later edits depend on earlier ones:**
+- Edit 1 changes line numbers → Edit 2's oldString relied on those lines → sequence.
+- Edit 1's content is referenced by Edit 2's oldString → sequence.
+
+**Caveat — oldString uniqueness within the batch.** Each edit's `oldString` must be unique in the file AT THE TIME THAT EDIT LANDS. Edits within one message land in some order. If Edit 2's oldString matches a string that Edit 1 is about to change, you have a collision. Verify uniqueness across the batch before issuing it.
+
+**Verify after the batch, not mid-batch.** Run validation once after all edits land. The v0.5.0 verify-before-completion pattern covers post-batch failures.
+
+### Read once, edit many
+
+The full pattern: read all relevant files in one parallel batch, then issue all edits in one parallel batch. Two messages, not N.

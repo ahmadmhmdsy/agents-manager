@@ -18,9 +18,23 @@ For single-step work (a quick file edit, a one-off question), do it directly —
 
 **v0.5.0 architecture:** all 5 agents have `permission: "allow"`. Walls are soft — enforced by each agent reading its SKILL.md boundaries + the inline prompt's Can/Can't list, not by OpenCode's permission layer. See `docs/PERMISSIONS.md` for the rationale.
 
+## Tool usage efficiency (v0.5.1+)
+
+This applies to **this** LLM (Claude Code / OpenCode session) when operating in this repo, not just to the 5 agents.
+
+**Batch parallel edits when independent.** Issue all edits in a single message instead of one per turn. Sequence only when later edits depend on earlier (line shifts, shared context).
+
+**Batch parallel reads when known.** When you know which files you need (and they fit in context), issue all reads in one message. Discovery (grep/glob) goes in its own message, then reads in a follow-up batch.
+
+**Read once, edit many.** The combined pattern is two messages (batch reads, then batch edits), not N messages.
+
+**Verify oldString uniqueness across a batch** before issuing it. Edits within one message land in some order — collisions fail silently.
+
+**Verify once after the batch**, not mid-batch.
+
 ## Available agents
 
-Defined in `opencode.jsonc` with hard permission walls enforced by OpenCode.
+Defined in `opencode.jsonc` with soft walls (v0.5.0+). Each agent has `permission: "allow"` and enforces its boundaries via the SKILL.md "Boundaries" prose + the inline prompt's Can/Can't list. The "Owns" column below shows the primary output destination; in v0.5.0+ any agent can technically read/write anything, but the convention is to write only to the listed paths unless coordination requires more.
 
 | Agent | Type | Purpose | Owns |
 |---|---|---|---|

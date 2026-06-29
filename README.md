@@ -2,20 +2,24 @@
 
 [![CI](https://github.com/ahmadmhmdsy/agents-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmadmhmdsy/agents-manager/actions/workflows/ci.yml)
 
-> **Status:** v0.4.0 — early-stage. API may change between minor versions until v1.0.0.
+> **Status:** v0.5.1 — early-stage. API may change between minor versions until v1.0.0.
 
-A multi-agent task orchestration system built on [OpenCode](https://opencode.ai)'s agent system. One **master agent** routes work through four **specialist agents** (research → planning → coder → review), each with its own context window and hard permission walls.
+A multi-agent task orchestration system built on [OpenCode](https://opencode.ai)'s agent system. One **master agent** routes work through four **specialist agents** (research → planning → coder → review), each with its own context window and a dedicated role.
 
 ## Why
 
-Generic AI assistants collapse too many roles into a single chat: research, planning, coding, and review share context and bleed into each other. **agents-manager** enforces role separation at the **OpenCode permission layer** — not by prose. Each specialist:
+Generic AI assistants collapse too many roles into a single chat: research, planning, coding, and review share context and bleed into each other. **agents-manager** enforces role separation through **separate context windows** + **soft walls declared in each agent's `SKILL.md`**. Each specialist:
 
 - Runs in a fresh context window (no cross-contamination).
-- Has a permission block that physically blocks forbidden tools.
+- Reads its `SKILL.md` boundaries (and the inline prompt's Can/Can't list) to decide what to do.
 - Returns a file artifact (no out-of-band chat).
 - Self-critiques before returning.
 
-The master enforces `max_fix_loops = 3` and pauses for user confirmation between planning and build. Specialists cannot escape their lanes.
+The master enforces `max_fix_loops = 3` and pauses for user confirmation between planning and build. In v0.5.0+, walls are soft contracts (prose + LLM discipline) rather than OpenCode permission-layer enforcement. See `docs/PERMISSIONS.md` for the rationale.
+
+## Operational characteristics (v0.5.1+)
+
+Each agent in `agents_manager/` follows two efficiency rules: **batch parallel reads when you know what to read, batch parallel edits when independent.** Only sequence when later edits depend on earlier or when discovery (grep/glob) is needed first. These rules apply to **this LLM** too — see `CLAUDE.md`. Full text + caveats (oldString uniqueness, context-window limit, discovery-then-read pattern) is in each agent's `SKILL.md` "Tool usage efficiency" section.
 
 ## Pipeline
 
