@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/ahmadmhmdsy/agents-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmadmhmdsy/agents-manager/actions/workflows/ci.yml)
 
-> **Status:** v0.5.1 — early-stage. API may change between minor versions until v1.0.0.
+> **Status:** v0.6.0 — early-stage. API may change between minor versions until v1.0.0.
 
 A multi-agent task orchestration system built on [OpenCode](https://opencode.ai)'s agent system. One **master agent** routes work through four **specialist agents** (research → planning → coder → review), each with its own context window and a dedicated role.
 
@@ -16,6 +16,17 @@ Generic AI assistants collapse too many roles into a single chat: research, plan
 - Self-critiques before returning.
 
 The master enforces `max_fix_loops = 3` and pauses for user confirmation between planning and build. In v0.5.0+, walls are soft contracts (prose + LLM discipline) rather than OpenCode permission-layer enforcement. See `docs/PERMISSIONS.md` for the rationale.
+
+## What's new in v0.6.0
+
+Six new features from an upstream-contribution patch (`docs/UPSTREAM-CONTRIB.md`), all opt-in by default:
+
+- **WARN register** — `share/notes/04_warns_register_<task-id>.md` consolidates per-phase WARNs into one file, so the user is asked once at task close instead of once per phase.
+- **Git-status + API-key preflight at Phase 0** — master asks about `git init` (default no) and external API keys (stored in gitignored `share/notes/02_secrets_*.md`).
+- **Per-phase fix-loop counter** — `Fix-loops by phase: {P1: 0, P2: 0, ...}` + total in tasks/README.md.
+- **Phase 5 non-git menu** — auto-detects git vs non-git at task close; sandbox projects get a 4-option menu (run smoke / polish WARNs / build follow-up / close out) instead of dead-branching on merge/PR.
+- **Browser visual preflight** (opt-in when browser tools are available) — master takes screenshots before review for UI phases.
+- **Optional flags** (`auto_accept_warns`, `git_initialized`, `phase_5_enabled`, `run_smoke_at_close`) — task tracker header.
 
 ## Operational characteristics (v0.5.1+)
 

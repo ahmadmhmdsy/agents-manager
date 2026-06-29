@@ -65,6 +65,7 @@ CLAUDE.md              — this file
 - Task id format: `T-YYYY-MM-DD-NNN`. One task file per id in `tasks/`.
 - Review reports are brutally honest. False PASS ships bugs; false FAIL just costs a fix loop.
 - Sub-agent `SKILL.md` and `rules.md` files are reference docs read on agent startup. They contain the full role definition, output templates, and standing rules.
+- **The master runs a 5-question preflight before dispatching any specialist** (deliverable / why-needed / independence / tools / evidence-closure). Sub-agent SKILL.md see this internally; the user is expected to wait for the dispatch or the BLOCKED signal — not prompt in between. (v0.6.0+ G6 — multi-agent preflight is now user-visible.)
 
 ## Don't do
 

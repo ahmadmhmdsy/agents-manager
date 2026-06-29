@@ -125,6 +125,7 @@ Read `rules.md` for the full list. Highlights:
 - **Run the build/tests** before you write the summary. If they fail, fix or report — don't pretend they passed.
 - **One chunk per invocation.** The master decides your chunk size. Don't sneak in extra tasks.
 - **On fix-loop re-entry, only fix what was flagged.** Do not "while I'm here" improve anything else.
+- **WARN register check (v0.6.0+):** Before flagging a concern in `Known issues / TODOs`, read `share/notes/04_warns_register_<task-id>.md` if it exists. If the concern (or a near-equivalent) is already listed, skip the re-flag. After the master creates the register, also append any new concern to it. See `rules.md` § 16.
 
 ## What you can do (your lane)
 

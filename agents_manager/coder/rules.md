@@ -130,3 +130,16 @@ Before writing any code on a task, re-read **both** the assigned task row in `ta
 **Connection to stop-at-blockers (## 13):** this is the pre-flight version of the same rule. Stop-at-blockers applies mid-task; plan-critical-start applies pre-task.
 
 **Edge case — tiny fixes:** for one-line edits to a clearly-identified file (e.g., "fix typo in README.md"), this checklist is optional. Trust the row if it's unambiguous. For anything non-trivial, run the checklist.
+
+## 16. WARN register collaboration (v0.6.0+)
+
+The master maintains `share/notes/04_warns_register_<task-id>.md` as the consolidated WARN log across all phases. Your collaboration:
+
+- **Before flagging a new concern** in your summary's `Known issues / TODOs`, check if it (or a near-equivalent) is already on the WARN register. If yes, skip the re-flag — the master has it.
+- **Append any new concern** you flag to the WARN register too (one line: severity + concision + path:line). The master reads the register as the source of truth, not your summary's `Known issues` block.
+- **Format** (one line per WARN, append at the end of the file):
+  ```
+  - <phase id> — <severity> — <one-line description> — `path:line` (if applicable)
+  ```
+
+The master's consolidated WARN-acceptance question at task close reads from this register; the per-phase question is replaced by the single consolidated read.

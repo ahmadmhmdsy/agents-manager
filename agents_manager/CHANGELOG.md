@@ -2,6 +2,96 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.6.0 — Upstream-contribution patch: WARN register, preflights, non-git Phase 5 (2026-06-29)
+
+**Feature release.** Six new features from a real-world end-to-end run by MiniMax-M3 (downstream consumer running google_ai_studio_clone_1). All opt-in by default. See [`docs/UPSTREAM-CONTRIB.md`](../../docs/UPSTREAM-CONTRIB.md) for the upstream attribution + patch source.
+
+### What was applied (7 features)
+
+#### C1 — WARN register protocol (CRITICAL)
+- Master creates `share/notes/04_warns_register_<task-id>.md` at the **first** Phase 4 dispatch.
+- Every review appends a `## Phase N — <date> — <verdict>` block listing issue-level WARNs.
+- Coders check the register before re-flagging; reviewers append to it.
+- User is asked once at task close, not once per phase. **Collapses 5 user questions → 1** on a typical 5-phase task.
+- Files touched: `agents_manager/SKILL.md` (master), `agents_manager/coder/SKILL.md`, `agents_manager/coder/rules.md` (Rule 16), `agents_manager/review/rules.md` (Rule 15), `share/notes/README.md`.
+
+#### C2 — Browser visual preflight (CRITICAL)
+- New "Phase 3 → 4 handoff" section in master SKILL.md.
+- Master takes screenshots before dispatching review for UI phases.
+- Saves to `share/screenshots/<task-id>_<phase>_<route>.png`.
+- Passes screenshot paths to the reviewer.
+- Reviewer's Rule 15 now mandates visual verification when screenshots are provided.
+- **Modification from patch:** added a third "skip when" clause — "no browser tool is available in this session" — so projects without `browsermcp_*` or `agent-browser` skip gracefully rather than dead-branch.
+
+#### C3 — Git-status + API-key preflight at Phase 0 Ingest (CRITICAL)
+- Three new bullets at PHASE 0 — Ingest.
+- Git-status check: if "not a git repository", prompt user; default no auto-init.
+- API-key preflight: ask during scope clarification; store in gitignored `share/notes/02_secrets_<task-id>.md` or route through project's documented proxy path.
+- WARN-register preflight: note the canonical path for downstream agents.
+- Files touched: `agents_manager/SKILL.md` (master).
+
+#### H1 — Per-phase fix-loop counter (HIGH)
+- `tasks/README.md` schema change: `Fix-loops by phase: {P1: 0, P2: 0, ...}` + `Fix-loops total: 0`.
+- Lets master say "1 of 3 used on Phase 3 cosmetic, 0 elsewhere."
+
+#### H2 — Real smoke test delegation (HIGH)
+- Implemented via C3's API-key preflight. `run_smoke_at_close: bool` flag in task tracker header.
+- When API key was provided in Phase 0 AND `run_smoke_at_close: true`, master runs `npm run smoke` in its own session at Phase 4 review time.
+
+#### H3 — Phase 5 redefined for non-git projects (HIGH)
+- Replaces git-only Phase 5 menu with auto-detect git vs non-git.
+- Git menu: 4 options (merge / PR / keep / discard) — unchanged.
+- **Non-git menu (new):** 4 options (run smoke / polish open WARNs / build follow-up / close out).
+- The non-git menu is the common case for sandbox / exploration projects — confirmed by the upstream user's data.
+
+#### H4 — WARN auto-accept (triageable list) (HIGH)
+- New section in master SKILL.md with the default triageable list (font subset bloat, emoji vs SVG, lint warnings, npm audit dev-only, etc.).
+- `auto_accept_warns: bool` flag in task tracker header — default `false` for safety.
+- When `true`, matching WARNs auto-append to register with `[auto-accepted triageable]` tag — no user prompt.
+
+### Gaps also picked up (2 easy ones from G1-G7)
+
+#### G1 — `verification-before-completion` skill invoked at verdict time
+- One bullet at start of PHASE 4 in master SKILL.md.
+- Before reading the reviewer's report, apply the verification-before-completion skill to your reasoning.
+
+#### G6 — Multi-agent preflight user-visible
+- One line in CLAUDE.md "Key conventions".
+- Users now see what to expect during the preflight (don't prompt in between).
+
+### What was deferred (M1-M4)
+
+- **M1** Versioned WARNs — each new phase re-triages the same concerns; C1b partial-fixes via "skip near-duplicate" rule. Full fix would require WARN-id assignment.
+- **M2** Build-cache invalidation manual — `npm run smoke` as postbuild step is project-specific.
+- **M3** Agent performance metrics — per-agent time + cost not tracked. Needs infrastructure.
+- **M4** Skill auditing cadence — advanced skills (e.g., simplify-opencode) inaccessible for normal use. OpenCode platform issue.
+
+### Documentation
+
+- **`docs/UPSTREAM-CONTRIB.md`** (new) — attribution + decision log + link to the upstream patch file (`agents_manager/upstream-contrib/PROPOSED_PATCH_v0.5.x_2026-06-29.md`).
+- **`README.md`** — "What's new in v0.6.0" section listing the 6 user-visible features.
+- **`CLAUDE.md`** — G6 preflight-visibility note.
+- **`agents_manager/CHANGELOG.md`** — this entry.
+
+### Files touched (10)
+
+| File | Edits |
+|---|---|
+| `agents_manager/SKILL.md` (master) | 4 sections (C2, C3, G1+C1a, H3+H4) |
+| `agents_manager/coder/SKILL.md` | C1d bullet |
+| `agents_manager/coder/rules.md` | C1b Rule 16 |
+| `agents_manager/review/rules.md` | C1c Rule 15 |
+| `share/notes/README.md` | C1e canonical file entry |
+| `tasks/README.md` | H1 schema + H4 optional flags section |
+| `CLAUDE.md` | G6 preflight note |
+| `README.md` | Status banner + "What's new" section |
+| `agents_manager/CHANGELOG.md` | v0.6.0 entry (this) |
+| `docs/UPSTREAM-CONTRIB.md` | **NEW** |
+
+**Net effect:** First end-to-end feedback loop with a real downstream consumer. Six new opt-in features address the user's quantitative findings: 5 separate WARN-acceptance questions collapsed to 1, git-status check enabled Phase 5's non-git menu (previously dead-branched), API-key preflight enables real smoke tests in master's own session.
+
+**Source:** Patch generated by MiniMax-M3 via opencode CLI on Windows pwsh 7+ (2026-06-29). Full text: `agents_manager/upstream-contrib/PROPOSED_PATCH_v0.5.x_2026-06-29.md`. License: inherits the agents_manager license.
+
 ## v0.5.1 — Tool usage efficiency (2026-06-28)
 
 Both rules reduce wall-clock time and improve context hygiene:

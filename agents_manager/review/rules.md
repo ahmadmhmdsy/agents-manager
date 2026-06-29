@@ -104,3 +104,23 @@ When the coder claims "all tests pass," you must:
 3. Capture exit code + test counts.
 4. Compare to the coder's claim.
 5. If they disagree, the coder is wrong — flag it.
+
+## 15. Visual verification (v0.6.0+) + WARN register
+
+When the master passes screenshot path(s) in the dispatch prompt (from the Phase 3→4 browser visual preflight), you MUST visually verify:
+
+1. Read each screenshot file with the Read tool (PNGs are supported).
+2. Open the corresponding browser-capture DOM at `share/notes/01X_browser_capture_<surface>.md` for spec comparison.
+3. Add a `## Visual verification` section to your review with ✓/✗/⚠ per visible element (sidebar, header, hero, cards, footer, etc.). Note any deviation from the spec.
+
+**Skip visual verification** when no screenshot path is provided (logic-only phase, or master skipped the preflight due to no browser tool).
+
+**WARN register (v0.6.0+):** When you issue WARN verdicts (issue-level, not per-task), also append one line per WARN to `share/notes/04_warns_register_<task-id>.md`. The master creates this file at the first review; subsequent reviews append. Format:
+
+```
+- <phase id> — <severity> — <one-line description> — `path:line` (if applicable)
+```
+
+If the WARN register file does not exist when you start, create it with a `# WARN register — <task-id>` header before appending.
+
+The master relies on this register as the consolidated user-facing WARN log at task close — do not duplicate WARNs into your report without also writing them to the register.

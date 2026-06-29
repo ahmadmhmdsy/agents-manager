@@ -30,6 +30,8 @@ One markdown file per task id, e.g. `tasks/T-2026-06-28-001.md`. This file is th
 **Loop counts:**
 - Research re-entries: 0
 - Planning re-entries: 0
+- Fix-loops by phase: `{P1: 0, P2: 0, P3: 0, P4: 0, P5: 0, ...}`
+- Fix-loops total: 0
 - Fix-loops (review → coder): 0
 
 **Files touched (deduplicated, from coder summaries):**
@@ -69,6 +71,15 @@ One markdown file per task id, e.g. `tasks/T-2026-06-28-001.md`. This file is th
 **Last clean review:** share/reports/04_review_<task-id>_<phase>.md
 **Open WARNs accepted by user:** <list or "none">
 ```
+
+## Optional flags (v0.6.0+)
+
+These flags live in the task tracker header (on a `## Optional flags` block, set at Phase 0 Ingest by the master, after the `**Phase:**` line). Master sets them; sub-agents read-only:
+
+- **`auto_accept_warns: bool`** (default `false`) — when `true`, master appends matches from the [triageable list](../agents_manager/SKILL.md#warn-auto-accept-triageable-list) to `share/notes/04_warns_register_<task-id>.md` with `[auto-accepted triageable]` tag, no user prompt.
+- **`git_initialized: bool`** (default `false`) — set `true` when the user accepts the Phase 0 git-init prompt.
+- **`phase_5_enabled: bool`** (default `false`) — when `true`, master enters Phase 5 at task close (auto-detects git vs non-git flavor).
+- **`run_smoke_at_close: bool`** (default `true` when an API key was provided in Phase 0) — when `true`, master runs the project's `npm run smoke` (or equivalent) at Phase 4 review time.
 
 ## Rules for editing this file
 

@@ -65,6 +65,9 @@ Every user task flows through these phases. **Do not skip a phase. Do not reorde
 - Read the user's task verbatim. Save it to `share/handoffs/00_user_task.md`.
 - Create a task id (e.g. `T-2026-06-28-001`) and a tracker file at `tasks/T-2026-06-28-001.md`.
 - Stamp `Started` in the `## Metrics` block of the task tracker.
+- **Git-status check (v0.6.0+):** Run `git status 2>&1` after capturing the user task. If the output contains "not a git repository", prompt the user: "This project isn't git-tracked. Want me to `git init` + initial commit now? (yes/no — default no)". Default to **don't auto-init**. If yes, run `git init` with a sensible `.gitignore` (covering `node_modules/`, `dist/`, `.env*`, etc.), then create the initial commit at the captured-task state. Set `git_initialized: true` on the task tracker header.
+- **API-key preflight (v0.6.0+):** During scope clarification, ask: "Does this task require an external API key for end-to-end verification (e.g. Gemini, OpenAI, Stripe)? If yes, paste it now or after scaffold so I can run the smoke test myself at Phase 4 review time, instead of dispatching it to a sub-agent." If the user provides a key, store it in `share/notes/02_secrets_<task-id>.md` (must be gitignored) or — preferred — route through the project's documented proxy path. Never let the key appear in a git-tracked file, in a sub-agent dispatch prompt, or in any artifact outside the master session.
+- **WARN-register preflight (v0.6.0+):** Note the canonical path `share/notes/04_warns_register_<task-id>.md` — the master creates this file at the first Phase 4 dispatch (see Phase 4 WARN register protocol below).
 
 ### PHASE 1 — Research (spawn `am-research`)
 - Hand the user task + task id to the research sub-agent.
@@ -87,7 +90,27 @@ Every user task flows through these phases. **Do not skip a phase. Do not reorde
 - The coder writes code AND a work summary → `share/notes/03_coder_summary_<task-id>_<phase>.md`.
 - A coder call is bounded: either one phase, one task, or one logical chunk. You decide the granularity.
 
+### Phase 3 → 4 handoff — Browser visual preflight (UI phases only, v0.6.0+)
+
+For phases that touch **visible UI**, take a screenshot before dispatching review:
+
+1. Start the dev server in the background: `cmd /c start /min npm run dev` (Windows) or `nohup npm run dev &` (Unix). Note the port (Vite default 5173, Next.js 3000, CRA 3000).
+2. Poll the port until live (≤30 s budget). If not live, skip and note "dev server did not bind in time" in the reviewer's prompt — do **not** block review.
+3. For each route the phase modified, call `browsermcp_navigate(url)` then `browsermcp_take_screenshot`, saving the PNG to `share/screenshots/<task-id>_<phase>_<route>.png` (mkdir if needed).
+4. Kill the dev server (`taskkill /im node.exe /fi "windowtitle eq dev*"` on Windows; `kill %1` on Unix).
+5. Pass the screenshot path(s) to the reviewer prompt as visual references.
+
+**Skip when:**
+- The phase has no visible UI (logic, config, refactor)
+- The project has no dev server (CLI tool, library)
+- **No browser tool is available in this session** (master does not have access to `browsermcp_*`, OpenCode native browser, or any equivalent). In that case, log "browser preflight skipped — no browser tool in agent's tool set" in the reviewer's prompt and continue without visual reference. This is the most common case for downstream projects that haven't installed browser MCP.
+
+**Why this exists:** build-clean ≠ visually correct. The 2026-06-29 workflow-improvement synthesis (T-2026-06-29-001) surfaced "no browser visual verification from the master" as a recurring failure.
+
 ### PHASE 4 — Review (spawn `am-review`)
+
+**Before reading the reviewer's report, apply `verification-before-completion`** (v0.6.0+, G1): did the review actually run the build / tests it claims? If the report cites a `path:line` for an issue, spot-check that the line exists and says what the review claims. If the report says "tests pass", confirm `path:line` shows the test command exit code. Do not accept a review verdict on faith.
+
 - Hand the coder summary + the relevant code + the plan.
 - The review agent writes → `share/reports/04_review_<task-id>_<phase>.md` with **per-task verdicts**.
 - The reviewer is allowed (and required, when a test command is documented) to run tests and the build.
@@ -95,6 +118,7 @@ Every user task flows through these phases. **Do not skip a phase. Do not reorde
   - **Fixable in current chunk** → loop back to Phase 3 with specific fix instructions. Increment `fix_loops` in the task tracker.
   - **Plan change needed** → loop back to Phase 2.
   - **Research gap discovered** → loop back to Phase 1.
+- **WARN register (v0.6.0+):** Create `share/notes/04_warns_register_<task-id>.md` at the **first** Phase 4 dispatch. After every review verdict, append a `## Phase N — <date> — <verdict>` block listing the per-phase issue-level WARNs (one line each: severity + concision + `path:line` if available). This file is the user's single surface for "all known WARNs across all phases" at task close. The consolidated WARN-acceptance question at task completion reads from this file, not from N separate per-phase messages.
 - **`max_fix_loops = 3`.** After 3 fix-loops on the same chunk, STOP. Surface the report to the user and ask for direction (accept with WARNs / cut scope / abandon / new plan).
 
 ### Completion
@@ -272,21 +296,52 @@ For high-stakes moments in the pipeline, the master may enter a structured refle
 
 **Source:** this section distills `obra/superpowers:brainstorming` (already installed user-level) into a master prompt trigger. The upstream skill is more elaborate; this is the minimum to use it.
 
-## Phase 5 (optional): branch close
+## WARN auto-accept (triageable list, v0.6.0+)
+
+Some WARNs are mechanically knowable as acceptable during dev. Master maintains a **triageable list**; matching WARNs are auto-accepted when the user opts in:
+
+- Font subset bloat (≥1 MB subset downloaded but unused at runtime)
+- Emoji vs SVG icons (cosmetic; no functional difference)
+- macOS Cmd vs Ctrl hint text (handler accepts both; only the visible string is misleading)
+- Lint warnings (not errors)
+- `npm audit` findings marked `dev` only
+- Console output that doesn't affect functionality
+- Lazy-loading CDN dependencies when the lazy wrapper is in the main bundle
+- Icon-size micro-drift (e.g. 16 px vs 18 px) when the structure matches
+
+**Schema:** the task tracker gets an `auto_accept_warns: bool` flag (default `false` for safety). When `true`, the master appends matching WARNs to `04_warns_register_<task-id>.md` with the `[auto-accepted triageable]` tag — **no user prompt**. When `false`, all WARNs surface via the existing per-phase approval flow.
+
+**Why opt-in:** some users want every WARN surfaced. Default keeps the user in the loop. Enable only after the user has explicitly acknowledged: "I trust the triageable list."
+
+## Phase 5 (optional): next-steps
 
 **When to enter:** Phase 4 review verdict = `PASS` or `PASS_WITH_WARN`. Phase 4 verdict = `FAIL` skips Phase 5.
 
-**What it does:** invoke `finishing-a-development-branch` to give the user a 4-option menu:
+**The master auto-detects the project flavor** at Phase 5 entry by running `git status 2>&1`:
+- If `git status` succeeds → **5a. Git project menu** (below)
+- If `git status` errors with "not a git repository" → **5b. Non-git menu** (below)
+
+### 5a. Git project menu
+
+Invoke `finishing-a-development-branch` to give the user a 4-option menu:
 1. Merge locally to base branch
 2. Push and create a Pull Request
 3. Keep the branch as-is (user will handle later)
 4. Discard this work
 
+### 5b. Non-git project menu (the common case for sandbox/exploration projects)
+
+Give the user a 4-option next-steps menu:
+1. **Run the smoke test** — if the task involves an external API and the user provided a key in Phase 0, the master runs `npm run smoke` (or the project's equivalent) in its own session and reports pass/fail.
+2. **Polish open WARNs** — spawn am-coder in a fix-loop for each remaining WARN in `share/notes/04_warns_register_<task-id>.md`. Stay within `max_fix_loops=3` per chunk.
+3. **Build a follow-up chunk** — dispatch a new am-coder call against the next planned phase (e.g. Phase 6 proxy server, Phase 6 server-side rendering, etc.).
+4. **Close out** — task is done; the user takes it from here. Append the `## Completion` block.
+
 **Opt-in flag:** Phase 5 is disabled by default. Enable per-task by setting `Phase 5 enabled: true` in the task's `tasks/<task-id>.md` row when capturing the user task.
 
-**Why opt-in:** some downstream projects don't drive to PR (research-only repos, internal tools, sandbox projects). Master should not auto-trigger PR workflows without user signal.
+**Why opt-in:** some downstream projects don't drive to PR (research-only repos, internal tools, sandbox projects). Master should not auto-trigger next-step workflows without user signal.
 
-**Source:** this section distills `obra/superpowers:finishing-a-development-branch` (installed user-level). Master reads it on Phase 5 entry.
+**Source:** distills `obra/superpowers:finishing-a-development-branch` (installed user-level) for 5a; 5b is the agents-manager default and reflects the 2026-06-29 workflow-improvement synthesis on T-2026-06-29-001. Master reads this section on Phase 5 entry.
 
 ## Metrics tracking
 
