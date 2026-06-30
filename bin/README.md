@@ -91,6 +91,50 @@ Default path is `examples/`. Exits `0` if clean, `1` if violations found, `2` if
 
 PowerShell parity is not shipped (advisory linters rarely need Windows). If you want it, the script is bash-only and 99 lines; port if needed.
 
+## `release-zip.sh` (Unix / macOS / WSL) — maintainer only
+
+```bash
+bash bin/release-zip.sh <tag> [--out <path>]
+```
+
+Builds `agents-manager-vX.Y.Z.zip` from a git tag's tree using `git archive`. Includes only the 7 paths that ship in a release: `opencode.jsonc`, `CLAUDE.md`, `agents_manager/`, `share/`, `tasks/`, `.agents/skills/mavis-team/`, `bin/` (bin/ is included so Option B / "download a ZIP" users can run the installer from the extracted folder).
+
+After build, validates the ZIP contains all expected paths and the two installer scripts. Exits non-zero with a clear message if anything is missing.
+
+Most users won't run this manually — `.github/workflows/release.yml` runs it on every `v*` tag push. Use this script when:
+
+- Backfilling releases for old tags (`bin/release-zip-all.sh` for that)
+- Validating locally before pushing a tag
+- Building a ZIP for an offline install (e.g. air-gapped environment)
+
+## `release-zip.ps1` (Windows PowerShell) — maintainer only
+
+```powershell
+.\bin\release-zip.ps1 -Tag <tag> [-Out <path>]
+```
+
+PowerShell mirror of `release-zip.sh`. Uses `[System.IO.Compression.ZipFile]` (built into .NET — no external `zip` CLI needed). Same validation logic. Requires Git for Windows' `bash.exe` on PATH for the `git archive | tar -x` step.
+
+## `release-zip-all.sh` (Unix / macOS / WSL) — maintainer only
+
+```bash
+bash bin/release-zip-all.sh [--out <dir>]
+```
+
+Loop helper. Builds ZIPs into `<out>` (default `./dist/`) for **every** local `v*` tag. Prints a per-tag summary. Used for the one-time backfill that created all the historical GitHub Releases.
+
+Does **not** call `gh release create` — pair it with a separate loop for that:
+
+```bash
+for tag in $(git tag -l 'v*' --sort=v:refname); do
+  gh release create "$tag" \
+    --title "$tag" \
+    --notes-file <(extract_changelog_entry "$tag") \
+    --target "$(git rev-parse "$tag")" \
+    "dist/agents-manager-${tag}.zip"
+done
+```
+
 ## Exit codes
 
 | Code | Meaning |

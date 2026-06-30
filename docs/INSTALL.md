@@ -33,9 +33,45 @@ git subtree pull --prefix=agents-manager-src \
 
 ## Option B — download a release ZIP (no git dependency)
 
-1. Visit <https://github.com/ahmadmhmdsy/agents-manager/releases>
-2. Download the latest `agents-manager-vX.Y.Z.zip`
-3. Extract the archive anywhere (e.g., `~/Downloads/agents-manager/`)
+The latest release is always at <https://github.com/ahmadmhmdsy/agents-manager/releases/latest>. The ZIP file is named `agents-manager-vX.Y.Z.zip`.
+
+### One-liner (pinned to a specific version)
+
+**macOS / Linux:**
+
+```bash
+# Pinned version (recommended for reproducibility)
+VERSION=v0.9.1
+curl -L -o /tmp/agents-manager.zip \
+  "https://github.com/ahmadmhmdsy/agents-manager/releases/download/${VERSION}/agents-manager-${VERSION}.zip"
+unzip -q /tmp/agents-manager.zip -d /tmp/
+bash /tmp/agents-manager/bin/install.sh /path/to/your-project
+```
+
+Or with `wget`:
+
+```bash
+VERSION=v0.9.1
+wget -q -O /tmp/agents-manager.zip \
+  "https://github.com/ahmadmhmdsy/agents-manager/releases/download/${VERSION}/agents-manager-${VERSION}.zip"
+unzip -q /tmp/agents-manager.zip -d /tmp/
+bash /tmp/agents-manager/bin/install.sh /path/to/your-project
+```
+
+**Windows (PowerShell 5.1+ / 7+):**
+
+```powershell
+$VERSION = "v0.9.1"
+Invoke-WebRequest -Uri "https://github.com/ahmadmhmdsy/agents-manager/releases/download/${VERSION}/agents-manager-${VERSION}.zip" -OutFile "$env:TEMP\agents-manager.zip"
+Expand-Archive -Path "$env:TEMP\agents-manager.zip" -DestinationPath "$env:TEMP\agents-manager-extract\" -Force
+& "$env:TEMP\agents-manager-extract\agents-manager\bin\install.ps1" -Target C:\path\to\your-project
+```
+
+### Manual (browse + click)
+
+1. Visit <https://github.com/ahmadmhmdsy/agents-manager/releases/latest>
+2. Under **Assets**, download `agents-manager-vX.Y.Z.zip` (NOT the source-code archives — those don't include the version-pinned installer scripts).
+3. Extract the archive anywhere (e.g., `~/Downloads/agents-manager/` or `C:\Users\<you>\Downloads\agents-manager\`).
 4. Run the installer from the extracted folder into your target project:
 
    ```bash
@@ -47,6 +83,8 @@ git subtree pull --prefix=agents-manager-src \
    ```
 
 The installer copies only the controller files (`opencode.jsonc`, `CLAUDE.md`, `agents_manager/`, `share/`, `tasks/`, `.agents/skills/mavis-team/`) into your target. It will **skip** any file or directory that already exists, so it's safe to re-run.
+
+The ZIP also includes the `bin/` directory (with `install.sh`, `install.ps1`, `check.sh`, `update.sh`, etc.) so Option B is fully self-contained — you don't need a separate copy of the installer.
 
 ## Git initialization (`--git <auto|prompt|skip>`, default `auto`)
 

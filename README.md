@@ -1,7 +1,7 @@
 # agents-manager
 
 [![CI](https://github.com/ahmadmhmdsy/agents-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmadmhmdsy/agents-manager/actions/workflows/ci.yml)
-[![Release v0.7.0](https://img.shields.io/badge/release-v0.7.0-blue)](https://github.com/ahmadmhmdsy/agents-manager/releases/tag/v0.7.0)
+[![Release v0.9.1](https://img.shields.io/badge/release-v0.9.1-blue)](https://github.com/ahmadmhmdsy/agents-manager/releases/tag/v0.9.1)
 [![License MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Upstream patch contributions](https://img.shields.io/badge/upstream-2%20patches-purple)](docs/UPSTREAM-CONTRIB.md)
 
@@ -181,8 +181,8 @@ git subtree add --prefix=agents-manager-src https://github.com/ahmadmhmdsy/agent
 
 ### Option B — download a release ZIP
 
-1. Go to <https://github.com/ahmadmhmdsy/agents-manager/releases>
-2. Download the latest release ZIP (e.g. `agents-manager-v0.7.0.zip`)
+1. Go to <https://github.com/ahmadmhmdsy/agents-manager/releases/latest>
+2. Download the latest release ZIP (e.g. `agents-manager-v0.9.1.zip`)
 3. Extract the controller files into your project root
 4. Run `bash bin/install.sh .` from inside the extracted folder, OR manually copy `opencode.jsonc`, `CLAUDE.md`, `agents_manager/`, `share/`, `tasks/`, `.agents/skills/mavis-team/` into your project root.
 
