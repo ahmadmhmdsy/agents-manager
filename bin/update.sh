@@ -98,8 +98,13 @@ version_lt() {
   local a="$1" b="$2"
   [[ "$a" == "$b" ]] && return 1
   local IFS=.
-  local -a va=($(echo "$a" | sed 's/^v//'))
-  local -a vb=($(echo "$b" | sed 's/^v//'))
+  # strip leading 'v' via parameter expansion (avoids SC2001 sed + SC2207 unquoted array)
+  local clean_a="${a#v}" clean_b="${b#v}"
+  local -a va=() vb=()
+  # shellcheck disable=SC2207  # Safe: IFS=. above + no glob chars in semver
+  va=( $clean_a )
+  # shellcheck disable=SC2207
+  vb=( $clean_b )
   for i in 0 1 2; do
     local ai="${va[$i]:-0}" bi="${vb[$i]:-0}"
     if (( ai < bi )); then return 0; fi
@@ -162,10 +167,16 @@ echo "────────────────────────�
 echo ""
 
 # Check for active task tracker files (mid-pipeline updates are risky)
-active_tasks=$(ls tasks/T-*.md 2>/dev/null | grep -v README || true)
-if [[ -n "$active_tasks" ]]; then
+# Use a glob instead of `ls | grep` to avoid SC2010 and handle non-alphanumeric names.
+active_tasks=()
+for f in tasks/T-*.md; do
+  [[ -f "$f" ]] || continue
+  [[ "$f" == "tasks/README.md" ]] && continue
+  active_tasks+=("$f")
+done
+if [[ "${#active_tasks[@]}" -gt 0 ]]; then
   echo "WARNING: Active task tracker files detected:"
-  echo "$active_tasks" | head -5
+  printf '  %s\n' "${active_tasks[@]:0:5}"
   echo "Updating mid-pipeline is risky. Consider completing or pausing first."
   echo ""
 fi
@@ -177,7 +188,7 @@ if [[ "$YES" != "true" ]]; then
     echo "Update skipped."
     # Still update the marker so we don't re-prompt today
     mkdir -p .agents-manager
-    echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .agents-manager/.last-update-check
+    date -u +%Y-%m-%dT%H:%M:%SZ > .agents-manager/.last-update-check
     exit 3
   fi
 fi
@@ -223,7 +234,14 @@ if ! unzip -q "$TEMP_DIR/release.zip" -d "$TEMP_DIR"; then
   exit 2
 fi
 
-EXTRACTED=$(ls "$TEMP_DIR" | grep -E '^agents-manager-' | head -1)
+# Find the agents-manager-* directory inside the extracted ZIP via glob
+# (avoids SC2010: don't use ls | grep).
+EXTRACTED=""
+for d in "$TEMP_DIR"/agents-manager-*; do
+  [[ -d "$d" ]] || continue
+  EXTRACTED=$(basename "$d")
+  break
+done
 if [[ -z "$EXTRACTED" ]]; then
   echo "ERROR: Release ZIP missing agents-manager-* directory. Backup preserved at $BACKUP_DIR/" >&2
   exit 2
@@ -243,7 +261,7 @@ done
 
 # ─── Marker + verify ──────────────────────────────────────────────────────
 mkdir -p .agents-manager
-echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .agents-manager/.last-update-check
+date -u +%Y-%m-%dT%H:%M:%SZ > .agents-manager/.last-update-check
 echo ""
 echo "Updated: $LOCAL → $REMOTE"
 echo "Backup:  $BACKUP_DIR/"
