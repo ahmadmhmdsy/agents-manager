@@ -36,3 +36,8 @@ design_agent_temp/  # local-only scratchpad for am-design design-agent developme
 
 # Release artifacts (built locally by bin/release-zip*.sh; published via GitHub Releases)
 dist/
+
+# agents-manager v0.10.0
+share/notes/02_secrets_*.md
+share/screenshots/
+share/notes/99_progress_*.md

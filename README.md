@@ -170,6 +170,8 @@ Each agent in `agents_manager/` follows two efficiency rules: **batch parallel r
 
 ## Quick start
 
+> **Unified CLI (v0.10.0+).** After installing, use `agents-manager` (bash) or `agents-manager.ps1` (PowerShell) for everything: `install`, `check`, `doctor`, `update`, `skills list|add|which|update`, `release`, `lint`, `version`. Run with no args to launch the interactive wizard, or `agents-manager help` for the full surface.
+
 ### Option A — git subtree (recommended for downstream projects with their own git history)
 
 ```bash

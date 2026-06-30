@@ -1,8 +1,69 @@
 # bin/ — agents-manager scripts
 
-Six cross-platform scripts for installing, verifying, updating, and linting an `agents-manager` controller in a target project.
+**v0.10.0+ entry point: `agents-manager` (bash) / `agents-manager.ps1` (PowerShell).** All other scripts in this folder (`install.sh`, `install.ps1`, `check.sh`, `check.ps1`, `update.sh`, `update.ps1`) are now thin shims that defer to the unified dispatcher. See [`agents-manager`](#agents-manager-unix--macos--wsl--v0100-) below.
 
-## `install.sh` (Unix / macOS / WSL)
+## `agents-manager` (Unix / macOS / WSL) — v0.10.0+
+
+Unified CLI for installing, verifying, updating, and linting an `agents-manager` controller, plus managing required skills (global `~/.agents/skills/<name>/` and controller-local `<target>/.agents/skills/<name>/`).
+
+```bash
+agents-manager                                       # interactive wizard
+agents-manager install [TARGET] [--git M] [--yes] [--dry-run]
+agents-manager update [--check] [--yes]
+agents-manager check [TARGET]
+agents-manager doctor [TARGET] [--fix]
+agents-manager uninstall [TARGET] [--yes]
+agents-manager skills list [--required-only|--installed-only|--missing-only]
+agents-manager skills add <name>...|--all [--global|--local] [--yes]
+agents-manager skills remove <name> [--yes]
+agents-manager skills which <name>
+agents-manager skills update <name>...|--all [--yes]
+agents-manager release [zip|all] [<args>...]
+agents-manager lint [PATH]
+agents-manager version
+agents-manager help [<subcommand>]
+```
+
+Subcommands, in summary:
+- `install` — install the controller in a target directory (delegates internally).
+- `update` — check for and apply upstream updates (delegates to `update.sh` until the v0.10.x update logic ports).
+- `check` — verify the 6 controller files + required skills from `bin/skills-manifest.json`.
+- `doctor` — diagnose common issues (controller files, required skills, tooling, git state). `--fix` auto-runs missing installs.
+- `uninstall` — remove the 6 controller files from a target directory.
+- `skills` — manage required skills:
+  - `list [--required-only|--installed-only|--missing-only]` — show status of every skill in the manifest.
+  - `add <name|--all>` — run the manifest's `install_cmd` for one or all missing skills. Default scope derived from manifest (most are `global`, run via `npx`).
+  - `remove <name>` — remove a `global` skill (currently obra/superpowers-only).
+  - `which <name>` — show where a skill is installed (or "missing" + the install command).
+  - `update <name|--all>` — run the manifest's `update_cmd` for one or all global skills.
+- `release [zip|all]` — wraps `release-zip.sh` / `release-zip-all.sh`.
+- `lint [PATH]` — wraps `lint-design.sh`.
+- `version` / `help` — info.
+
+Global flags: `--yes` / `-y` (skip prompts), `--no-color` (disable ANSI colors).
+
+Forwarded flags (e.g. `--git auto`, `--dry-run`) differ by subcommand; see `agents-manager help <subcommand>`.
+
+Backward compatibility: all the legacy `bash bin/install.sh ...` / `.\bin\install.ps1 ...` invocations still work via the shim layer.
+
+## `agents-manager.ps1` (Windows PowerShell + pwsh) — v0.10.0+
+
+PowerShell mirror of `agents-manager`. Same subcommands; PascalCase flags (e.g. `-Git auto`, `-Yes`, `-DryRun`).
+
+```powershell
+.\agents-manager.ps1                                    # interactive wizard
+.\agents-manager.ps1 install . -Git auto -Yes
+.\agents-manager.ps1 doctor . -Fix
+.\agents-manager.ps1 skills add -All -Yes
+.\agents-manager.ps1 update -Check
+.\agents-manager.ps1 help install
+```
+
+---
+
+# Legacy shims (v0.9.x compat — all defer to `agents-manager`)
+
+## `install.sh` (Unix / macOS / WSL) — shim
 
 ```bash
 bash bin/install.sh [TARGET] [--dry-run] [--uninstall] [--yes] [--git <auto|prompt|skip>]

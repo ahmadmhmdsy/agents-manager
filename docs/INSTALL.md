@@ -2,6 +2,8 @@
 
 Three ways to install `agents-manager` into a target project. Pick whichever matches your workflow.
 
+> **Unified CLI (v0.10.0+).** All install + verify + update + skill-management commands live in a single dispatcher: `agents-manager` (bash) and `agents-manager.ps1` (PowerShell). The legacy `bin/install.sh`, `bin/install.ps1`, `bin/check.sh`, etc. are now thin shims that defer to the dispatcher. Run `agents-manager help` for the full subcommand list, or just `agents-manager` with no args to launch the interactive wizard.
+
 ## Prerequisites
 
 Before installing, make sure you have:

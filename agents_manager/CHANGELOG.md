@@ -2,6 +2,107 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.10.0 — Unified CLI: `agents-manager` dispatcher (2026-06-30)
+
+**Additive feature.** Controller, agent code, `opencode.jsonc`, and the master orchestrator are unchanged. v0.10.0 introduces a unified CLI that wraps the existing installers + skill management behind a single dispatcher.
+
+### What's new
+
+- **`bin/agents-manager`** — new bash dispatcher (~500 lines, single file). Subcommands: `install`, `update`, `check`, `doctor`, `uninstall`, `skills {list|add|remove|which|update}`, `release`, `lint`, `version`, `help`. With no args, launches an interactive wizard (7 options). Pass `--yes`/`-y` to skip prompts. Pass `--no-color` to disable ANSI colors.
+
+- **`bin/agents-manager.ps1`** — PowerShell mirror (param-based, `ConvertFrom-Json` for the manifest). Same subcommands; PascalCase flags (`-Git auto`, `-Yes`, `-DryRun`, `-Fix`, `-All`).
+
+- **`bin/skills-manifest.json`** — new declarative file listing all required skills (10 entries: 1 controller-local `mavis-team` + 9 obra/superpowers). Each entry has `id`, `required`, `level` (local|global), `source`, `description`, `install_cmd`, `update_cmd`. The dispatcher reads this manifest at runtime, so adding a new required skill is a 1-line JSON change (no code change needed).
+
+- **`bin/install.sh` / `bin/install.ps1` / `bin/check.sh` / `bin/check.ps1` / `bin/update.sh` / `bin/update.ps1`** — converted to **3-line shims** that `exec` (bash) or `&` invoke (PowerShell) the dispatcher. All v0.9.x invocations still work unchanged.
+
+- **`bin/README.md`** — top section documents the unified `agents-manager` entry point; legacy sections now labeled "shims".
+
+- **`docs/INSTALL.md`** — top callout points users at `agents-manager`. Rest of doc unchanged.
+
+- **`README.md`** — Quick-start callout added. Rest of doc unchanged.
+
+### New commands
+
+```
+agents-manager install . --git auto --yes           # install into current dir
+agents-manager doctor . --fix                       # diagnose + auto-remediate
+agents-manager skills list --missing-only            # show missing skills
+agents-manager skills add --all --yes               # install all missing required
+agents-manager skills which verification-before-completion
+agents-manager skills update --all                  # bulk-update global skills
+agents-manager update --check                       # show version drift (delegates to update.sh)
+agents-manager release zip v0.10.1                  # build a ZIP (delegates to release-zip.sh)
+agents-manager help                                 # full help
+```
+
+### `doctor` checks
+
+`agents-manager doctor [TARGET] [--fix]` runs:
+
+- **Controller files** (opencode.jsonc, CLAUDE.md, agents_manager/, share/, tasks/)
+- **Required skills** (all 10 manifest entries; reports installed vs missing)
+- **Tooling**: git on PATH, python3 on PATH (for JSON parsing), opencode on PATH, npx on PATH
+- **Shell version** (bash ≥ 4; PowerShell — on Windows)
+- **Target git state** (is `.git` present)
+- **Fix mode** (`--fix`): auto-runs `skills add --all` + `install` to remediate failures
+
+Output is colored PASS/WARN/FAIL with a summary line. Exit code 0 = no FAILs; 1 = at least one FAIL.
+
+### `skills` subcommands
+
+- `list [--required-only|--installed-only|--missing-only]` — show every manifest entry's installed status.
+- `add <name>...` — run the manifest's `install_cmd` for one skill (uses `npx` for global obra skills).
+- `add --all` — install all required + missing skills. `-y` skips prompts.
+- `remove <name>` — for global skills only. Generates a matching `npx skills remove` command.
+- `which <name>` — show installed path OR "missing" with the install command.
+- `update <name|--all>` — run the manifest's `update_cmd`. Local skills have no update (they ship with the controller).
+
+### Why
+
+Before v0.10.0, downstream users had to remember `bin/install.sh`, `bin/check.sh`, `bin/update.sh`, and a separate `npx skills add ...` invocation for each missing skill. The dispatcher collapses all of that into one entry point. The interactive wizard makes zero-knowledge users productive without reading the docs.
+
+### Manifest discoverability
+
+Adding a new required skill is now a 1-line JSON change in `bin/skills-manifest.json`. No code change needed in `bin/agents-manager*`. `skills add --all` and `doctor` pick up the new entry automatically.
+
+### Backward compat
+
+All v0.9.x invocations still work via the shim layer:
+
+```bash
+bash bin/install.sh . --git auto --yes   # -> agents-manager install . --git auto --yes
+.\bin\install.ps1 -Target . -Git auto -Yes   # -> agents-manager.ps1 install . -Git auto -Yes
+bash bin/check.sh .   # -> agents-manager check .
+```
+
+### Scope limits
+
+- The bash dispatcher requires **bash 4+** (associative arrays + `select` builtin for wizard). macOS ships bash 3 by default — use Git Bash or WSL there. PowerShell requires 5.1+ / pwsh 7+.
+- `python3` is required by the bash dispatcher (for JSON parsing of `bin/skills-manifest.json`). PowerShell uses `ConvertFrom-Json` and does not need python3.
+- `update` subcommand **delegates** to the legacy `update.sh`/`update.ps1` (v0.8 logic). A future release will fold update logic into the dispatcher.
+- `release` and `lint` subcommands **delegate** to the existing `release-zip*.sh` and `lint-design.sh` scripts.
+
+### Files touched
+
+| File | Status |
+|---|---|
+| `bin/agents-manager` | **NEW** — bash dispatcher (~500 lines, single file) |
+| `bin/agents-manager.ps1` | **NEW** — PowerShell mirror |
+| `bin/skills-manifest.json` | **NEW** — 10-skill declarative manifest |
+| `bin/install.sh` | **modified** — 3-line shim |
+| `bin/install.ps1` | **modified** — 3-line shim |
+| `bin/check.sh` | **modified** — 3-line shim |
+| `bin/check.ps1` | **modified** — 3-line shim |
+| `bin/update.sh` | **modified** — 3-line shim |
+| `bin/update.ps1` | **modified** — 3-line shim |
+| `bin/README.md` | **modified** — documents new dispatcher + shims |
+| `docs/INSTALL.md` | **modified** — top callout for `agents-manager` |
+| `README.md` | **modified** — Quick start callout |
+| `agents_manager/CHANGELOG.md` | **modified** — this entry |
+
+**v0.10.0 — additive minor.** Safe for all v0.9.x users. No controller logic changes. No permission layer changes.
+
 ## v0.9.2 — Release infrastructure (tags + GitHub Releases + auto-release workflow) (2026-06-30)
 
 **Meta release.** The controller is unchanged. This release backfills the missing GitHub infrastructure that was referenced by `docs/INSTALL.md` Option B but never actually existed on the remote.
