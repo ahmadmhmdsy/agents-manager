@@ -69,6 +69,7 @@ jobs:
           shellcheck bin/check.sh
           shellcheck bin/update.sh
           shellcheck bin/lint-design.sh
+          shellcheck bin/agents-manager
 
   ps-lint:
     name: ps-lint (PowerShell syntax check)
@@ -86,7 +87,7 @@ jobs:
       - name: Syntax-check bin/*.ps1
         shell: pwsh
         run: |
-          $files = @("bin/install.ps1", "bin/check.ps1")
+          $files = @("bin/install.ps1", "bin/check.ps1", "bin/agents-manager.ps1")
           foreach ($f in $files) {
               $errs = $null
               [System.Management.Automation.Language.Parser]::ParseFile($f, [ref]$null, [ref]$errs) | Out-Null
@@ -113,7 +114,9 @@ jobs:
           FIXTURE=/tmp/am-fixture
           rm -rf "$FIXTURE"
           mkdir -p "$FIXTURE"
-          chmod +x bin/install.sh
+          # Ensure all shell scripts in bin/ are executable (Git on Windows
+          # sometimes doesn't preserve the +x bit on checkout).
+          chmod +x bin/*.sh
           ./bin/install.sh "$FIXTURE"
       - name: Verify fixture has all controller paths
         run: |

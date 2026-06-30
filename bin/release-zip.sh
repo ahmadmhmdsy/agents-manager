@@ -4,10 +4,14 @@
 #   tag:  e.g. v0.9.1 (leading 'v' optional)
 #   --out <path>:  output path (default: ./agents-manager-<version>.zip in cwd)
 #
-# Includes only the 6 controller paths (NOT bin/ — bin/ stays in the source repo
+# Includes only the 7 controller paths (NOT bin/ — bin/ stays in the source repo
 # for the maintainer; users download ZIPs and run install.sh from inside them).
 # Validates that each expected path was actually included before declaring success.
 set -euo pipefail
+
+# NOTE: This script is invoked directly (must have +x) OR via `bash release-zip.sh`
+# from agents-manager. The dispatcher uses the `bash explicit` form so the +x bit
+# is not required.
 
 if [[ $# -lt 1 ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
   echo "Usage: $0 <tag> [--out <path>]"
