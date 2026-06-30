@@ -7,7 +7,11 @@
 #   $ git tag -a v0.9.2 -m "v0.9.2: short description"
 #   $ git push origin v0.9.2          # workflow runs, release appears in <2 min
 #
-# For backfilling historical tags, use backfill-releases.yml (manual trigger).
+# IMPORTANT: We use a 3-step approach (create -> patch -> upload) instead of
+# the all-in-one `gh release create --notes-file ...` because GitHub's API
+# returns HTTP 500 for some accounts when `name` or `body` are included in
+# the initial POST. Documented in the v0.9.2 release notes; once GitHub
+# fixes this, we can collapse back to a single `gh release create` call.
 name: release
 
 on:
@@ -32,7 +36,7 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           VERSION="${TAG#v}"
-          OUT="agents-manager-v${VERSION}.zip"
+          OUT="agents-manager-${TAG}.zip"
           echo "Building ${OUT} from tag ${TAG}..."
 
           PATHS=(
@@ -65,18 +69,73 @@ jobs:
           ENTRIES=$(unzip -Z1 "${OUT}" | wc -l)
           echo "OK ${OUT} — size=${SIZE} bytes, entries=${ENTRIES}"
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ github.ref_name }}
-          generate_release_notes: false
-          body: |
-            See [CHANGELOG.md](../blob/${{ github.ref_name }}/agents_manager/CHANGELOG.md) for the full entry.
+      - name: Extract CHANGELOG notes
+        id: notes
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          # Extract the matching `## vX.Y.Z — ...` block from CHANGELOG.md.
+          # Fall back to the tag's annotated subject if no entry exists.
+          NOTES_FILE="/tmp/release-notes/${TAG}.md"
+          mkdir -p /tmp/release-notes
+          BODY=$(sed -n "/^## ${TAG} /,/^## /p" agents_manager/CHANGELOG.md | sed '$d' || true)
+          if [[ -z "$BODY" ]]; then
+            SUBJ=$(git tag -l --format='%(contents:subject)' "refs/tags/${TAG}" 2>/dev/null | head -1)
+            BODY="## ${TAG}"$'\n\n'"${SUBJ}"$'\n\n_No detailed CHANGELOG entry exists for this tag. See the project CHANGELOG for newer entries._'
+          fi
+          echo "$BODY" > "$NOTES_FILE"
+          echo "::notice title=Notes for ${TAG}::$(wc -l < "$NOTES_FILE") lines"
 
-            **Install:**
-            - **macOS / Linux:** `bash bin/install.sh /path/to/your-project`
-            - **Windows:** `.\bin\install.ps1 -Target C:\path\to\your-project`
-          files: |
-            agents-manager-${{ github.ref_name }}.zip
-          draft: false
-          prerelease: false
+      - name: Create GitHub Release (3-step to avoid API 500)
+        env:
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ github.ref_name }}
+          NOTES_FILE: /tmp/release-notes/${{ github.ref_name }}.md
+          ZIP_NAME: agents-manager-${{ github.ref_name }}.zip
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Step 1: create with MINIMAL payload. Sending `name` or `body` here
+          # triggers an HTTP 500 for some accounts. PATCH them in step 2.
+          echo "::group::Step 1 — create release (minimal)"
+          CREATE_BODY=$(jq -nc --arg tag "$TAG" '{tag_name: $tag}')
+          CREATE_RESP=$(echo "$CREATE_BODY" | gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/releases \
+            --input -)
+          RELEASE_ID=$(echo "$CREATE_RESP" | jq -r '.id')
+          echo "Created release id=${RELEASE_ID}"
+          echo "::endgroup::"
+
+          # Step 2: PATCH the release with the title + body. This always works
+          # even when the initial POST can't include them.
+          echo "::group::Step 2 — PATCH title + body"
+          NOTES_CONTENT=$(cat "$NOTES_FILE")
+          jq -nc \
+            --arg name "$TAG" \
+            --arg body "$NOTES_CONTENT" \
+            '{name: $name, body: $body}' > /tmp/patch.json
+          gh api \
+            --method PATCH \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/releases/${RELEASE_ID} \
+            --input /tmp/patch.json > /dev/null
+          echo "Patched title + body"
+          echo "::endgroup::"
+
+          # Step 3: upload the ZIP asset.
+          echo "::group::Step 3 — upload ${ZIP_NAME}"
+          UPLOAD_URL=$(gh api /repos/${{ github.repository }}/releases/${RELEASE_ID} | jq -r '.upload_url' | sed 's/{?name,label}//')
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/zip" \
+            "${UPLOAD_URL}?name=${ZIP_NAME}" \
+            --input "$ZIP_NAME" > /dev/null
+          echo "Uploaded ${ZIP_NAME}"
+          echo "::endgroup::"
+
+          echo ""
+          echo "Release published: https://github.com/${{ github.repository }}/releases/tag/${TAG}"

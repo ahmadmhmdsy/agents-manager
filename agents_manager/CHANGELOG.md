@@ -2,6 +2,72 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.9.2 — Release infrastructure (tags + GitHub Releases + auto-release workflow) (2026-06-30)
+
+**Meta release.** The controller is unchanged. This release backfills the missing GitHub infrastructure that was referenced by `docs/INSTALL.md` Option B but never actually existed on the remote.
+
+### What's new
+
+- **14 git tags now on remote.** Previously, the repo had 13 local annotated tags (`v0.1.0` … `v0.9.0`) that were never pushed. Now `v0.1.0` through `v0.9.1` are all on `origin` (28 refs including `^{}` dereferenced form). `git checkout v0.7.2` works for downstream users.
+
+- **14 GitHub Releases published, each with a ZIP.** Previously the Releases page at <https://github.com/ahmadmhmdsy/agents-manager/releases> was empty. Now every tag from `v0.1.0` to `v0.9.1` has a release with the matching `agents-manager-vX.Y.Z.zip` artifact and a body extracted from `agents_manager/CHANGELOG.md` (or the tag subject as fallback for `v0.1.0` and `v0.7.1` which predate the changelog discipline).
+
+- **`.github/workflows/release.yml`** — auto-publishes a GitHub Release when any `v*` tag is pushed. Builds the ZIP via `git archive`, extracts CHANGELOG notes, and creates the release using a 3-step process (create → PATCH title+body → upload asset) to work around a GitHub API bug that returns HTTP 500 when `name` or `body` are included in the initial `POST /releases`. Future flow is now:
+
+  ```bash
+  git tag -a v0.9.2 -m "v0.9.2: short description"
+  git push origin v0.9.2
+  ```
+
+  The release appears in <2 minutes with the ZIP attached.
+
+- **`bin/release-zip.sh`** (new) — `git archive` based ZIP builder. Validates the ZIP contains all 7 expected paths plus `bin/install.sh` + `bin/install.ps1` (Option B users invoke the installer from the extracted folder; without `bin/`, the ZIP is useless).
+
+- **`bin/release-zip.ps1`** (new) — PowerShell mirror using `[System.IO.Compression.ZipFile]` (built into .NET — no external `zip` CLI needed). Same validation logic.
+
+- **`bin/release-zip-all.sh`** (new) — loop helper for the one-time backfill. `bin/release-zip-all.sh --out ./dist` builds ZIPs into `./dist/` for every local `v*` tag.
+
+- **`bin/README.md`** — documents the three new release-* scripts (and notes they are maintainer-only).
+
+- **`README.md`** — release badge `v0.7.0` → `v0.9.1`; Option B points at `releases/latest` with the `v0.9.1` ZIP example.
+
+- **`docs/INSTALL.md`** — Option B now has curl/wget/PowerShell one-liners pinned to a specific version, plus a note that the ZIP includes `bin/` so Option B is fully self-contained.
+
+### Why
+
+Before v0.9.2, the install docs advertised Option B as "download a ZIP, run the installer from inside it." But the Releases page was empty, no tags existed on the remote, and the installer scripts didn't even ship in any artifact. Three dead ends stacked. v0.9.2 closes the loop so Option B actually works.
+
+### Scope limits
+
+- The backfill was done via a one-off PowerShell script (`backfill-via-curl.ps1`) using the same 3-step approach as the new workflow. The script is **not committed** to the repo — it was a one-time use.
+- The ZIPs in the Releases page are the controller files only (7 paths from the path allowlist in `bin/release-zip.sh`). They do **not** include the full git history or any CI/test outputs.
+- The release workflow is intentionally **not** triggered by `workflow_dispatch` after the backfill — that path had reliability issues in testing. Tag-push is the canonical trigger. If a future need arises for manual release creation, a small `workflow_dispatch` workflow can be added on top.
+
+### GitHub API quirk documented
+
+GitHub's `POST /releases` endpoint returns HTTP 500 for some accounts (including this one) when the payload includes `name` or `body` fields. The bug is not yet fixed as of 2026-06-30. The 3-step workaround used by the release workflow and the backfill script:
+
+1. `POST /releases` with only `{"tag_name": "vX.Y.Z"}` — succeeds.
+2. `PATCH /releases/{id}` with `{"name": "...", "body": "..."}` — succeeds.
+3. `POST /releases/{id}/assets?name=...` with the ZIP — succeeds.
+
+If GitHub fixes the bug, the workflow can collapse back to a single `gh release create --title ... --notes-file ...` call.
+
+### Files touched
+
+| File | Status |
+|---|---|
+| `.github/workflows/release.yml` | **modified** — 3-step create/patch/upload (was single `softprops/action-gh-release` call). |
+| `bin/release-zip.sh` | **NEW** — `git archive` based ZIP builder with validation. |
+| `bin/release-zip.ps1` | **NEW** — PowerShell mirror using `[System.IO.Compression.ZipFile]`. |
+| `bin/release-zip-all.sh` | **NEW** — loop helper for the one-time backfill. |
+| `bin/README.md` | **modified** — documents the 3 new scripts. |
+| `README.md` | **modified** — badge v0.7.0 → v0.9.1; Option B → `releases/latest` with v0.9.1 example. |
+| `docs/INSTALL.md` | **modified** — Option B has curl/wget/PowerShell one-liners + note that ZIP includes `bin/`. |
+| `agents_manager/CHANGELOG.md` | **modified** — this entry. |
+
+**v0.9.2 — additive meta-release.** No controller changes, no `opencode.jsonc` changes, no agent behavior changes. Only the packaging infrastructure. Existing v0.9.1 users are unaffected.
+
 ## v0.9.1 — Installer auto-initializes git for zero-knowledge users (2026-06-30)
 
 Additive installer patch. No controller changes, no opencode.jsonc changes, no agent behavior changes. New users with no git familiarity can install into a fresh folder without an extra "oh no, I forgot to run git init" step.
