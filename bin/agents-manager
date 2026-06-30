@@ -436,7 +436,7 @@ cmd_uninstall() {
 
   for p in "${paths[@]}"; do
     if [[ -e "$T/$p" ]]; then
-      rm -rf "$T/$p"
+      rm -rf -- "${T:?}/$p"
       echo "  REMOVED $p"
     fi
   done
@@ -777,7 +777,7 @@ wizard() {
   echo
   echo "What would you like to do?"
   PS3="  Enter number [1-7] or 'q' to quit: "
-  select choice in \
+  select _ in \
     "Install the controller in a project" \
     "Update an existing install" \
     "Check / verify an install" \
