@@ -198,14 +198,15 @@ echo "Permissions:"
 # Windows git doesn't preserve the +x bit, so downstream users on Unix
 # need this reapplied after install. PowerShell scripts are unaffected.
 if [[ "$DRY_RUN" == "true" ]]; then
-  echo "  CHMOD +x bin/*.sh (dry run — would set executable bit on $(ls "$SRC"/bin/*.sh 2>/dev/null | wc -l) files)"
+  # Use find — avoids SC2012 (ls parsing) and handles non-alphanumeric names.
+  count=$(find "$SRC/bin" -maxdepth 1 -type f -name '*.sh' 2>/dev/null | wc -l)
+  echo "  CHMOD +x bin/*.sh (dry run — would set executable bit on $count files)"
 else
   count=0
-  for f in "$SRC"/bin/*.sh; do
-    [[ -f "$f" ]] || continue
+  while IFS= read -r -d '' f; do
     chmod +x "$f"
     count=$((count + 1))
-  done
+  done < <(find "$SRC/bin" -maxdepth 1 -type f -name '*.sh' -print0 2>/dev/null)
   echo "  CHMOD +x bin/*.sh ($count files)"
 fi
 
