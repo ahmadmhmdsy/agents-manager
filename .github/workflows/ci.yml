@@ -135,10 +135,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install required user-level skills
+        run: |
+          chmod +x bin/*.sh
+          bash bin/agents-manager skills add --all --yes
       - name: Run bin/check.sh
         run: |
-          chmod +x bin/check.sh
-          ./bin/check.sh .
+          bash bin/check.sh .
 
   examples-consistency:
     name: examples-consistency (all examples have required structure)
