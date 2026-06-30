@@ -1,6 +1,6 @@
 # bin/ — agents-manager scripts
 
-Four cross-platform scripts for installing and verifying an `agents-manager` controller in a target project.
+Six cross-platform scripts for installing, verifying, updating, and linting an `agents-manager` controller in a target project.
 
 ## `install.sh` (Unix / macOS / WSL)
 
@@ -74,6 +74,21 @@ Default behavior: print version info, show what will change, prompt `[yes/no]`. 
 ```
 
 PowerShell parity. Same flags (`-Check` / `-Yes` PascalCase).
+
+## `lint-design.sh` (Unix / macOS / WSL) — v0.9.0+
+
+```bash
+bash bin/lint-design.sh [PATH]
+```
+
+Advisory linter for `am-design` output. Flags two things in mockup HTML:
+
+- Inline hex color codes outside `:root` and `[data-theme]` blocks (so design tokens stay centralized)
+- Emoji (so copy decks can grep cleanly)
+
+Default path is `examples/`. Exits `0` if clean, `1` if violations found, `2` if path doesn't exist. **Does not block CI** — `lint-design` CI job is advisory only.
+
+PowerShell parity is not shipped (advisory linters rarely need Windows). If you want it, the script is bash-only and 99 lines; port if needed.
 
 ## Exit codes
 

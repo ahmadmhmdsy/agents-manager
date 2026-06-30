@@ -14,6 +14,18 @@ share/
 │   ├── 02_plan_phases_<task-id>.md        ← planning sub-agent: phased plan
 │   ├── 03_coder_summary_<task-id>_<phase>.md   ← coder sub-agent: work summary
 │   └── 99_decisions.md                     ← append-only log of locked decisions
+├── design/                     ← v0.9.0+: am-design's tree-structured output
+│   └── <task-id>/
+│       ├── 00_brief.md                  ← 7-question discovery answers
+│       ├── 01_research/                 ← optional, when RESEARCH mode is used
+│       ├── 02_brand/                    ← optional, BRAND mode
+│       ├── 03_system/                   ← optional, SYSTEMIZE mode (design tokens)
+│       ├── 04_mockups/                  ← optional, MOCK / PROTOTYPE mode
+│       ├── 05_audit/                    ← optional, AUDIT / EVALUATE mode
+│       ├── 06_copy/                     ← optional, WRITE mode (microcopy)
+│       ├── 07_primitives/               ← optional, ILLUSTRATE mode (icons)
+│       ├── 08_translations/             ← optional, TRANSLATE mode (locale)
+│       └── 99_handoff.md                ← always — declares the next consumer + ships only the artifacts they need
 └── reports/
     └── 04_review_<task-id>_<phase>.md     ← review sub-agent: per-task verdicts
 ```
@@ -35,6 +47,9 @@ share/
 | `notes/02_plan_high_*.md` | planning | master, user |
 | `notes/02_plan_phases_*.md` | planning | master, coder, review |
 | `notes/03_coder_summary_*.md` | coder | master, review |
+| `design/<task-id>/00_brief.md` | am-design (v0.9.0+) | master, am-coder (Phase 3 reference) |
+| `design/<task-id>/<mode>-files>` | am-design (v0.9.0+) | per the audience declared in `99_handoff.md` |
+| `design/<task-id>/99_handoff.md` | am-design (v0.9.0+) | master, am-coder (next consumer) |
 | `reports/04_review_*.md` | review | master (and the user, on demand) |
 | `notes/99_decisions.md` | any agent (append) | all agents |
 

@@ -28,6 +28,7 @@ bun.lockb
 # Project-specific working notes (not part of the controller)
 AGENT_temp.md
 research_doc/
+design_agent_temp/  # local-only scratchpad for am-design design-agent development
 
 # OS temp
 *.tmp

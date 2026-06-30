@@ -2,6 +2,87 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.9.0 — am-design v2.0: 12-mode design specialist (2026-07-20)
+
+New: a 6th agent — `am-design` — handling all visual / UX / design / prototype / brand / audit / copy / illustration / translation work. Adds 12 modes (up from 5), 6 mockup templates (up from 1), 7 new resource templates, 4 worked examples + 1 case study, and audience-aware handoff.
+
+### What's new
+
+- **New agent: `am-design`** — visual / UX / design / prototype specialist. Tokenized design system + HTML mockups + brand identity + accessibility audit + microcopy + icon sets + locale adaptation. Strict-separation only — never touches `src/**` or application code.
+- **12 modes** (was 5 in v1 of am-design, set not single value):
+  `RESEARCH`, `CONCEIVE`, `BRAND`, `SYSTEMIZE`, `MOCK`, `PROTOTYPE`, `EXTEND`, `WRITE`, `AUDIT`, `EVALUATE`, `ILLUSTRATE`, `TRANSLATE`.
+- **6 mockup templates** (was 1): `mobile`, `tablet`, `desktop`, `web-responsive`, `email`, `brand`. Each encodes the medium's locked dimensions and chrome.
+- **7-question discovery protocol** — before producing anything, am-design asks: medium? audience? constraints? artifact set? mode set? scope tier? success criteria? Answers land in `00_brief.md`.
+- **Audience-aware handoff** — `99_handoff.md` declares the next consumer (am-coder / human designer / PM / stakeholder / marketing / agency / accessibility reviewer / localizer) and ships only the artifacts that consumer needs.
+- **Tree-structured output** (`share/design/<task-id>/`) — optional folders per mode (`01_research/`, `02_brand/`, `03_system/`, `04_mockups/`, `05_audit/`, `06_copy/`, `07_primitives/`, `08_translations/`, `99_handoff.md`). Folder presence matches artifact set.
+- **Strict two-lane separation upheld** — am-design never writes `src/**`. If a reference implementation is wanted, master spawns a small `am-coder` task with `share/design/<task-id>/` as input.
+- **4 worked examples + 1 case study**:
+  - `examples/design-onboarding/` — fitness app, 2-screen mobile onboarding (carried from am-design v1)
+  - `examples/design-brand-identity/` — Atlas coffee roastery, brand + copy (new)
+  - `examples/design-responsive-web/` — Lumio habit tracker, 3 breakpoints (new)
+  - `examples/design-audit/` — Stride fitness app, 20 findings + severity matrix + remediation plan (new)
+  - `examples/design-casestudy-quran/` — retrospective on a real multi-theme, multi-locale Quran app design system built before am-design was formalized; documents what works and what to formalize (new)
+- **7 new resource templates** under `agents_manager/design/resources/`:
+  - `research-template.md` (competitive analysis, user research synthesis, audit input)
+  - `brand-template.md` (color, typography, voice, brand guidelines)
+  - `audit-template.md` (findings, severity matrix, remediation plan)
+  - `copy-template.md` (microcopy, content strategy)
+  - `motion-spec-template.md` (durations, easing, transitions, reduced motion)
+  - `icon-template.svg` (24×24 grid placeholder)
+  - `multi-locale-checklist.md` (Arabic/Hebrew/Persian/Urdu/Latin/CJK, dual calendar, RTL specifics)
+- **Expanded novel-abstractions seed list** (`agents_manager/design/resources/novel-abstractions-seed-list.md`) — 11 accepted (T) + 12 refused (R) patterns, generalized from the original 5 + 5 UI-focused set.
+- **Optional `bin/lint-design.sh`** — advisory lint that flags inline hex and emoji in mockup HTML files. Does not block commits.
+
+### Why
+
+Before v0.9.0, design work fell on `am-coder` (who is supposed to focus on implementation) or got invented ad-hoc (no contract for visual deliverables). Real-world design work spans web / mobile / brand / audit / copy / icon / locale — not just mobile-app mockups. v0.9.0:
+
+1. Adds a dedicated agent (`am-design`) so implementation specialists stay focused.
+2. Generalizes the scope beyond mobile to web / desktop / brand / email / etc.
+3. Decouples the handoff audience (was always `am-coder`; now supports 8 audiences).
+4. Documents the patterns that emerged from the Quran app case study as reusable abstractions.
+
+### Scope limits
+
+- `am-design` does not write framework-specific code. Reference implementations are `am-coder`'s job.
+- Mediums supported in v0.9.0: web (responsive), mobile, tablet, desktop, email, brand. Watch, TV, kiosk, voice, print, packaging deferred to v3.
+- Multi-locale handling is documented for Arabic, Hebrew, Persian, Urdu, Latin, CJK. Other scripts (Tamil, Thai, Devanagari) partially documented; full coverage in v3.
+- Case study (`design-casestudy-quran`) is documentation of past work — not a live reference implementation.
+- The lint script is advisory; it doesn't fail CI.
+
+### Files touched
+
+| File | Status |
+|---|---|
+| `opencode.jsonc` | **modified** — added `am-design` block with full inline prompt (boundaries + return shape + tool usage); added comment marker for v2.0; master's task dispatch list expanded to 5 specialists (FIX A) |
+| `CLAUDE.md` | **modified** — added `am-design` row to Available agents table; counts updated (5 → 6 agents total, 4 → 5 specialists); stale line 47 rewritten for v0.5.0 soft walls (FIX F) |
+| `README.md` | **modified** — counts updated; FAQ "How do I add a 6th agent?" updated with am-design as the worked example; status banner; "The five agents" → "The six agents" |
+| `agents_manager/SKILL.md` (master) | **modified** — `## Spawning a specialist` dispatch contract references `am-design` (FIX D); added design routing rule (FIX H); anti-pattern "5 specialists" → "5 specialists" with design included |
+| `agents_manager/CHANGELOG.md` | **modified** — this entry |
+| `agents_manager/design/` | **NEW** (21 files: SKILL.md + rules.md + 11 resources + notes/) |
+| `docs/am-design-v2-migration.md` | **NEW** |
+| `docs/am-design-v2-decisions.md` | **NEW** |
+| `docs/am-design-v2-testing.md` | **NEW** |
+| `bin/lint-design.sh` | **NEW** (optional helper) |
+| `examples/design-onboarding/` | carried from am-design v1 |
+| `examples/design-brand-identity/` | **NEW** (Atlas) |
+| `examples/design-responsive-web/` | **NEW** (Lumio) |
+| `examples/design-audit/` | **NEW** (Stride) |
+| `examples/design-casestudy-quran/` | **NEW** (retrospective) |
+| `bin/install.sh` + `bin/install.ps1` | **modified** — chmod +x on `bin/*.sh` after copy |
+| `.github/workflows/ci.yml` | **modified** — added `lint-design` CI job; expanded `validate-frontmatter` to include `agents_manager/design/SKILL.md`; examples-consistency now globs all `examples/*/README.md` |
+
+### Tag / commit
+
+**v0.9.0 — additive minor.** No breaking changes to existing 5 agents. Owners on v0.8.0 can apply this PR without rewriting anything else. Existing dispatches to master, am-research, am-planning, am-coder, am-review work unchanged. am-design is opt-in — master spawns it only when the task touches visible UI AND the user has not yet locked a visual direction.
+
+### Source attribution
+
+- **Generator:** MiniMax-M3 via opencode CLI on Windows PowerShell 7+
+- **Source date:** 2026-07-20
+- **Source project:** agents-manager v0.8.0 + am-design v1 (carried from `agents-manager-0.8.0` local snapshot) + am-design v2 (12 modes, 6 mediums, 4 examples + case study)
+- **License:** inherits the agents_manager license (MIT). Contribution, not obligation.
+
 ## v0.8.0 — Auto-updater (2026-06-29)
 
 New: the controller can now check for and apply upstream updates without manual ZIP downloads.

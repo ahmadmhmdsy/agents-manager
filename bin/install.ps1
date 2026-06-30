@@ -168,6 +168,18 @@ Write-Host ""
 Write-Host "Gitignore:"
 Ensure-Gitignore -TargetDir $TargetAbs -Version $ScriptVersion
 
+# Note: PowerShell scripts (.ps1) don't need +x on NTFS — execute is granted
+# via file association / Set-AuthenticodeSignature. But on Windows, the
+# bash scripts we ship (install.sh, check.sh, update.sh, lint-design.sh)
+# need +x when running under WSL or Git Bash. The bash installer (install.sh)
+# applies chmod +x itself after copy. For users running install.ps1 on
+# Windows and then invoking bash scripts under WSL, they should run:
+#   chmod +x bin/*.sh
+# (documented in docs/INSTALL.md and bin/README.md).
+Write-Host ""
+Write-Host "Permissions:"
+Write-Host "  (PowerShell scripts require no special permission. Bash scripts in bin/ will be chmod +x'd by install.sh on Unix.)"
+
 if ($DryRun) {
     Write-Host ""
     Write-Host "DRY RUN complete - no changes were written."

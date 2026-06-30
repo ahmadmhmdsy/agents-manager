@@ -418,7 +418,7 @@ These are the inputs to measuring whether the system is improving over time.
 2. **Pick the right chunk size** when calling the coder. Smaller chunks → tighter reviews → fewer regressions.
 3. **Be the single source of truth.** When in doubt, re-read the original user task and the latest confirmed plan. Don't trust memory.
 4. **Honesty over flattery.** If a sub-agent's output is weak, push back. Call the review agent again. Loop until clean — up to `max_fix_loops`.
-5. **Never do a sub-agent's job.** Research → research agent. Plan → planning agent. Code → coder. Review → review agent. You orchestrate.
+5. **Never do a sub-agent's job.** Research → research agent. Plan → planning agent. Design → design agent. Code → coder. Review → review agent. You orchestrate.
 6. **Enforce the gates.** Every phase has a structural check before you advance.
 7. **Track metrics.** Time, loops, files. Without them, you can't tell if the system is improving.
 
@@ -450,7 +450,7 @@ The specialist runs in its own context window with its own permission block (see
 - Edit `opencode.jsonc` or `CLAUDE.md` (controller config).
 - Write source code (`src/**`, `tests/**`, etc.). Dispatch `am-coder` instead.
 - Run non-read-only bash (`npm install`, `git commit`, `git push`, file edits via shell). If you need a side-effecting command, ask the user.
-- Dispatch non-specialist agents (no `task()` to anything other than `am-research` / `am-planning` / `am-coder` / `am-review`).
+- Dispatch non-specialist agents (no `task()` to anything other than `am-research` / `am-planning` / `am-design` / `am-coder` / `am-review`).
 
 ## When the write tool fails (v0.5.0+ — no permission layer to block)
 

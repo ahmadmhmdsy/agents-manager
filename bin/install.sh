@@ -192,6 +192,23 @@ echo ""
 echo "Gitignore:"
 ensure_gitignore
 
+echo ""
+echo "Permissions:"
+# Ensure all shell scripts in bin/ are executable.
+# Windows git doesn't preserve the +x bit, so downstream users on Unix
+# need this reapplied after install. PowerShell scripts are unaffected.
+if [[ "$DRY_RUN" == "true" ]]; then
+  echo "  CHMOD +x bin/*.sh (dry run — would set executable bit on $(ls "$SRC"/bin/*.sh 2>/dev/null | wc -l) files)"
+else
+  count=0
+  for f in "$SRC"/bin/*.sh; do
+    [[ -f "$f" ]] || continue
+    chmod +x "$f"
+    count=$((count + 1))
+  done
+  echo "  CHMOD +x bin/*.sh ($count files)"
+fi
+
 if [[ "$DRY_RUN" == "true" ]]; then
   echo ""
   echo "DRY RUN complete — no changes were written."

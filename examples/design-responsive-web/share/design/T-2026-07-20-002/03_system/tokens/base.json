@@ -1,0 +1,30 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "color": {
+    "primary":      { "$type": "color", "$value": "#5B4B8A", "$description": "Brand purple — primary CTAs" },
+    "primary-deep": { "$type": "color", "$value": "#3D2F66", "$description": "Hover, footer" },
+    "primary-tint": { "$type": "color", "$value": "#EDE9F5", "$description": "Subtle purple backgrounds" },
+    "warm":         { "$type": "color", "$value": "#F4ECDF", "$description": "Warm beige page background" },
+    "ink":          { "$type": "color", "$value": "#1A1814", "$description": "Primary text" },
+    "ink-2":        { "$type": "color", "$value": "#4A453D", "$description": "Secondary text" },
+    "ink-3":        { "$type": "color", "$value": "#8A8278", "$description": "Tertiary text" },
+    "line":         { "$type": "color", "$value": "#E2DCCF", "$description": "Borders, dividers" },
+    "surface":      { "$type": "color", "$value": "#FFFFFF", "$description": "Cards" }
+  },
+  "dimension": {
+    "space-1": { "$type": "dimension", "$value": "4px" },
+    "space-2": { "$type": "dimension", "$value": "8px" },
+    "space-3": { "$type": "dimension", "$value": "12px" },
+    "space-4": { "$type": "dimension", "$value": "16px" },
+    "space-5": { "$type": "dimension", "$value": "24px" },
+    "space-6": { "$type": "dimension", "$value": "32px" },
+    "space-7": { "$type": "dimension", "$value": "48px" },
+    "space-8": { "$type": "dimension", "$value": "64px" }
+  },
+  "typography": {
+    "display": { "$type": "fontFamily", "$value": "Inter, system-ui, sans-serif" },
+    "weight-bold": { "$type": "fontWeight", "$value": 700 },
+    "weight-medium": { "$type": "fontWeight", "$value": 500 },
+    "weight-regular": { "$type": "fontWeight", "$value": 400 }
+  }
+}

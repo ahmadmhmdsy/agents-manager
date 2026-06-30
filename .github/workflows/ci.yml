@@ -52,6 +52,7 @@ jobs:
             agents_manager/planning/SKILL.md \
             agents_manager/coder/SKILL.md \
             agents_manager/review/SKILL.md \
+            agents_manager/design/SKILL.md \
             .agents/skills/mavis-team/SKILL.md
 
   bash-lint:
@@ -66,6 +67,8 @@ jobs:
           set -e
           shellcheck bin/install.sh
           shellcheck bin/check.sh
+          shellcheck bin/update.sh
+          shellcheck bin/lint-design.sh
 
   ps-lint:
     name: ps-lint (PowerShell syntax check)
@@ -135,24 +138,35 @@ jobs:
           ./bin/check.sh .
 
   examples-consistency:
-    name: examples-consistency (3 examples have required structure)
+    name: examples-consistency (all examples have required structure)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify each example has user-task + README + expected-output
+      - name: Verify each example has user-task + README + share/ or expected-output/
         run: |
           set -e
           FAIL=0
-          for ex in node-markdown-linter python-csv-summarizer docs-restructure; do
-            echo "Checking examples/$ex/"
-            for f in README.md user-task.md expected-output; do
-              if [[ ! -e "examples/$ex/$f" ]]; then
-                echo "  FAIL: examples/$ex/$f missing"
+          # Every example must have README.md and user-task.md.
+          # Each example should also have either share/ (worked trace) or
+          # expected-output/ (compact example with end-state).
+          for ex in examples/*/; do
+            [[ -d "$ex" ]] || continue
+            ex_name=$(basename "$ex")
+            echo "Checking $ex_name/"
+            for f in README.md user-task.md; do
+              if [[ ! -e "$ex$f" ]]; then
+                echo "  FAIL: $ex$f missing"
                 FAIL=1
               else
-                echo "  OK:   examples/$ex/$f"
+                echo "  OK:   $ex$f"
               fi
             done
+            if [[ -d "${ex}share" ]] || [[ -d "${ex}expected-output" ]]; then
+              echo "  OK:   $ex_name has share/ or expected-output/"
+            else
+              echo "  FAIL: $ex_name missing both share/ and expected-output/ (need at least one)"
+              FAIL=1
+            fi
           done
           if [[ ! -f examples/README.md ]]; then
             echo "FAIL: examples/README.md missing"
@@ -161,3 +175,27 @@ jobs:
             echo "OK: examples/README.md"
           fi
           exit $FAIL
+
+  lint-design:
+    name: lint-design (advisory — does not fail CI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run bin/lint-design.sh (advisory)
+        run: |
+          set -e
+          chmod +x bin/lint-design.sh
+          # Default path is examples/ — matches the v0.9.0 conventions.
+          # Advisory: exit 0 = clean, exit 1 = violations found.
+          # We do NOT fail the build on violations (skill is marked advisory).
+          if bash bin/lint-design.sh examples/; then
+            echo "OK: lint-design clean"
+          else
+            rc=$?
+            if [[ $rc -eq 1 ]]; then
+              echo "WARN: lint-design found violations (advisory, not failing CI)"
+            else
+              echo "FAIL: lint-design exited $rc"
+              exit $rc
+            fi
+          fi

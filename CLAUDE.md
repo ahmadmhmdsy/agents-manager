@@ -16,7 +16,9 @@ The master handles everything: writing the task capture, calling specialists, en
 
 For single-step work (a quick file edit, a one-off question), do it directly — no need to invoke the master.
 
-**v0.5.0 architecture:** all 5 agents have `permission: "allow"`. Walls are soft — enforced by each agent reading its SKILL.md boundaries + the inline prompt's Can/Can't list, not by OpenCode's permission layer. See `docs/PERMISSIONS.md` for the rationale.
+**v0.5.0 architecture (carried through v0.9.0):** all 6 agents have `permission: "allow"`. Walls are soft — enforced by each agent reading its SKILL.md boundaries + the inline prompt's Can/Can't list, not by OpenCode's permission layer. See `docs/PERMISSIONS.md` for the rationale.
+
+**v0.9.0:** 6th agent `am-design` (12-mode design specialist) added. Strict separation: am-design never writes `src/**`; reference implementations are am-coder's job.
 
 ## Tool usage efficiency (v0.5.1+)
 
@@ -41,16 +43,17 @@ Defined in `opencode.jsonc` with soft walls (v0.5.0+). Each agent has `permissio
 | `master` | agent | Orchestrates the pipeline; does not implement | `share/handoffs/`, `share/notes/99_decisions.md`, `tasks/` |
 | `am-research` | agent | Brainstorm, doubt, analyze, investigate | `share/notes/01_research_*.md` |
 | `am-planning` | agent | Turn research into a phased plan + task list | `share/notes/02_plan_*.md`, `tasks/<id>.md` rows |
+| `am-design` (v0.9.0+) | agent | Visual / UX / brand / mockup / audit — never `src/**` | `share/design/<task-id>/**` |
 | `am-coder` | agent | Implement assigned tasks | source code, `share/notes/03_coder_summary_*.md` |
 | `am-review` | agent | Verify coder work, produce per-task verdicts | `share/reports/04_review_*.md` |
 
-The walls (e.g. `am-research` literally cannot write code, `am-coder` literally cannot edit `agents_manager/**`) are enforced by OpenCode's permission layer — not by prose promises.
+Walls are soft in v0.5.0+. Each agent's `SKILL.md` declares its boundaries as a prose contract; the LLM is expected to honor them. See [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md) for the architectural rationale.
 
 ## Project structure
 
 ```
-agents_manager/        — controller: 1 master + 4 specialists, each with SKILL.md + rules.md
-share/                 — inter-agent communication bus (handoffs, notes, reports)
+agents_manager/        — controller: 1 master + 5 specialists (research, planning, design, coder, review), each with SKILL.md + rules.md
+share/                 — inter-agent communication bus (handoffs, notes, reports, design/, messages/)
 tasks/                 — canonical task tracker (one .md per task id)
 research_doc/          — long-term research notes and decision records
 opencode.jsonc         — agent definitions + permissions

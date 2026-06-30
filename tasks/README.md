@@ -96,6 +96,22 @@ These flags live in the task tracker header (on a `## Optional flags` block, set
 - **`phase_5_enabled: bool`** (default `false`) — when `true`, master enters Phase 5 at task close (auto-detects git vs non-git flavor).
 - **`run_smoke_at_close: bool`** (default `true` when an API key was provided in Phase 0) — when `true`, master runs the project's `npm run smoke` (or equivalent) at Phase 4 review time.
 
+## Design-task cross-reference (v0.9.0+)
+
+When a design task is in scope, the master routes the design phase to `am-design` instead of (or in addition to) `am-research` + `am-planning`. Design artifacts land under `share/design/<task-id>/` with a tree-structured layout (see [`../share/README.md`](../share/README.md) for the full convention).
+
+In the task table below, design tasks are tagged with a `[design]` prefix on the `Phase` column (e.g. `1.5 [design]`) and the `Files expected` column points at the design tree:
+
+```
+| ID        | Phase       | Task                                  | Files expected                                  |
+|-----------|-------------|---------------------------------------|-------------------------------------------------|
+| P1.5D-T1  | 1.5 [design]| Run 7-question discovery             | `share/design/<task-id>/00_brief.md`             |
+| P1.5D-T2  | 1.5 [design]| Produce MOCK artifacts (mobile home)  | `share/design/<task-id>/04_mockups/mobile-home.html` |
+| P1.5D-T3  | 1.5 [design]| Hand off to am-coder                  | `share/design/<task-id>/99_handoff.md`          |
+```
+
+The master reads `99_handoff.md` before dispatching `am-coder` — the handoff declares the next consumer and ships only the artifacts the coder needs.
+
 ## Rules for editing this file
 
 - **Append-only on the `Loop history` and `## Metrics` sections.** Never delete a loop entry or a metric stamp.

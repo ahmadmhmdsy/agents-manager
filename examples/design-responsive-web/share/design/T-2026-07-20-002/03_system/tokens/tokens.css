@@ -1,0 +1,16 @@
+:root {
+  --color-primary: #5B4B8A;
+  --color-primary-deep: #3D2F66;
+  --color-primary-tint: #EDE9F5;
+  --color-warm: #F4ECDF;
+  --color-ink: #1A1814;
+  --color-ink-2: #4A453D;
+  --color-ink-3: #8A8278;
+  --color-line: #E2DCCF;
+  --color-surface: #FFFFFF;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --r-md: 14px; --r-lg: 22px;
+  --max-width: 1200px;
+}

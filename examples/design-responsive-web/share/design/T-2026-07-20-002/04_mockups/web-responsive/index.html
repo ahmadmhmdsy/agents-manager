@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<title>Lumio Landing — 3 Breakpoints (am-design)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../../03_system/tokens/tokens.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #ECEFF3; font-family: var(--font-sans); color: var(--color-ink); padding: 24px; }
+.canvas { display: grid; grid-template-columns: repeat(3, minmax(320px, 1fr)); gap: 20px; max-width: 1700px; margin: 0 auto; }
+.viewport { background: var(--color-warm); border-radius: 18px; box-shadow: 0 12px 40px -12px rgba(0,0,0,0.15); overflow: hidden; position: relative; }
+.label { background: var(--color-primary-deep); color: #fff; padding: 8px 16px; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; display: flex; justify-content: space-between; }
+.frame { width: 100%; display: block; }
+.frame.mobile { aspect-ratio: 390 / 844; }
+.frame.tablet { aspect-ratio: 768 / 1024; }
+.frame.desktop { aspect-ratio: 1440 / 900; }
+.page { padding: 24px 20px; height: 100%; display: flex; flex-direction: column; }
+.page.tablet-pad { padding: 32px 32px; }
+.page.desktop-pad { padding: 48px 64px; }
+.nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+.logo { font-weight: 700; font-size: 18px; color: var(--color-primary-deep); }
+.logo span { color: var(--color-primary); }
+.nav-links { display: none; gap: 24px; font-size: 14px; color: var(--color-ink-2); }
+.nav-links.desktop-only { display: flex; }
+.menu-btn { width: 32px; height: 32px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.menu-btn span { width: 18px; height: 2px; background: var(--color-ink); border-radius: 1px; }
+.btn { background: var(--color-primary); color: #fff; padding: 12px 20px; border-radius: var(--r-md); font-weight: 600; font-size: 14px; text-decoration: none; display: inline-block; }
+.btn-ghost { color: var(--color-primary-deep); background: transparent; padding: 12px 16px; font-weight: 500; font-size: 14px; text-decoration: none; }
+.hero { margin-top: 24px; }
+.hero h1 { font-size: 32px; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; color: var(--color-ink); }
+.hero h1.tablet-h1 { font-size: 44px; }
+.hero h1.desktop-h1 { font-size: 64px; max-width: 720px; }
+.hero p { margin-top: 16px; font-size: 15px; line-height: 1.6; color: var(--color-ink-2); }
+.hero p.tablet-p { font-size: 17px; max-width: 520px; }
+.hero p.desktop-p { font-size: 19px; max-width: 640px; }
+.hero-actions { margin-top: 24px; display: flex; gap: 8px; align-items: center; }
+.hero-shot { margin-top: 32px; background: var(--color-primary-tint); border: 1px dashed var(--color-primary); border-radius: var(--r-lg); aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; color: var(--color-primary); font-size: 12px; font-weight: 500; }
+.features { margin-top: 32px; display: grid; gap: 12px; }
+.features.cols-1 { grid-template-columns: 1fr; }
+.features.cols-2 { grid-template-columns: 1fr 1fr; }
+.features.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.feature { background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--r-md); padding: 16px; }
+.feature .icon { width: 36px; height: 36px; border-radius: 10px; background: var(--color-primary-tint); display: flex; align-items: center; justify-content: center; margin-bottom: 10px; color: var(--color-primary); }
+.feature h3 { font-size: 14px; font-weight: 600; }
+.feature p { font-size: 12px; color: var(--color-ink-3); margin-top: 4px; line-height: 1.5; }
+.footer { margin-top: auto; padding-top: 24px; border-top: 1px solid var(--color-line); font-size: 11px; color: var(--color-ink-3); display: flex; justify-content: space-between; }
+.note { font-family: ui-monospace, monospace; background: #FFF7CC; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <!-- MOBILE -->
+  <div class="viewport">
+    <div class="label"><span>Mobile · 390</span><span>1 col</span></div>
+    <div class="frame mobile">
+      <div class="page">
+        <nav class="nav">
+          <div class="logo">Lumi<span>o</span></div>
+          <div class="menu-btn"><span></span><span></span><span></span></div>
+        </nav>
+        <div class="hero">
+          <h1>Build small habits, daily.</h1>
+          <p>Lumio helps you commit to one tiny habit at a time. No streaks to lose. No notifications to ignore.</p>
+          <div class="hero-actions">
+            <a href="#" class="btn">Get started</a>
+            <a href="#" class="btn-ghost">See how it works</a>
+          </div>
+          <div class="hero-shot">Product screenshot placeholder</div>
+        </div>
+        <div class="features cols-1">
+          <div class="feature">
+            <div class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+            <h3>One habit at a time</h3>
+            <p>Focus on what matters now. Stack new habits later.</p>
+          </div>
+          <div class="feature">
+            <div class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/></svg></div>
+            <h3>Track without streaks</h3>
+            <p>Miss a day? Lumio adapts. No guilt, no broken chains.</p>
+          </div>
+          <div class="feature">
+            <div class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>
+            <h3>Plain, calm interface</h3>
+            <p>Designed for adults with lives. No dopamine tricks.</p>
+          </div>
+        </div>
+        <div class="footer">
+          <span>© Lumio 2026</span>
+          <span>Privacy · Terms</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLET -->
+  <div class="viewport">
+    <div class="label"><span>Tablet · 768</span><span>2 cols (features)</span></div>
+    <div class="frame tablet">
+      <div class="page tablet-pad">
+        <nav class="nav">
+          <div class="logo">Lumi<span>o</span></div>
+          <div style="display: flex; gap: 24px; font-size: 14px; color: var(--color-ink-2); align-items: center;">
+            <span>Features</span><span>How it works</span><span>Pricing</span>
+            <a href="#" class="btn" style="margin: 0;">Get started</a>
+          </div>
+        </nav>
+        <div class="hero" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center;">
+          <div>
+            <h1 class="tablet-h1">Build small habits, daily.</h1>
+            <p class="tablet-p">Lumio helps you commit to one tiny habit at a time. No streaks to lose. No notifications to ignore.</p>
+            <div class="hero-actions">
+              <a href="#" class="btn">Get started</a>
+              <a href="#" class="btn-ghost">See how it works</a>
+            </div>
+          </div>
+          <div class="hero-shot">Product screenshot placeholder</div>
+        </div>
+        <div class="features cols-2">
+          <div class="feature"><div class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h3>One habit at a time</h3><p>Focus on what matters now. Stack new habits later.</p></div>
+          <div class="feature"><div class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/></svg></div><h3>Track without streaks</h3><p>Miss a day? Lumio adapts. No guilt, no broken chains.</p></div>
+          <div class="feature"><div class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div><h3>Plain, calm interface</h3><p>Designed for adults with lives. No dopamine tricks.</p></div>
+          <div class="feature"><div class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></div><h3>Quiet by default</h3><p>Notifications only when you ask. Otherwise, your day is yours.</p></div>
+        </div>
+        <div class="footer">
+          <span>© Lumio 2026</span>
+          <span>Privacy · Terms · Contact</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESKTOP -->
+  <div class="viewport">
+    <div class="label"><span>Desktop · 1440</span><span>3 cols (features)</span></div>
+    <div class="frame desktop">
+      <div class="page desktop-pad">
+        <nav class="nav">
+          <div class="logo" style="font-size: 20px;">Lumi<span>o</span></div>
+          <div class="nav-links desktop-only" style="gap: 32px;">
+            <span>Features</span><span>How it works</span><span>Pricing</span><span>About</span>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <a href="#" class="btn-ghost">Sign in</a>
+            <a href="#" class="btn">Get started</a>
+          </div>
+        </nav>
+        <div class="hero" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 48px; align-items: center;">
+          <div>
+            <h1 class="desktop-h1">Build small habits, daily.</h1>
+            <p class="desktop-p">Lumio helps you commit to one tiny habit at a time. No streaks to lose. No notifications to ignore. Just a quiet, honest way to follow through.</p>
+            <div class="hero-actions">
+              <a href="#" class="btn">Get started — free</a>
+              <a href="#" class="btn-ghost">See how it works →</a>
+            </div>
+          </div>
+          <div class="hero-shot" style="aspect-ratio: 4 / 3;">Product screenshot placeholder</div>
+        </div>
+        <div class="features cols-3">
+          <div class="feature"><div class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h3>One habit at a time</h3><p>Focus on what matters now. Stack new habits later.</p></div>
+          <div class="feature"><div class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/></svg></div><h3>Track without streaks</h3><p>Miss a day? Lumio adapts. No guilt, no broken chains.</p></div>
+          <div class="feature"><div class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div><h3>Plain, calm interface</h3><p>Designed for adults with lives. No dopamine tricks.</p></div>
+        </div>
+        <div class="footer">
+          <span>© Lumio 2026</span>
+          <span>Privacy · Terms · Contact · About</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<p style="text-align:center; margin-top:24px; font-size:13px; color:var(--color-ink-3);">Lumio landing · responsive mockup · <span class="note">3 breakpoints side-by-side</span></p>
+</body>
+</html>

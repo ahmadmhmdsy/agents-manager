@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Atlas logo placeholder">
+  <title>Atlas Logo Placeholder</title>
+  <desc>Replace with real logo from ILLUSTRATE-mode dispatch.</desc>
+  <rect width="200" height="200" fill="var(--color-primary, #2D4A2B)" rx="36"/>
+  <text x="100" y="120" font-family="Playfair Display, Georgia, serif" font-size="84" font-weight="700" fill="var(--color-bg, #F8F4EC)" text-anchor="middle" letter-spacing="-0.02em">A</text>
+  <circle cx="100" cy="155" r="4" fill="var(--color-accent, #C9851E)"/>
+</svg>

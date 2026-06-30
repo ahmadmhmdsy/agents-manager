@@ -5,19 +5,20 @@
 [![License MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Upstream patch contributions](https://img.shields.io/badge/upstream-2%20patches-purple)](docs/UPSTREAM-CONTRIB.md)
 
-> **Status:** v0.7.0 — early-stage. API may change between minor versions until v1.0.0.
+> **Status:** v0.9.0 — early-stage. API may change between minor versions until v1.0.0.
 
-A multi-agent task orchestration system built on [OpenCode](https://opencode.ai)'s agent system. One **master agent** routes work through four **specialist agents** (research → planning → coder → review), each with its own context window and a dedicated role.
+A multi-agent task orchestration system built on [OpenCode](https://opencode.ai)'s agent system. One **master agent** routes work through **five specialist agents** (research → planning → design → coder → review), each with its own context window and a dedicated role.
 
 ## Table of contents
 
 - [Why](#why)
 - [At a glance](#at-a-glance)
 - [Optional flags](#optional-flags)
+- [What's new in v0.9.0](#whats-new-in-v090)
 - [What's new in v0.7.0](#whats-new-in-v070)
 - [What's new in v0.6.0](#whats-new-in-v060)
 - [Pipeline](#pipeline)
-- [The five agents](#the-five-agents)
+- [The six agents](#the-six-agents)
 - [Permissions model](#permissions-model-v050--soft-walls)
 - [Operational characteristics](#operational-characteristics-v051)
 - [Quick start](#quick-start)
@@ -132,13 +133,14 @@ USER TASK
                               v0.6.0+: optionally runs smoke test if API key provided
 ```
 
-## The five agents
+## The six agents
 
 | Agent | Type | What it does | Hard wall (v0.5.0+ soft) |
 |---|---|---|---|
-| **master** | orchestrator | Routes work, gates on user confirmation, enforces `max_fix_loops = 3` | Cannot implement, plan, code, or review; only edits its own `agents_manager/SKILL.md` |
+| **master** | orchestrator | Routes work, gates on user confirmation, enforces `max_fix_loops = 3` | Cannot implement, plan, design, code, or review; only edits its own `agents_manager/SKILL.md` |
 | **am-research** | specialist | Brainstorm, analyze, surface unknowns | Read-only — cannot write code or configs |
 | **am-planning** | specialist | Phased plan + Complexity block + task table | No bash, no code edits |
+| **am-design** (v0.9.0+) | specialist | 12-mode design: mockups, tokens, brand, audit, copy, locale, audit | Never writes `src/**`; never edits other specialists' folders |
 | **am-coder** | specialist | Implement assigned tasks | Cannot edit other specialists' folders or controller config; only its own `agents_manager/coder/**` |
 | **am-review** | specialist | Per-task verdicts with evidence | Cannot edit source code; tests only |
 
@@ -190,11 +192,19 @@ See [`docs/INSTALL.md`](docs/INSTALL.md) for the full procedure (PowerShell + Un
 
 ## Examples
 
-Three worked examples live in [`examples/`](examples/):
+Eight worked examples live in [`examples/`](examples/):
 
-- **`examples/node-markdown-linter/`** — full pipeline trace for "add a no-consecutive-h1 rule" task. Includes `original/` (starting state), `user-task.md`, full `share/` artifacts (00–04), `tasks/T-2026-06-28-001.md`, and `expected-output/` (rule + 5 new tests). **Canonical demonstration** of the agents-manager pipeline end-to-end.
+**Code pipeline:**
+- **`examples/node-markdown-linter/`** — full pipeline trace for "add a no-consecutive-h1 rule" task. Includes `original/` (starting state), `user-task.md`, full `share/` artifacts (00–04), `tasks/T-2026-06-28-001.md`, and `expected-output/` (rule + 5 new tests). **Canonical demonstration** of the agents-manager code pipeline end-to-end.
 - **`examples/python-csv-summarizer/`** — compact example for "add a `mean` aggregation alongside `sum` and `count`". Demonstrates the Python/pytest loop.
 - **`examples/docs-restructure/`** — pure-markdown example (no source code). Demonstrates Phases 1+2+4 without Phase 3 (no code to write).
+
+**Design pipeline (v0.9.0+):**
+- **`examples/design-onboarding/`** — fitness app, 2-screen mobile onboarding (carried from am-design v1).
+- **`examples/design-brand-identity/`** — Atlas coffee roastery, full brand system + copy deck.
+- **`examples/design-responsive-web/`** — Lumio habit tracker, 3 breakpoints (mobile/tablet/desktop).
+- **`examples/design-audit/`** — Stride fitness app, 20 findings + severity matrix + remediation plan.
+- **`examples/design-casestudy-quran/`** — retrospective on a real multi-theme, multi-locale Quran app design system built before am-design was formalized.
 
 See [`examples/README.md`](examples/README.md) for the index + how to replay.
 
@@ -230,12 +240,12 @@ Once installed, open your project in OpenCode and describe your task. The `maste
 agents-manager/
 ├── README.md                       ← this file (GitHub landing)
 ├── LICENSE                         ← MIT
-├── opencode.jsonc                  ← 5 agents + permission blocks
+├── opencode.jsonc                  ← 6 agents + permission blocks
 ├── CLAUDE.md                       ← auto-routing rule
-├── agents_manager/                 ← controller (master + 4 specialists)
-├── share/                          ← inter-agent bus (handoffs / notes / reports)
+├── agents_manager/                 ← controller (master + 5 specialists: research, planning, design, coder, review)
+├── share/                          ← inter-agent bus (handoffs / notes / reports / design/ / messages/)
 ├── tasks/                          ← task tracker
-├── examples/                       ← 3 worked pipeline traces
+├── examples/                       ← 8 worked pipeline traces (3 code + 5 design)
 ├── agents_manager/upstream-contrib/← MiniMax-M3 contribution patches (v0.6.0 + v0.7.0)
 ├── .agents/skills/mavis-team/      ← OpenCode-discoverable skill
 ├── bin/                            ← install + check scripts
@@ -253,15 +263,20 @@ The v0.4.0 → v0.4.1 era exposed three OpenCode permission-layer edge cases (wr
 
 No — not in v0.7.0. The OpenCode permission-layer globs in `opencode.jsonc` are root-relative (e.g., `share/**`, `tasks/**`). They resolve against the project root, not the install directory. Nesting breaks the path resolution. **Root-level install only** is supported.
 
-### How do I add a 6th agent?
+### How do I add a 7th agent? (or: how was `am-design` added in v0.9.0?)
 
-1. Add the agent block to `opencode.jsonc` (use existing 5 as templates).
-2. Create `agents_manager/<role>/SKILL.md` + `rules.md` + `notes/` + `resources/`.
-3. Reference it from `agents_manager/SKILL.md` master prompt + dispatch contract.
-4. Add it to the master's `task` permission allowlist.
-5. Update the "five agents" tables in this README.
+The v0.9.0 PR added `am-design` as a worked example. Same recipe applies to any future agent:
 
-See `agents_manager/SKILL.md` for the role definition pattern + each existing `SKILL.md` for the boundary + output template pattern.
+1. Add the agent block to `opencode.jsonc` (use any existing agent as a template; match the inline prompt structure: `## Before acting` / `## Output` / `## Boundaries` / `## Return` / `## Tool usage (v0.5.1+)`).
+2. Create `agents_manager/<role>/SKILL.md` + `rules.md` + `notes/` (episodic + semantic) + `resources/`.
+3. Reference the agent in `agents_manager/SKILL.md` master prompt:
+   - `## Spawning a specialist` dispatch contract (the `task(subagent_type=...)` example)
+   - `## Your responsibilities` ("Never do a sub-agent's job. ... Design → design agent. ...")
+   - `## What you cannot do` (the master never dispatches non-specialist agents)
+4. Add the agent row to the CLAUDE.md agents table + update project-structure count.
+5. Update the README's "The six agents" table + FAQ + releases.
+
+`am-design` is also a good model for "specialist with its own subtree" — it owns `agents_manager/design/`, writes to `share/design/<task-id>/**`, and has strict-separation rules (never `src/**`).
 
 ### How do I migrate from a hard-wall install (v0.4.x) to soft-wall (v0.5.0+)?
 
@@ -297,7 +312,9 @@ Per-agent opt-in: set one agent's `permission` back to a hard-wall block (copy f
 
 | Version | Date | Theme | Highlights |
 |---|---|---|---|
-| **v0.7.0** | 2026-06-29 | Chunk-size protocol | Per-phase complexity estimation + master re-ask + Phase productivity metric |
+| **v0.9.0** | 2026-07-20 | am-design v2.0: 12-mode design specialist | 6th agent (design), 6 mockup templates, 5 new design examples + 1 case study, audience-aware handoff, strict-separation only |
+| **v0.8.0** | 2026-06-29 | Auto-updater | `bin/update.sh` / `update.ps1` with version compare + backup + zip-apply; master once-per-day prompt |
+| **v0.7.x** | 2026-06-29 | Chunk-size protocol | Per-phase complexity estimation + master re-ask + Phase productivity metric (v0.7.0); install guide + scripts polish (v0.7.1 + v0.7.2) |
 | **v0.6.0** | 2026-06-29 | WARN register + preflights | WARN consolidation, git/API preflight, Phase 5 non-git menu, browser preflight |
 | **v0.5.1** | 2026-06-28 | Tool usage efficiency | Batch parallel reads + edits rules (applies to this LLM too) |
 | **v0.5.0** | 2026-06-28 | Soft-wall architecture | All agents `permission: "allow"`; boundaries become soft contracts |
@@ -315,7 +332,7 @@ MIT — see [`LICENSE`](LICENSE).
 
 ## Status
 
-**v0.7.0** is the latest release. The controller is functional and tested on 2 downstream projects (1 with full end-to-end run). Known scope:
+**v0.9.0** is the latest release. The controller is functional and tested on 3 downstream projects (2 with full end-to-end runs). Known scope:
 
 - API may change between minor versions until v1.0.0.
 - `git subtree` and manual ZIP install paths are both battle-tested.

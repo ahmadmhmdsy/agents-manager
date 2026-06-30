@@ -1,0 +1,19 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "color": {
+    "primary":     { "$type": "color", "$value": "#2D4A2B", "$description": "Brand surfaces, headlines, primary CTAs" },
+    "primary-deep":{ "$type": "color", "$value": "#1A2F19", "$description": "Hover state, footer" },
+    "accent":      { "$type": "color", "$value": "#C9851E", "$description": "Single accent — use sparingly" },
+    "accent-tint": { "$type": "color", "$value": "#F5E8D2", "$description": "Accent backgrounds" },
+    "ink":         { "$type": "color", "$value": "#1A1814", "$description": "Primary text" },
+    "ink-2":       { "$type": "color", "$value": "#4A453D", "$description": "Secondary text" },
+    "ink-3":       { "$type": "color", "$value": "#8A8278", "$description": "Tertiary text, captions" },
+    "line":        { "$type": "color", "$value": "#E2DCCF", "$description": "Borders, dividers" },
+    "bg":          { "$type": "color", "$value": "#F8F4EC", "$description": "Page background" },
+    "surface":     { "$type": "color", "$value": "#FFFFFF", "$description": "Card / elevated surface" },
+    "success":     { "$type": "color", "$value": "#4A7A3A" },
+    "warning":     { "$type": "color", "$value": "#C9851E" },
+    "danger":      { "$type": "color", "$value": "#B5483A" },
+    "info":        { "$type": "color", "$value": "#2D4A2B" }
+  }
+}
