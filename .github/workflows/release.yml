@@ -1,25 +1,19 @@
 # release.yml — auto-publish a GitHub Release when a `v*` tag is pushed
 #
 # Trigger: any push of a tag matching `v*` (e.g. v0.9.2).
-# Output: GitHub Release with the matching ZIP artifact attached, plus a
-# body that links to the CHANGELOG entry.
+# Output: GitHub Release with the matching ZIP artifact attached.
 #
 # Convention:
 #   $ git tag -a v0.9.2 -m "v0.9.2: short description"
 #   $ git push origin v0.9.2          # workflow runs, release appears in <2 min
+#
+# For backfilling historical tags, use backfill-releases.yml (manual trigger).
 name: release
 
 on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      tags:
-        description: 'Comma-separated list of tags to backfill (e.g. "v0.1.0,v0.2.0"). Leave empty to release all v* tags.'
-        required: false
-        type: string
-        default: ''
 
 permissions:
   contents: write
@@ -31,34 +25,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # full history so `git archive` works on any tag
+          fetch-depth: 0
 
-      - name: Determine tag list
-        id: tags
-        run: |
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-            echo "all=" >> "$GITHUB_OUTPUT"
-          else
-            INPUT='${{ inputs.tags }}'
-            if [[ -n "$INPUT" ]]; then
-              echo "all=${INPUT}" >> "$GITHUB_OUTPUT"
-              FIRST=$(echo "$INPUT" | cut -d',' -f1)
-              echo "tag=${FIRST}" >> "$GITHUB_OUTPUT"
-            else
-              # Empty input: release all v* tags
-              TAGS=$(git tag -l 'v*' --sort=v:refname | tr '\n' ',' | sed 's/,$//')
-              echo "all=${TAGS}" >> "$GITHUB_OUTPUT"
-              FIRST=$(echo "$TAGS" | cut -d',' -f1)
-              echo "tag=${FIRST}" >> "$GITHUB_OUTPUT"
-            fi
-          fi
-          echo "Will process: ${{ steps.tags.outputs.all }}"
-
-      - name: Build ZIPs
+      - name: Build ZIP
         env:
-          TAG_LIST: ${{ steps.tags.outputs.all }}
+          TAG: ${{ github.ref_name }}
         run: |
+          VERSION="${TAG#v}"
+          OUT="agents-manager-v${VERSION}.zip"
+          echo "Building ${OUT} from tag ${TAG}..."
+
           PATHS=(
             "opencode.jsonc"
             "CLAUDE.md"
@@ -68,78 +44,39 @@ jobs:
             ".agents/skills/mavis-team"
             "bin"
           )
-          IFS=',' read -ra TAGS <<< "$TAG_LIST"
-          for tag in "${TAGS[@]}"; do
-            tag="$(echo "$tag" | xargs)"  # trim
-            [[ -z "$tag" ]] && continue
-            VERSION="${tag#v}"
-            OUT="agents-manager-v${VERSION}.zip"
-            echo "::group::Building ${OUT} from ${tag}"
-            git archive \
-              --format=zip \
-              --prefix="agents-manager/" \
-              --output="${OUT}" \
-              "${tag}" \
-              "${PATHS[@]}"
-            if ! unzip -Z1 "${OUT}" | grep -qE '^agents-manager/bin/install\.sh$'; then
-              echo "ERROR: ${OUT} is missing bin/install.sh"; exit 1
-            fi
-            if ! unzip -Z1 "${OUT}" | grep -qE '^agents-manager/bin/install\.ps1$'; then
-              echo "ERROR: ${OUT} is missing bin/install.ps1"; exit 1
-            fi
-            SIZE=$(stat -c %s "${OUT}")
-            ENTRIES=$(unzip -Z1 "${OUT}" | wc -l)
-            echo "OK ${OUT} — size=${SIZE} bytes, entries=${ENTRIES}"
-            echo "::endgroup::"
-          done
 
-      - name: Extract CHANGELOG notes per tag
-        id: notes
-        env:
-          TAG_LIST: ${{ steps.tags.outputs.all }}
-        run: |
-          mkdir -p /tmp/release-notes
-          for tag in $(echo "$TAG_LIST" | tr ',' ' '); do
-            tag="$(echo "$tag" | xargs)"
-            [[ -z "$tag" ]] && continue
-            NOTES_FILE="/tmp/release-notes/${tag}.md"
-            # Extract `## <tag> — ...` block from CHANGELOG.md
-            BODY=$(sed -n "/^## ${tag} /,/^## /p" agents_manager/CHANGELOG.md | sed '$d' || true)
-            if [[ -z "$BODY" ]]; then
-              SUBJ=$(git tag -l --format='%(contents:subject)' "refs/tags/${tag}" 2>/dev/null | head -1)
-              BODY="## ${tag}
+          git archive \
+            --format=zip \
+            --prefix="agents-manager/" \
+            --output="${OUT}" \
+            "${TAG}" \
+            "${PATHS[@]}"
 
-${SUBJ}
+          if ! unzip -Z1 "${OUT}" | grep -qE '^agents-manager/bin/install\.sh$'; then
+            echo "ERROR: ${OUT} is missing bin/install.sh"
+            exit 1
+          fi
+          if ! unzip -Z1 "${OUT}" | grep -qE '^agents-manager/bin/install\.ps1$'; then
+            echo "ERROR: ${OUT} is missing bin/install.ps1"
+            exit 1
+          fi
 
-_No detailed CHANGELOG entry exists for this tag. See the project CHANGELOG for newer entries._"
-            fi
-            echo "$BODY" > "$NOTES_FILE"
-            echo "::notice title=Notes for ${tag}::$(wc -l < "$NOTES_FILE") lines"
-          done
+          SIZE=$(stat -c %s "${OUT}")
+          ENTRIES=$(unzip -Z1 "${OUT}" | wc -l)
+          echo "OK ${OUT} — size=${SIZE} bytes, entries=${ENTRIES}"
 
-      - name: Create GitHub Releases
-        env:
-          TAG_LIST: ${{ steps.tags.outputs.all }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          for tag in $(echo "$TAG_LIST" | tr ',' ' '); do
-            tag="$(echo "$tag" | xargs)"
-            [[ -z "$tag" ]] && continue
-            VERSION="${tag#v}"
-            ZIP="agents-manager-v${VERSION}.zip"
-            NOTES_FILE="/tmp/release-notes/${tag}.md"
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: false
+          body: |
+            See [CHANGELOG.md](../blob/${{ github.ref_name }}/agents_manager/CHANGELOG.md) for the full entry.
 
-            echo "::group::Creating release ${tag}"
-            if gh release view "$tag" >/dev/null 2>&1; then
-              echo "${tag} already exists — updating notes + assets"
-              gh release edit "$tag" --notes-file "$NOTES_FILE"
-              gh release upload "$tag" "$ZIP" --clobber
-            else
-              gh release create "$tag" \
-                --title "$tag" \
-                --notes-file "$NOTES_FILE" \
-                --target "$(git rev-parse "$tag")" \
-                "$ZIP"
-            fi
-            echo "::endgroup::"
-          done
+            **Install:**
+            - **macOS / Linux:** `bash bin/install.sh /path/to/your-project`
+            - **Windows:** `.\bin\install.ps1 -Target C:\path\to\your-project`
+          files: |
+            agents-manager-${{ github.ref_name }}.zip
+          draft: false
+          prerelease: false
