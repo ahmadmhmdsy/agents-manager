@@ -98,13 +98,12 @@ version_lt() {
   local a="$1" b="$2"
   [[ "$a" == "$b" ]] && return 1
   local IFS=.
-  # strip leading 'v' via parameter expansion (avoids SC2001 sed + SC2207 unquoted array)
+  # strip leading 'v' via parameter expansion (avoids SC2001 sed).
   local clean_a="${a#v}" clean_b="${b#v}"
+  # Use read -ra (avoids SC2206 — quote to prevent word splitting).
   local -a va=() vb=()
-  # shellcheck disable=SC2207  # Safe: IFS=. above + no glob chars in semver
-  va=( $clean_a )
-  # shellcheck disable=SC2207
-  vb=( $clean_b )
+  IFS=. read -ra va <<< "$clean_a"
+  IFS=. read -ra vb <<< "$clean_b"
   for i in 0 1 2; do
     local ai="${va[$i]:-0}" bi="${vb[$i]:-0}"
     if (( ai < bi )); then return 0; fi
