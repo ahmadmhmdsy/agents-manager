@@ -237,8 +237,6 @@ ensure_gitignore
 # git repo, this is a no-op in every mode. If git CLI is missing, we
 # print one warning line and continue (don't fail the install).
 git_init_if_needed() {
-  local gitignore_path="$TARGET_ABS/.gitignore"
-
   # Already a git repo — never re-init.
   if [[ -d "$TARGET_ABS/.git" ]]; then
     echo "  SKIP .git (already initialized)"
