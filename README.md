@@ -230,6 +230,8 @@ Verify your install: `bash bin/check.sh .`
 
 The install scripts support `--dry-run` (preview without writing) and `--uninstall` (remove the controller). For full script documentation, see [`bin/README.md`](bin/README.md). PowerShell parity via `.\bin\install.ps1 -Target <path>`.
 
+**Zero-knowledge git handling (v0.9.1+):** the installer defaults to `--git auto` — if your target folder is not a git repo, it runs `git init` + initial commit for you. Use `--git prompt` to be asked first, or `--git skip` to leave git alone. See [`docs/INSTALL.md`](docs/INSTALL.md) § Git initialization.
+
 ## Usage
 
 Once installed, open your project in OpenCode and describe your task. The `master` agent auto-routes to specialists based on your request. See [`agents_manager/SKILL.md`](agents_manager/SKILL.md) for the full orchestration protocol and [`agents_manager/README.md`](agents_manager/README.md) for the system overview.

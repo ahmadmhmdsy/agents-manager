@@ -1,29 +1,59 @@
 #!/usr/bin/env bash
 # install.sh — copy the agents-manager controller into a target project
-# Usage: ./bin/install.sh [TARGET] [--dry-run] [--uninstall] [--yes]
+# Usage: ./bin/install.sh [TARGET] [--dry-run] [--uninstall] [--yes] [--git <auto|prompt|skip>]
 # Default TARGET = current directory
 set -euo pipefail
 
-VERSION="v0.7.2"
+VERSION="v0.9.1"
 
 # Parse flags
 TARGET="."
 DRY_RUN="false"
 UNINSTALL="false"
 YES="false"
+GIT_MODE="auto"
 
-for arg in "$@"; do
+# Track whether the current iteration consumed an extra arg (for --git <value>).
+# We capture the whole arg list once and expand it ourselves to keep
+# "--git auto" and "--git=auto" parsing local to this loop.
+parse_git_value() {
+  local arg="$1"
+  case "$arg" in
+    --git=*) echo "${arg#--git=}" ;;
+    *)       echo "$arg" ;;
+  esac
+}
+
+ARGS=("$@")
+i=0
+while [[ $i -lt ${#ARGS[@]} ]]; do
+  arg="${ARGS[$i]}"
   case "$arg" in
     --dry-run)   DRY_RUN="true" ;;
     --uninstall) UNINSTALL="true" ;;
     --yes|-y)    YES="true" ;;
+    --git)
+      i=$((i + 1))
+      if [[ $i -ge ${#ARGS[@]} ]]; then
+        echo "ERROR: --git requires a value (auto|prompt|skip)" >&2
+        exit 1
+      fi
+      GIT_MODE="$(parse_git_value "${ARGS[$i]}")"
+      ;;
+    --git=*)
+      GIT_MODE="$(parse_git_value "$arg")"
+      ;;
     --help|-h)
-      echo "Usage: $0 [TARGET] [--dry-run] [--uninstall] [--yes]"
+      echo "Usage: $0 [TARGET] [--dry-run] [--uninstall] [--yes] [--git <auto|prompt|skip>]"
       echo ""
-      echo "  TARGET       Path to the project where the controller should be installed. Default: current directory."
-      echo "  --dry-run    Print what would change without writing anything."
-      echo "  --uninstall  Remove the controller files from TARGET (asks for confirmation)."
-      echo "  --yes, -y    Skip confirmation prompts (use with --uninstall)."
+      echo "  TARGET                 Path to the project where the controller should be installed. Default: current directory."
+      echo "  --dry-run              Print what would change without writing anything."
+      echo "  --uninstall            Remove the controller files from TARGET (asks for confirmation)."
+      echo "  --yes, -y              Skip confirmation prompts (use with --uninstall)."
+      echo "  --git <mode>           How to handle git initialization when TARGET is not yet a git repo."
+      echo "                         auto   (default) run 'git init' + initial commit automatically."
+      echo "                         prompt ask before running 'git init' (Y/n)."
+      echo "                         skip   don't touch git at all."
       exit 0
       ;;
     -*)
@@ -34,7 +64,17 @@ for arg in "$@"; do
       TARGET="$arg"
       ;;
   esac
+  i=$((i + 1))
 done
+
+# Validate --git value
+case "$GIT_MODE" in
+  auto|prompt|skip) ;;
+  *)
+    echo "ERROR: --git must be one of: auto, prompt, skip (got '$GIT_MODE')" >&2
+    exit 1
+    ;;
+esac
 
 # Resolve the source directory (the root of this repo, where this script lives two levels deep)
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -191,6 +231,91 @@ copy_dir  .agents/skills/mavis-team
 echo ""
 echo "Gitignore:"
 ensure_gitignore
+
+# ─── Git init (optional, --git <auto|prompt|skip>) ────────────────────────
+# Default mode is `auto` — zero-knowledge UX. If the target is already a
+# git repo, this is a no-op in every mode. If git CLI is missing, we
+# print one warning line and continue (don't fail the install).
+git_init_if_needed() {
+  local gitignore_path="$TARGET_ABS/.gitignore"
+
+  # Already a git repo — never re-init.
+  if [[ -d "$TARGET_ABS/.git" ]]; then
+    echo "  SKIP .git (already initialized)"
+    return 0
+  fi
+
+  # Explicit skip
+  if [[ "$GIT_MODE" == "skip" ]]; then
+    echo "  SKIP git init (--git skip)"
+    return 0
+  fi
+
+  # git CLI not on PATH — don't fail the install.
+  if ! command -v git >/dev/null 2>&1; then
+    echo "  WARN git CLI not on PATH — skipping git init (install continues)."
+    echo "        Install git from https://git-scm.com/ then run 'git init' yourself."
+    return 0
+  fi
+
+  # Prompt mode — ask the user (Y/n, default yes for zero-knowledge UX).
+  if [[ "$GIT_MODE" == "prompt" ]] && [[ "$YES" != "true" ]] && [[ "$DRY_RUN" != "true" ]]; then
+    local ans
+    read -r -p "  Initialize git in $TARGET_ABS? [Y/n] " ans
+    ans="${ans:-Y}"
+    if [[ ! "$ans" =~ ^[Yy]([Ee][Ss])?$ ]]; then
+      echo "  SKIP git init (declined)"
+      return 0
+    fi
+  fi
+
+  # Dry run — show what would happen.
+  if [[ "$DRY_RUN" == "true" ]]; then
+    echo "  GIT init + add + commit (dry run)"
+    return 0
+  fi
+
+  # Do it. Use a local-only identity so we don't depend on the user's
+  # global git config (zero-knowledge users may not have set user.name).
+  # First-commit message: standard "Initial commit" so any future
+  # tooling that greps for it works.
+  if ! git -C "$TARGET_ABS" init -q -b main 2>/dev/null; then
+    # Older git (< 2.28) doesn't support -b on init — fall back.
+    git -C "$TARGET_ABS" init -q
+  fi
+
+  # Stage everything the installer just wrote (and any pre-existing files).
+  # On Windows, git emits dozens of "LF will be replaced by CRLF" warnings
+  # for LF-only files; those are informational, not errors, and would
+  # overwhelm a zero-knowledge user's terminal. Redirect stderr — we
+  # still check $? / explicit diff output below for real failures.
+  if ! git -C "$TARGET_ABS" add -A 2>/dev/null; then
+    echo "  WARN git add failed — repo is initialized but no files were staged." >&2
+    echo "        Run 'git -C $TARGET_ABS add -A && git commit' manually." >&2
+    return 0
+  fi
+
+  # Only commit if there's actually something to commit (target may have
+  # files in .gitignore that produce an empty tree).
+  if git -C "$TARGET_ABS" diff --cached --quiet; then
+    echo "  OK   .git (initialized, nothing to commit — all paths gitignored)"
+    return 0
+  fi
+
+  git -C "$TARGET_ABS" \
+    -c user.email="agents-manager@local" \
+    -c user.name="agents-manager" \
+    commit -q -m "Initial commit" 2>/dev/null || {
+      echo "  WARN git commit failed — repo is initialized but no commit was created." >&2
+      echo "        Run 'git -C $TARGET_ABS commit' manually after fixing the issue." >&2
+      return 0
+    }
+  echo "  OK   .git (initialized + initial commit on branch 'main')"
+}
+
+echo ""
+echo "Git:"
+git_init_if_needed
 
 echo ""
 echo "Permissions:"

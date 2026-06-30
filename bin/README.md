@@ -5,12 +5,13 @@ Six cross-platform scripts for installing, verifying, updating, and linting an `
 ## `install.sh` (Unix / macOS / WSL)
 
 ```bash
-bash bin/install.sh [TARGET] [--dry-run] [--uninstall]
+bash bin/install.sh [TARGET] [--dry-run] [--uninstall] [--yes] [--git <auto|prompt|skip>]
 ```
 
 - `TARGET` — path to the project where the controller should be installed. Defaults to `.` (current directory).
 - `--dry-run` — print what would change without writing anything.
 - `--uninstall` — remove the controller files from `TARGET` (with confirmation prompt unless `--yes`).
+- `--git <auto|prompt|skip>` — how to handle git init when `TARGET` is not yet a git repo. Default `auto` (zero-knowledge friendly): runs `git init` + initial commit automatically. `prompt` asks Y/n. `skip` never touches git. See [`docs/INSTALL.md`](../docs/INSTALL.md) § Git initialization.
 
 Copies 2 files + 4 directories from the agents-manager checkout into `TARGET`:
 
@@ -21,15 +22,15 @@ Copies 2 files + 4 directories from the agents-manager checkout into `TARGET`:
 - `tasks/`
 - `.agents/skills/mavis-team/`
 
-Existing files are **skipped** (not overwritten). Re-running is safe. After install, the script also writes a starter `.gitignore` in `TARGET` if one isn't present, with sensible entries for secrets and runtime artifacts.
+Existing files are **skipped** (not overwritten). Re-running is safe. After install, the script also writes a starter `.gitignore` in `TARGET` if one isn't present, with sensible entries for secrets and runtime artifacts. If `--git auto` (default) and `TARGET` isn't already a git repo, the script also runs `git init` + an initial commit (skipped silently if the `git` CLI isn't on `PATH`).
 
 ## `install.ps1` (Windows PowerShell 5.1+ and 7+)
 
 ```powershell
-.\bin\install.ps1 [-Target <path>] [-DryRun] [-Uninstall]
+.\bin\install.ps1 [-Target <path>] [-DryRun] [-Uninstall] [-Yes] [-Git <auto|prompt|skip>]
 ```
 
-Same flags as the bash version, but with PowerShell's standard `-DryRun` / `-Uninstall` (PascalCase) naming.
+Same flags as the bash version, but with PowerShell's standard `-DryRun` / `-Uninstall` / `-Yes` (PascalCase) naming. `-Git` accepts `auto`, `prompt`, or `skip`; default is `auto` (zero-knowledge friendly).
 
 ## `check.sh` (Unix / macOS / WSL)
 

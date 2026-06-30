@@ -1,17 +1,19 @@
 # install.ps1 — copy the agents-manager controller into a target project
-# Usage: .\bin\install.ps1 [-Target <path>] [-DryRun] [-Uninstall] [-Yes]
+# Usage: .\bin\install.ps1 [-Target <path>] [-DryRun] [-Uninstall] [-Yes] [-Git <auto|prompt|skip>]
 # Default TARGET = current directory
 [CmdletBinding()]
 param(
     [string]$Target = ".",
     [switch]$DryRun,
     [switch]$Uninstall,
-    [switch]$Yes
+    [switch]$Yes,
+    [ValidateSet("auto", "prompt", "skip")]
+    [string]$Git = "auto"
 )
 
 $ErrorActionPreference = "Stop"
 
-$ScriptVersion = "v0.7.2"
+$ScriptVersion = "v0.9.1"
 
 # Resolve script directory (repo root is parent of bin/)
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -167,6 +169,73 @@ Copy-DirSafe  ".agents/skills/mavis-team"
 Write-Host ""
 Write-Host "Gitignore:"
 Ensure-Gitignore -TargetDir $TargetAbs -Version $ScriptVersion
+
+# ─── Git init (optional, -Git <auto|prompt|skip>) ──────────────────────────
+# Default mode is `auto` — zero-knowledge UX. If the target is already a
+# git repo, this is a no-op in every mode. If git CLI is missing, we
+# print one warning line and continue (don't fail the install).
+function Initialize-GitIfNeeded {
+    param(
+        [string]$TargetDir,
+        [string]$Mode,
+        [bool]$DryRunMode,
+        [bool]$AutoYes
+    )
+    $gitDir = Join-Path $TargetDir ".git"
+    if (Test-Path $gitDir) {
+        Write-Host "  SKIP .git (already initialized)"
+        return
+    }
+    if ($Mode -eq "skip") {
+        Write-Host "  SKIP git init (-Git skip)"
+        return
+    }
+    $git = Get-Command git -ErrorAction SilentlyContinue
+    if (-not $git) {
+        Write-Host "  WARN git CLI not on PATH - skipping git init (install continues)." -ForegroundColor Yellow
+        Write-Host "        Install git from https://git-scm.com/ then run 'git init' yourself." -ForegroundColor Yellow
+        return
+    }
+    if (($Mode -eq "prompt") -and (-not $AutoYes) -and (-not $DryRunMode)) {
+        $choices = @(
+            [System.Management.Automation.Host.ChoiceDescription]::new("&Yes", "Run git init + initial commit now."),
+            [System.Management.Automation.Host.ChoiceDescription]::new("&No",  "Skip git init. Do it yourself later.")
+        )
+        $pick = $Host.UI.PromptForChoice("Git init", "Initialize git in $TargetDir?", $choices, 0)
+        if ($pick -ne 0) {
+            Write-Host "  SKIP git init (declined)"
+            return
+        }
+    }
+    if ($DryRunMode) {
+        Write-Host "  GIT init + add + commit (dry run)"
+        return
+    }
+    # Use -b main when supported (modern git for Windows >= 2.28); fall back
+    # silently on older versions. Capture stderr to suppress noisy output.
+    & git -C $TargetDir init -q -b "main" *>$null
+    if ($LASTEXITCODE -ne 0) {
+        # Older git (< 2.28) doesn't accept -b on init. Retry without it.
+        & git -C $TargetDir init -q *>$null
+    }
+    & git -C $TargetDir add -A *>$null
+    & git -C $TargetDir diff --cached --quiet *>$null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  OK   .git (initialized, nothing to commit - all paths gitignored)"
+        return
+    }
+    & git -C $TargetDir -c "user.email=agents-manager@local" -c "user.name=agents-manager" commit -q -m "Initial commit" *>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  WARN git commit failed - repo is initialized but no commit was created." -ForegroundColor Yellow
+        Write-Host "        Run 'git -C $TargetDir commit' manually after fixing the issue." -ForegroundColor Yellow
+        return
+    }
+    Write-Host "  OK   .git (initialized + initial commit on branch 'main')"
+}
+
+Write-Host ""
+Write-Host "Git:"
+Initialize-GitIfNeeded -TargetDir $TargetAbs -Mode $Git -DryRunMode:$DryRun -AutoYes:$Yes
 
 # Note: PowerShell scripts (.ps1) don't need +x on NTFS — execute is granted
 # via file association / Set-AuthenticodeSignature. But on Windows, the

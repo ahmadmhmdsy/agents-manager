@@ -2,6 +2,56 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.9.1 — Installer auto-initializes git for zero-knowledge users (2026-06-30)
+
+Additive installer patch. No controller changes, no opencode.jsonc changes, no agent behavior changes. New users with no git familiarity can install into a fresh folder without an extra "oh no, I forgot to run git init" step.
+
+### What's new
+
+- **`bin/install.sh` and `bin/install.ps1`** — new `--git <auto|prompt|skip>` (PowerShell: `-Git`) flag. Default is **`auto`** for zero-knowledge UX:
+  - `auto` — if `TARGET` is not yet a git repo, run `git init` + initial commit automatically. If the `git` CLI is missing, print one warning and continue (don't fail the install).
+  - `prompt` — if `TARGET` is not yet a git repo, ask `Initialize git now? [Y/n]` (default yes).
+  - `skip` — never touch git. Today's behavior.
+- **No-op when `.git` already exists** — regardless of mode, re-running the installer into an already-initialized repo is a no-op for the git step.
+- **Local-only identity** — the initial commit uses `agents-manager <agents-manager@local>` so it doesn't depend on the user's global git config.
+- **`docs/INSTALL.md`** — new "Git initialization" section in the install guide, with examples for all three modes.
+- **`bin/README.md`** — flag documented in the script reference.
+- **`README.md`** — one-line callout in the "Quick start" section.
+
+### Why
+
+Master's existing v0.6.0 Phase 0 prompt (`agents_manager/SKILL.md` § PHASE 0) already asks about `git init` at task time. But that prompt fires *after* the controller is installed — so a user who installs into a fresh, non-git folder gets the install to succeed, then sees the git prompt on every single task. Pushing the option into the installer eliminates the surprise entirely and matches "zero knowledge / as easy as possible."
+
+### Scope limits
+
+- The installer only **initializes** git; it does not configure remotes, push, or set up any workflows.
+- The starter `.gitignore` (already shipped since v0.7.2) is unchanged. The installer still does not auto-add `node_modules/`, `dist/`, `.env*`, etc. — that's the user's job (or the master agent's Phase 0 prompt if they accept it).
+- PowerShell parity uses `$Host.UI.PromptForChoice` for the `[Y/n]` prompt (works headless if `-Yes` is passed).
+
+### Files touched
+
+| File | Status |
+|---|---|
+| `bin/install.sh` | **modified** — version bump (v0.7.2 → v0.9.1); `--git` flag parsing; new `Git:` block + `git_init_if_needed` step between `Gitignore:` and `Permissions:` |
+| `bin/install.ps1` | **modified** — version bump; `-Git` parameter (ValidatedSet: auto/prompt/skip); new `Initialize-GitIfNeeded` function with `$Host.UI.PromptForChoice` |
+| `docs/INSTALL.md` | **modified** — new "Git initialization" section after the prerequisites + install options |
+| `bin/README.md` | **modified** — flag documented in both `install.sh` and `install.ps1` sections |
+| `README.md` | **modified** — one-line callout in "Quick start" |
+| `agents_manager/CHANGELOG.md` | **modified** — this entry |
+
+### Tag / commit
+
+**v0.9.1 — additive patch.** Safe for all v0.9.0 users. Re-running install into an existing v0.9.0 project is a no-op for the git step regardless of mode (because `.git` already exists).
+
+### Shell coverage
+
+| Script | Tested on |
+|---|---|
+| `install.sh` | bash 4+ (Linux, macOS, WSL, Git Bash) |
+| `install.ps1` | PowerShell 5.1 (Windows PowerShell) and 7+ (pwsh, cross-platform) |
+
+No changes to test matrix.
+
 ## v0.9.0 — am-design v2.0: 12-mode design specialist (2026-07-20)
 
 New: a 6th agent — `am-design` — handling all visual / UX / design / prototype / brand / audit / copy / illustration / translation work. Adds 12 modes (up from 5), 6 mockup templates (up from 1), 7 new resource templates, 4 worked examples + 1 case study, and audience-aware handoff.

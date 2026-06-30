@@ -48,6 +48,45 @@ git subtree pull --prefix=agents-manager-src \
 
 The installer copies only the controller files (`opencode.jsonc`, `CLAUDE.md`, `agents_manager/`, `share/`, `tasks/`, `.agents/skills/mavis-team/`) into your target. It will **skip** any file or directory that already exists, so it's safe to re-run.
 
+## Git initialization (`--git <auto|prompt|skip>`, default `auto`)
+
+**For zero-knowledge users:** the default is `auto`. When your project folder is **not yet** a git repo, the installer runs `git init` and creates an initial commit for you. You don't need to know what git is — it just works. If `git` isn't installed on your machine, the installer prints a single warning and continues (the install still succeeds; you can install git later).
+
+**For users who want control,** the installer accepts a `--git` flag (PowerShell: `-Git`) with three modes:
+
+| Mode | Behavior |
+|---|---|
+| `auto` (default) | If `.git` doesn't exist → run `git init` + initial commit. If it does → no-op. If `git` CLI is missing → one-line warning, continue. |
+| `prompt` | If `.git` doesn't exist → ask `Initialize git now? [Y/n]` (default yes for zero-knowledge friendliness). |
+| `skip` | Never touch git. The installer works on a non-git folder and you'll handle git yourself. |
+
+Examples:
+
+```bash
+# Default — auto-init if missing (zero-knowledge friendly)
+bash bin/install.sh .
+
+# Ask before initializing
+bash bin/install.sh . --git prompt
+
+# Don't touch git at all
+bash bin/install.sh . --git skip
+
+# PowerShell parity
+.\bin\install.ps1 -Target . -Git prompt
+.\bin\install.ps1 -Target . -Git skip
+```
+
+**Re-running the installer in an already-initialized repo is always a no-op** for the git step, regardless of mode. The installer also does not touch git in any mode if `.git` already exists.
+
+**What gets committed in `auto` mode?** Everything in the target at install time (the controller files you just received plus any pre-existing files). The commit is attributed to a local-only identity (`agents-manager <agents-manager@local>`) so it doesn't depend on your global git config.
+
+To preview what the installer would do without changing anything, pass `--dry-run` (or `-DryRun` on PowerShell):
+
+```bash
+bash bin/install.sh /path/to/your-project --dry-run --git auto
+```
+
 ## Option C — manual copy
 
 If you prefer to copy files yourself, you need exactly these 6 paths:
