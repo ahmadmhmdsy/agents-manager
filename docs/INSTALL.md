@@ -1,8 +1,73 @@
 # Installation Guide
 
-Three ways to install `agents-manager` into a target project. Pick whichever matches your workflow.
+Four ways to install `agents-manager` into a target project. Pick whichever matches your workflow.
 
 > **Unified CLI (v0.10.0+).** All install + verify + update + skill-management commands live in a single dispatcher: `agents-manager` (bash) and `agents-manager.ps1` (PowerShell). The legacy `bin/install.sh`, `bin/install.ps1`, `bin/check.sh`, etc. are now thin shims that defer to the dispatcher. Run `agents-manager help` for the full subcommand list, or just `agents-manager` with no args to launch the interactive wizard.
+>
+> **Python UX (v0.11.0+).** Cross-platform wrapper: `python3 bin/agents-manager.py` or `python3 bin/install.py` from a local checkout. See [Option D](#option-d--use-the-standalone-installer-v0110-) below for the zero-dependency remote bootstrap path.
+
+## Prerequisites
+
+Before installing, make sure you have:
+
+1. **OpenCode CLI** installed and on your PATH. See <https://opencode.ai/docs/>.
+2. **Bun** runtime (OpenCode dependency). See <https://bun.sh/>.
+3. **Node.js + npx** (for `npx skills add`).
+4. **git** (for Option A and most workflows).
+5. **Python 3.7+** (only for [Option D](#option-d--use-the-standalone-installer-v0110-) — the standalone installer uses stdlib only).
+
+## Option D — Use the standalone installer (v0.11.0+)
+
+The fastest path if you don't already have a local checkout. One command per platform — downloads the latest release ZIP, extracts it, runs the bundled installer against your target, and cleans up.
+
+| OS | Command |
+|---|---|
+| Windows (PowerShell) | `iwr -useb https://raw.githubusercontent.com/ahmadmhmdsy/agents-manager/main/bin/standalone-installer/install.cmd -OutFile install.cmd; .\install.cmd` |
+| Windows (cmd / double-click) | Save <https://raw.githubusercontent.com/ahmadmhmdsy/agents-manager/main/bin/standalone-installer/install.cmd> → right-click → "Save Link As" → double-click the saved `install.cmd` |
+| macOS / Linux | `curl -fsSL https://raw.githubusercontent.com/ahmadmhmdsy/agents-manager/main/bin/standalone-installer/install.sh \| bash` |
+
+### Flags
+
+All three invocations accept the same flag set:
+
+| Flag | Default | Notes |
+|---|---|---|
+| `--target DIR` | `.` (CWD) | directory to install into; must exist or have a writable parent |
+| `--version TAG` | `latest` | release tag, e.g. `v0.11.0`; `latest` queries GitHub Releases |
+| `--repo ORG/REPO` | `ahmadmhmdsy/agents-manager` | any GitHub repo publishing `agents-manager-v*.zip` assets |
+| `--git MODE` | `auto` | one of `auto`, `skip`, `prompt` (see [Git initialization](#git-initialization---git-autopromptskip-default-auto) below) |
+| `--skills SCOPE` | `both` | one of `global`, `local`, `both`, `skip` (see [Skill installation scope](#skill-installation-scope-v0110-) below) |
+| `--yes` / `-y` | off | skip the `Proceed?` confirmation |
+| `--dry-run` | off | preview without writing |
+| `--help` | — | prints usage + banner preview |
+
+### Examples
+
+```bash
+# Pin a version
+./bin/standalone-installer/install.sh --version v0.11.0
+
+# Choose target + skills scope + skip confirmations (CI-friendly)
+./bin/standalone-installer/install.sh --target ~/projects/foo --skills both --yes
+
+# Dry-run preview
+./bin/standalone-installer/install.sh --dry-run
+```
+
+### What it does
+
+1. **Preflight** — checks Python ≥ 3.7, network reachability (HEAD `https://api.github.com`), target writable.
+2. **Fetch** — `GET https://api.github.com/repos/<repo>/releases/latest` (or `/releases/tags/<v>` for pinned versions).
+3. **Download** — streams the matching `agents-manager-vX.Y.Z.zip` asset.
+4. **Extract** — unzips to a `tempfile.mkdtemp` staging dir.
+5. **Dispatch** — runs the bundled `bin/install.cmd` (Windows) or `bin/install.sh` (Unix) with the requested flags.
+6. **Cleanup** — `finally: shutil.rmtree(tmpdir)` even on Ctrl+C.
+
+See [`bin/standalone-installer/README.md`](../bin/standalone-installer/README.md) for the full OS matrix + preflight recipes.
+
+---
+
+## Option A — git subtree (recommended for downstream projects with their own git history)
 
 ## Prerequisites
 
@@ -159,6 +224,36 @@ npx --yes skills add https://github.com/obra/superpowers --skill brainstorming -
 ```
 
 These are all from the [obra/superpowers](https://github.com/obra/superpowers) project. `-g` installs to `~/.agents/skills/` (user-level). `-y` skips confirmation prompts.
+
+### Skill installation scope (v0.11.0+)
+
+The `agents-manager` dispatcher (bash + PowerShell) and the Python UX wrapper accept a `--skills` flag on `skills add` that controls where required skills get installed. The standalone installer (Option D) accepts the same flag via `--skills`.
+
+| Scope | Meaning |
+|---|---|
+| `global` | install all skills to `~/.agents/skills/<name>/` via `npx` (user-level). Same as running each `npx skills add ... -g` manually. |
+| `local` | install all skills to `<target>/.agents/skills/<name>/` (project-local, controller-bundled). |
+| `both` (default) | honor per-skill source: global-source skills (obra/superpowers) → `~/.agents/skills/`, local-source skills (e.g. `mavis-team`) → `<target>/.agents/skills/`. **Matches v0.10.0 implicit behavior** — no breaking change. |
+| `skip` | skip skills entirely. Controller files install only. Useful when you want to manage skills yourself. |
+
+Examples:
+
+```bash
+# Bash dispatcher
+agents-manager skills add --all --skills global --yes
+agents-manager skills add --all --skills local --yes
+agents-manager skills add --all --skills skip --yes
+agents-manager skills add --all                  # default = both
+
+# PowerShell dispatcher (PascalCase)
+.\agents-manager.ps1 skills add -All -Skills Global -Yes
+.\agents-manager.ps1 skills add -All -Skills Skip -Yes
+
+# Standalone installer
+./bin/standalone-installer/install.sh --skills local --yes
+```
+
+The interactive wizard (`agents-manager` with no args, or `python3 bin/install.py`) prompts for scope (4 options, default `both`) before running `cmd_skills add --all`.
 
 ## Verify the install
 
@@ -362,7 +457,12 @@ The check exits non-zero if any controller file or required user-level skill is 
 |---|---|
 | `install.sh` | bash 4+ (Linux, macOS, WSL) |
 | `install.ps1` | PowerShell 5.1 (Windows PowerShell) and PowerShell 7+ (pwsh, cross-platform) |
+| `install.cmd` (v0.11.0+) | Windows cmd.exe (double-click works; requires `python` on PATH) |
 | `check.sh` | bash 4+ |
 | `check.ps1` | PowerShell 5.1 and 7+ |
+| `bin/agents-manager.py` (v0.11.0+) | Python 3.7+ on any OS (Windows / macOS / Linux); dispatches to bash or PowerShell underneath |
+| `bin/install.py` (v0.11.0+) | Python 3.7+; banner + dispatches to `agents-manager.py --menu` |
+| `bin/standalone-installer/install.{sh,cmd,py}` (v0.11.0+) | shim + Python 3.7+; downloads + extracts + runs the bundled installer |
+| `bin/agents-manager.{sh,cmd}` (v0.11.0+) | shim → `bin/agents-manager.py` |
 
 `fish` and `zsh` are NOT tested. If you use one of those, fall back to `bash` explicitly: `bash bin/install.sh .`. PowerShell Core (`pwsh`) on Linux/macOS is supported via `pwsh bin/install.ps1`.

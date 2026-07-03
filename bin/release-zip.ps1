@@ -90,6 +90,30 @@ try {
         exit 2
     }
 
+    # Verify the new (v0.11.0+) Python UX + standalone installer scripts are present.
+    # Without these, Option-D users (curl-pipe / iwr / double-click install.cmd)
+    # cannot bootstrap from the release ZIP.
+    $InstallerScripts = @(
+        "bin\install.sh",
+        "bin\install.ps1",
+        "bin\agents-manager.py",
+        "bin\install.py",
+        "bin\standalone-installer\install.py",
+        "bin\standalone-installer\install.cmd"
+    )
+    $MissingScripts = @()
+    foreach ($s in $InstallerScripts) {
+        $check = Join-Path $ExtractDir $s
+        if (-not (Test-Path $check)) {
+            $MissingScripts += $s
+        }
+    }
+    if ($MissingScripts.Count -gt 0) {
+        Write-Host "ERROR: extracted tree missing installer scripts:" -ForegroundColor Red
+        $MissingScripts | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
+        exit 2
+    }
+
     # Create the ZIP with [System.IO.Compression.ZipFile]
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     if (Test-Path $TmpOut) { Remove-Item $TmpOut -Force }

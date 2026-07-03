@@ -41,3 +41,12 @@ dist/
 share/notes/02_secrets_*.md
 share/screenshots/
 share/notes/99_progress_*.md
+
+# Python bytecode (created by python3 -m py_compile and direct invocation)
+__pycache__/
+*.pyc
+
+# agents-manager v0.11.0
+share/notes/02_secrets_*.md
+share/screenshots/
+share/notes/99_progress_*.md

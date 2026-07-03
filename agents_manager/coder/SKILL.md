@@ -30,7 +30,33 @@ agents_manager/coder/
 └── ...
 ```
 
-On re-entry: read `notes/semantic/` first (curated patterns for this repo), then `notes/episodic/` for prior summaries on the same task id.
+## Memory protocol (v0.13.0+)
+
+The `agents_manager/memory/` system is your persistence across sessions. Three scopes, read in order on re-entry, written on exit per the rules below. Canonical schema + lifecycle + sweep criteria live in [`agents_manager/memory/README.md`](../../memory/README.md).
+
+**On re-entry** — read in this order, ≤200 lines/scope, grep-by-keyword when you know what you're looking for:
+
+1. `agents_manager/memory/global/` — cross-project insights (everything in this repo + sibling repos in the agents_manager family)
+2. `agents_manager/memory/projects/<project-slug>/` — the active project. Slug = contents of `agents_manager/.active-project` if present, else `basename $(git rev-parse --show-toplevel)`
+3. `agents_manager/coder/notes/semantic/` — curated role insights
+4. `agents_manager/coder/notes/episodic/` — per-task notes from prior invocations on this task id
+
+**On exit** — if this dispatch produced a **durable insight** (would a future invocation of yours, on a different task, benefit from reading this?), write it. Three-question test:
+
+1. Would this help on a *different* task, not just this one?
+2. Is it *non-obvious* — not something a fresh agent would derive in 2 minutes from reading the code?
+3. Is it *small* — could a future agent read it in 30 seconds and decide whether to keep going?
+
+If yes to all three → write to `agents_manager/coder/notes/{semantic,episodic}/` (semantic for cross-task patterns, episodic for per-task notes). Append a one-line marker to your return summary: `Memory written: <path>`.
+
+If you did not write memory, say so explicitly: `Memory written: none (no durable insight this dispatch)`.
+
+**Hard rules:**
+
+- **Secrets-free.** Never write a memory entry that references `share/notes/02_secrets_*` paths or contains API keys, tokens, passwords, or private URLs. If a future agent needs to know a secret exists, write `see share/notes/02_secrets_<topic>.md (do not include contents)` — never the contents.
+- **No writing into templates.** `templates/<name>/memory/` is the template author's lane. You may *read* it for context, never write into it. (See `agents_manager/SKILL.md` boundary rules.)
+- **≤20 lines per entry.** If your insight is longer, split it or compress it.
+- **Hard cap.** If a scope exceeds 200 lines, stop reading and report to master — that's a 90-day sweep signal.
 
 ## Inputs you will receive
 

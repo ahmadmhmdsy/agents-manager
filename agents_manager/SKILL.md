@@ -524,3 +524,56 @@ When you have multiple edits to make across files (or to independent regions of 
 ### Read once, edit many
 
 The full pattern: read all relevant files in one parallel batch, then issue all edits in one parallel batch. Two messages, not N.
+
+## Memory protocol (v0.13.0+)
+
+As master, your memory scope covers the **entire project** (cross-task, cross-role). You do not write to per-role `notes/` trees — those are specialist-scoped. Your memory authority is `agents_manager/memory/{global,projects/}`.
+
+### Project-slug detection
+
+On every task start, derive the active project slug:
+1. If `agents_manager/.active-project` exists and contains a non-empty value → use that value.
+2. Otherwise → `basename $(git rev-parse --show-toplevel)` (default = current repo directory name).
+
+The slug determines which `agents_manager/memory/projects/<slug>/` subtree to read/write.
+
+### On re-entry (3-source read)
+
+Read in this order, ≤200 lines/scope:
+
+1. `agents_manager/memory/global/` — cross-project insights applicable to any project in this repo
+2. `agents_manager/memory/projects/<slug>/` — the active project's memory (per slug above)
+3. `share/notes/99_progress_<task-id>.md` — your progress ledger for this task id (compaction-safe state)
+
+The progress ledger is master's 3rd source because master's role-scope memory (which is everything) lives partly in the per-task ledger, not in a `notes/` tree. The ledger is append-only by design.
+
+### On exit (write contract)
+
+If this dispatch (or any specialist dispatch you supervise) produced a **durable cross-project insight**, write it to:
+- `agents_manager/memory/global/` if the insight applies across projects
+- `agents_manager/memory/projects/<slug>/` if it's project-specific
+
+Three-question test (same as specialists — see `agents_manager/memory/README.md`):
+1. Helps a *different* task, not just this one?
+2. Non-obvious — not derivable in 2 minutes from the code?
+3. Small — readable in 30 seconds?
+
+Substantive dispatches MUST end with one of:
+- `Memory written: <path>` — entry was written
+- `Memory written: none (no durable insight)` — entry was NOT written, with reason
+
+Trivial dispatches (one-line questions, status checks) skip this line entirely.
+
+### Hard rules
+
+- **Secrets-free.** Never write a memory entry that references `share/notes/02_secrets_*` paths or contains API keys, tokens, passwords, or private URLs.
+- **No writing into templates.** `templates/<name>/memory/` is the template author's lane. You may read it for context, never write into it.
+- **≤20 lines per entry.** If your insight is longer, split it or compress it.
+- **Hard cap.** If a scope exceeds 200 lines, that is a 90-day sweep signal. Surface it to the user.
+- **90-day sweep.** At Phase 5 close (or Phase 4 close if `phase_5_enabled: false`), review `agents_manager/memory/{global,projects/}` for stale entries (last_verified >90 days old or status=superseded with no replacement). Surface the sweep summary to the user.
+
+### Memory at phase boundaries
+
+- **Phase 2 (planning):** the plan artifact goes to `share/notes/02_plan_<task-id>.md` (existing convention). Plan-level memory entries (cross-task decisions) go to `agents_manager/memory/projects/<slug>/`.
+- **Phase 3 (build):** coder summaries go to `share/notes/03_coder_summary_<task-id>_P<n>.<m>.md`. Substantive patterns discovered during build go to `agents_manager/memory/projects/<slug>/`.
+- **Phase 4 (review):** review reports go to `share/reports/04_review_<task-id>_P<n>.<m>.md`. Recurring issues across reviews go to `agents_manager/memory/global/`.

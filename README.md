@@ -9,6 +9,18 @@
 
 A multi-agent task orchestration system built on [OpenCode](https://opencode.ai)'s agent system. One **master agent** routes work through **five specialist agents** (research → planning → design → coder → review), each with its own context window and a dedicated role.
 
+## Quick install
+
+The fastest way to bootstrap agents-manager into any project. One command per platform:
+
+| OS | Command |
+|---|---|
+| Windows (PowerShell) | `iwr -useb https://raw.githubusercontent.com/ahmadmhmdsy/agents-manager/main/bin/standalone-installer/install.cmd -OutFile install.cmd; .\install.cmd` |
+| Windows (cmd / double-click) | Save <https://raw.githubusercontent.com/ahmadmhmdsy/agents-manager/main/bin/standalone-installer/install.cmd> → right-click → "Save Link As" → double-click the saved `install.cmd` |
+| macOS / Linux | `curl -fsSL https://raw.githubusercontent.com/ahmadmhmdsy/agents-manager/main/bin/standalone-installer/install.sh \| bash` |
+
+See [`bin/standalone-installer/README.md`](bin/standalone-installer/README.md) for the full flag set (`--target`, `--version`, `--skills`, `--git`, `--dry-run`). For alternative install paths (git subtree, release ZIP, manual copy), see [Quick start](#quick-start) below.
+
 ## Table of contents
 
 - [Why](#why)
@@ -172,6 +184,8 @@ Each agent in `agents_manager/` follows two efficiency rules: **batch parallel r
 
 > **Unified CLI (v0.10.0+).** After installing, use `agents-manager` (bash) or `agents-manager.ps1` (PowerShell) for everything: `install`, `check`, `doctor`, `update`, `skills list|add|which|update`, `release`, `lint`, `version`. Run with no args to launch the interactive wizard, or `agents-manager help` for the full surface.
 
+Windows? Use `bin\install.cmd` for an interactive wizard. macOS/Linux? Use `bin/install.sh`. Both launch the Python UX layer (`bin/agents-manager.py`), which dispatches to the bash or PowerShell dispatcher under the hood. For zero-dependency remote bootstrap, see [Quick install](#quick-install) above.
+
 ### Option A — git subtree (recommended for downstream projects with their own git history)
 
 ```bash
@@ -190,7 +204,7 @@ git subtree add --prefix=agents-manager-src https://github.com/ahmadmhmdsy/agent
 
 ### Option C — manual install
 
-See [`docs/INSTALL.md`](docs/INSTALL.md) for the full procedure (PowerShell + Unix).
+See [`docs/INSTALL.md`](docs/INSTALL.md) for the full procedure (PowerShell + Unix). If you already have a local checkout, the Python UX wrapper gives you a single entry point: `python3 bin/agents-manager.py install . --yes`. The Python layer wraps the bash / PowerShell dispatcher and adds an interactive 5-option menu; the dispatcher logic is unchanged.
 
 ## Examples
 

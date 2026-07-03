@@ -5,11 +5,20 @@
 #   No args = interactive wizard.
 [CmdletBinding()]
 param(
+    # Captures all subcommand + arg tokens. The per-subcommand parse loops
+    # below split it into subcommand-specific flags.
     [Parameter(ValueFromRemainingArguments = $true)]
-    [string[]]$AllArgs
+    [string[]]$RemainingArgs
 )
 
-$ScriptVersion = "v0.10.0"
+# We intentionally do NOT declare switch parameters for -Yes, -Skills, etc.
+# Those flags are matched by the per-subcommand parse loops below. Declaring
+# them here would require PowerShell-style casing (e.g. -Skills not --skills)
+# and would fail the bind when invoked with bash-style --skills / -All / etc.
+# The single positional [string[]]$RemainingArgs accepts any combination of
+# args and routes them to the parse loop.
+
+$ScriptVersion = "v0.11.0"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Src = (Resolve-Path (Join-Path $ScriptDir "..")).Path
 $ManifestPath = Join-Path $ScriptDir "skills-manifest.json"
@@ -58,33 +67,56 @@ function Test-SkillInstalled {
     Test-Path $path
 }
 
+# Copy a controller-shipped skill from the source checkout to the target project.
+# Returns the destination path on success (whether newly copied or already present);
+# returns $null if the skill is not bundled with the controller.
+function Install-Skill-Locally {
+    param([string]$Id, [string]$Source, [string]$Target)
+    if ($Source -ne "controller") { return $null }
+    $src = Join-Path $Src ".agents/skills/$Id"
+    if (-not (Test-Path $src)) { return $null }
+    $dest = Join-Path $Target ".agents/skills/$Id"
+    if (Test-Path $dest) { return $dest }
+    New-Item -Path (Split-Path -Parent $dest) -ItemType Directory -Force | Out-Null
+    Copy-Item -Path $src -Destination $dest -Recurse -Force
+    return $dest
+}
+
 function Resolve-Target {
     param([string]$Path)
     if (-not (Test-Path $Path)) { throw "target '$Path' does not exist" }
     (Resolve-Path $Path).Path
 }
 
-# Parse a flag-style arg list: returns a hashtable with Target, DryRun, GitMode (or whatever flags).
+# Parse a flag-style arg list: returns a hashtable with Target, DryRun, GitMode, Skills (or whatever flags).
+# Accepts both bash-style (--dry-run, --git=M, --skills=local) and PowerShell PascalCase (-DryRun, -Git M, -Skills local)
+# on every documented install flag. This makes the install subcommand accept the same args from both wrappers.
 function Parse-InstallFlags {
     param([string[]]$Rest)
     $Target = "."
     $DryRun = $false
     $GitMode = "auto"
+    $Skills = "both"
     for ($i = 0; $i -lt $Rest.Count; $i++) {
         $a = $Rest[$i]
         switch -Regex ($a) {
-            '^-{1,2}dry-run$'    { $DryRun = $true; continue }
-            '^-{1,2}yes$|^--?y$' { continue }
-            '^-{1,2}git=(.+)$'   { $GitMode = $Matches[1]; continue }
-            '^-{1,2}git$'        {
+            '^-{1,2}(dry-?run|DryRun)$'      { $DryRun = $true; continue }
+            '^-{1,2}(yes|Y)$'                { continue }
+            '^-{1,2}[gG]it=(.+)$'            { $GitMode = $Matches[1]; continue }
+            '^-{1,2}[gG]it$'                 {
                 if ($i + 1 -lt $Rest.Count) { $GitMode = $Rest[$i + 1]; $i++ }
+                continue
+            }
+            '^-{1,2}(skills|scope)=(.*)$'    { $Skills = $Matches[2].ToLower(); continue }
+            '^-{1,2}(skills|scope)$'         {
+                if ($i + 1 -lt $Rest.Count) { $Skills = $Rest[$i + 1].ToLower(); $i++ }
                 continue
             }
             '^-'                 { err "unknown flag: $a"; return $null }
             default              { $Target = $a }
         }
     }
-    return @{ Target = $Target; DryRun = $DryRun; GitMode = $GitMode }
+    return @{ Target = $Target; DryRun = $DryRun; GitMode = $GitMode; Skills = $Skills }
 }
 
 function Install-Cmd {
@@ -93,6 +125,9 @@ function Install-Cmd {
     if ($null -eq $p) { return 1 }
     if ($p.GitMode -notin @("auto", "prompt", "skip")) {
         err "--git must be auto|prompt|skip (got '$($p.GitMode)')"; return 1
+    }
+    if ($p.Skills -notin @("both", "global", "local", "skip")) {
+        err "-Skills must be both|global|local|skip (got '$($p.Skills)')"; return 1
     }
     if (-not (Test-Path $Src/opencode.jsonc)) {
         err "$Src does not look like an agents-manager checkout"; return 1
@@ -191,6 +226,21 @@ share/notes/99_progress_*.md
     Write-Host ""
     Write-Host "${BOLD}Permissions:${RESET}"
     Write-Host "  (PowerShell scripts require no special permission. Bash scripts in bin/ are chmod +x'd by the bash installer.)"
+
+    # Skills chain (after controller files copy). Default = both (matches v0.10.0
+    # implicit behavior); -Skills skip disables; -DryRun prints what would happen.
+    # NOTE: Skills-Add-Cmd only accepts --all (lowercase) for the all flag; it accepts
+    # PascalCase -Global/-Local/-Both/-Skip for scope. We pass the long-form --all and
+    # --yes, and PascalCase --skills-equivalent for scope.
+    Write-Host ""
+    Write-Host "${BOLD}Skills:${RESET}"
+    if ($p.Skills -eq "skip") {
+        Write-Host "  SKIP skills install (-Skills skip)"
+    } elseif ($p.DryRun) {
+        Write-Host "  WOULD run: Skills-Add-Cmd --all --yes --$($p.Skills) (dry run)"
+    } else {
+        Skills-Add-Cmd @("--all", "--yes", "--$($p.Skills)")
+    }
 
     if ($p.DryRun) { Write-Host ""; Write-Host "DRY RUN complete - no changes were written."; return }
 
@@ -359,7 +409,7 @@ function Skills-List-Cmd {
         Write-Host ("  {0,-30}  {1,-7}  {2}{3,-10}{4}  {5}" -f $s.id, $level, $color, $status, $RESET, $src)
     }
     Write-Host ""
-    Write-Host "Tip:  .\agents-manager.ps1 skills add <name>...|--all [--yes]"
+    Write-Host "Tip:  .\agents-manager.ps1 skills add <name>...|--all [-Global|-Local|-Both|-Skip] [-Yes]"
 }
 
 function Skills-Which-Cmd {
@@ -386,13 +436,18 @@ function Skills-Which-Cmd {
 
 function Skills-Add-Cmd {
     param([string[]]$Rest)
-    $names = @(); $all = $false; $scope = ""
+    $names = @(); $all = $false; $scope = "both"
     foreach ($a in $Rest) {
         switch ($a) {
-            "--all" { $all = $true }
-            { $_ -in @("--global", "--local") } { $scope = $_.Substring(2) }
-            { $_ -in @("--yes", "-y") } {}
-            default { $names += $_ }
+            '--all'                        { $all = $true; continue }
+            { $_ -in @('--global', '--local', '--both', '--skip') } {
+                $scope = $_.Substring(2); continue
+            }
+            { $_ -in @('-Global', '-Local', '-Both', '-Skip') } {
+                $scope = $_.Substring(1).ToLower(); continue
+            }
+            { $_ -in @('--yes', '-y') }   { continue }
+            default                       { $names += $a }
         }
     }
     Load-Manifest
@@ -407,28 +462,57 @@ function Skills-Add-Cmd {
     }
     if ($names.Count -eq 0) { dim "Nothing to do."; return 0 }
     $okCount = 0; $failCount = 0
+    $projectRoot = (Get-Location).Path
     foreach ($id in $names) {
         $level = Get-ManifestField -Id $id -Field "level"
+        $source = Get-ManifestField -Id $id -Field "source"
         $ic = Get-ManifestField -Id $id -Field "install_cmd"
-        if ($scope) { $level = $scope }
-        Write-Host ""; Write-Host "${BOLD}-> $id${RESET} (level=$level)"
-        if ($level -eq "local") {
-            if (Test-SkillInstalled -Id $id -Level $level) {
-                ok "   already installed"; $okCount++
-            } else {
-                warn "   controller-local skill '$id' missing - run install command"; $failCount++
-            }
+        Write-Host ""; Write-Host "${BOLD}-> $id${RESET} (level=$level source=$source)"
+
+        if ($scope -eq "skip") {
+            dim "   --scope skip -> skipping $id"
             continue
         }
-        if (-not $ic) { warn "   no install_cmd in manifest"; $failCount++; continue }
-        if (-not $YES -and -not $all) {
-            $ans = Read-Host "   Run: $ic  [Y/n]"
-            if (-not $ans) { $ans = "Y" }
-            if ($ans -notmatch "^[Yy]") { dim "   skipped"; continue }
+
+        # Determine which paths to attempt. Scope=both honors per-skill source
+        # so the default output matches today's behavior.
+        $doLocal = $false; $doGlobal = $false
+        switch ($scope) {
+            "local"  { $doLocal = $true }
+            "global" { $doGlobal = $true }
+            "both" {
+                if ($source -eq "controller") { $doLocal = $true } else { $doGlobal = $true }
+            }
         }
-        info "   running: $ic"
-        & bash -c "$ic"
-        if ($LASTEXITCODE -eq 0) { ok "   installed"; $okCount++ } else { err "   install failed"; $failCount++ }
+
+        # Local-install branch
+        if ($doLocal) {
+            $wasPresent = Test-Path (Join-Path $projectRoot ".agents/skills/$id")
+            $localDest = Install-Skill-Locally -Id $id -Source $source -Target $projectRoot
+            if ($localDest) {
+                if ($wasPresent) { ok "   already installed at $localDest" }
+                else { ok "   installed locally -> $localDest" }
+                $okCount++
+            } else {
+                warn "   '$id' is not bundled; install via -Scope global"; $failCount++
+            }
+        }
+
+        # Global-install branch (npx)
+        if ($doGlobal) {
+            if (-not $ic) {
+                warn "   '$id' is shipped locally; -Scope global only meaningful for non-controller skills"; $failCount++
+                continue
+            }
+            if (-not $YES -and -not $all) {
+                $ans = Read-Host "   Run: $ic  [Y/n]"
+                if (-not $ans) { $ans = "Y" }
+                if ($ans -notmatch "^[Yy]") { dim "   skipped"; continue }
+            }
+            info "   running: $ic"
+            & bash -c "$ic"
+            if ($LASTEXITCODE -eq 0) { ok "   installed"; $okCount++ } else { err "   install failed"; $failCount++ }
+        }
     }
     Write-Host ""; Write-Host "Skills: ok=$okCount fail=$failCount"
     if ($failCount -gt 0) { return 1 }
@@ -542,8 +626,8 @@ ${BOLD}Examples${RESET}
 "@
     } else {
         switch ($topic) {
-            "install" { Write-Host "agents-manager install -Usage: install [TARGET] [-Git M] [-Yes] [-DryRun]" }
-            "skills"  { Write-Host "agents-manager skills -Usage: skills list|add|remove|which|update ..." }
+            "install" { Write-Host "agents-manager install -Usage: install [TARGET] [-Git M] [-Skills S] [-Yes] [-DryRun]  (skills scope: both|global|local|skip; default both)" }
+            "skills"  { Write-Host "agents-manager skills -Usage: skills list|add|remove|which|update ... add accepts -Global|-Local|-Both|-Skip" }
             default   { err "no detailed help for '$topic'"; return 1 }
         }
     }
@@ -586,8 +670,22 @@ function Wizard {
             $a = Read-Host "  Install missing required skills? [Y/n]"
             if (-not $a) { $a = "Y" }
             if ($a -match "^[Yy]") {
+                Write-Host ""
+                Write-Host "  Skill installation scope:"
+                Write-Host "    1) both    (default - install per skill source: local controller, global obra)"
+                Write-Host "    2) local   (force local install only - warn on skills not bundled)"
+                Write-Host "    3) global  (force global install only - warn on controller-local skills)"
+                Write-Host "    4) skip    (don't install any skills)"
+                $scopeAns = Read-Host "  Scope [1-4, default=1]"
+                if (-not $scopeAns) { $scopeAns = "1" }
+                $scopeFlag = @("-Both")
+                switch ($scopeAns) {
+                    "2" { $scopeFlag = @("-Local") }
+                    "3" { $scopeFlag = @("-Global") }
+                    "4" { $scopeFlag = @("-Skip") }
+                }
                 $script:YES = $true
-                Skills-Add-Cmd @("-All", "-Yes")
+                Skills-Add-Cmd (@("-All", "-Yes") + $scopeFlag)
             }
         }
         "6" {
@@ -604,7 +702,7 @@ function Wizard {
 
 # ───────────────────────────── dispatcher ─────────────────────────────
 $rest = @()
-foreach ($a in $AllArgs) {
+foreach ($a in $RemainingArgs) {
     if ($a -in @("--yes", "-y")) { $script:YES = $true; continue }
     if ($a -eq "--no-color") { $env:NO_COLOR = "1"; continue }
     $rest += $a

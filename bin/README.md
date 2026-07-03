@@ -14,7 +14,7 @@ agents-manager check [TARGET]
 agents-manager doctor [TARGET] [--fix]
 agents-manager uninstall [TARGET] [--yes]
 agents-manager skills list [--required-only|--installed-only|--missing-only]
-agents-manager skills add <name>...|--all [--global|--local] [--yes]
+agents-manager skills add <name>...|--all [--global|--local|--both|--skip] [--yes]
 agents-manager skills remove <name> [--yes]
 agents-manager skills which <name>
 agents-manager skills update <name>...|--all [--yes]
@@ -32,7 +32,7 @@ Subcommands, in summary:
 - `uninstall` — remove the 6 controller files from a target directory.
 - `skills` — manage required skills:
   - `list [--required-only|--installed-only|--missing-only]` — show status of every skill in the manifest.
-  - `add <name|--all>` — run the manifest's `install_cmd` for one or all missing skills. Default scope derived from manifest (most are `global`, run via `npx`).
+  - `add <name|--all>` — run the manifest's `install_cmd` for one or all missing skills. Default scope is `both` (honors per-skill source: global-source skills go to `~/.agents/skills/`, local-source skills go to `<target>/.agents/skills/`). Pass `--global`, `--local`, or `--skip` to override.
   - `remove <name>` — remove a `global` skill (currently obra/superpowers-only).
   - `which <name>` — show where a skill is installed (or "missing" + the install command).
   - `update <name|--all>` — run the manifest's `update_cmd` for one or all global skills.
@@ -58,6 +58,86 @@ PowerShell mirror of `agents-manager`. Same subcommands; PascalCase flags (e.g. 
 .\agents-manager.ps1 update -Check
 .\agents-manager.ps1 help install
 ```
+
+`skills add` accepts `-Global`, `-Local`, `-Both`, or `-Skip` (default `-Both`); same semantics as the bash `--global/--local/--both/--skip`.
+
+---
+
+## Python UX (v0.11.0+)
+
+Cross-platform wrapper layer on top of the bash / PowerShell dispatchers. Useful when you want a single invocation that works on either platform, an interactive 5-option menu without shell quirks, or a friendlier `--help` / `--version` surface.
+
+### `agents-manager.py` — Python dispatcher
+
+```bash
+python3 bin/agents-manager.py install . --yes         # cross-platform install
+python3 bin/agents-manager.py doctor . --fix
+python3 bin/agents-manager.py skills add --all --yes
+python3 bin/agents-manager.py --help
+python3 bin/agents-manager.py --menu                  # interactive 5-option menu
+python3 bin/agents-manager.py --version
+```
+
+Stdlib only (no `pip install`). Parses args + prompts for menu choices, then dispatches to `bin/agents-manager` (Unix) or `bin/agents-manager.ps1` (Windows). All dispatcher logic stays in the bash / PowerShell files — the Python layer is a thin wrapper.
+
+### `install.py` — wizard launcher
+
+```bash
+python3 bin/install.py        # prints banner + launches agents-manager.py --menu
+python3 bin/install.py --help
+```
+
+Tiny launcher (~40 LOC). Its only job is to print a friendly banner and invoke `agents-manager.py --menu` so users can double-click it from Explorer / Finder.
+
+### Shims (cross-platform entry points)
+
+| File | OS | What it does |
+|---|---|---|
+| `bin/agents-manager.sh` | Unix | shim → `python3 bin/agents-manager.py "$@"` |
+| `bin/agents-manager.cmd` | Windows | shim → `python bin/agents-manager.py %*` |
+| `bin/install.sh` | Unix | shim → `python3 bin/install.py` |
+| `bin/install.cmd` | Windows | shim → `python bin/install.py` |
+
+The `.sh` / `.cmd` shims let users invoke `agents-manager` or `install` from `bin/` regardless of OS, picking the right Python interpreter automatically. All four are 1–3 lines and defer entirely to the Python files.
+
+### `skills add` scope flag (v0.11.0+)
+
+| Flag (bash / PowerShell) | Meaning |
+|---|---|
+| `--global` / `-Global` | install to `~/.agents/skills/<name>/` (user-level, via `npx`) |
+| `--local` / `-Local` | install to `<target>/.agents/skills/<name>/` (project-local) |
+| `--both` / `-Both` (default) | honor per-skill source: global-source skills → `~/.agents/`, local-source skills → `<target>/.agents/` |
+| `--skip` / `-Skip` | skip skills entirely (controller install only) |
+
+Default `both` matches v0.10.0's implicit behavior — no breaking change for existing users. The interactive wizard prompts for scope before running `cmd_skills add --all`.
+
+---
+
+## Standalone installer — v0.11.0+
+
+A self-contained bootstrapper in `bin/standalone-installer/` for users who don't already have a local checkout. Downloads the latest release ZIP, extracts it, runs the bundled installer against the target, and cleans up — all in one command. Cross-platform, stdlib only.
+
+| File | OS | What it does |
+|---|---|---|
+| `bin/standalone-installer/install.py` | any | full bootstrap (~250 LOC, stdlib only) |
+| `bin/standalone-installer/install.sh` | Unix | shim → `python3 install.py "$@"` |
+| `bin/standalone-installer/install.cmd` | Windows | shim → `python install.py %*` |
+
+Quick usage (see [`bin/standalone-installer/README.md`](standalone-installer/README.md) for the full flag set):
+
+```bash
+# Default: latest release, install into current directory
+./bin/standalone-installer/install.sh            # Unix
+.\bin\standalone-installer\install.cmd           # Windows (double-click works)
+
+# Pin a version + target + scope
+./bin/standalone-installer/install.sh --version v0.11.0 --target ~/projects/foo --skills both --yes
+
+# One-liner remote install (curl-pipe)
+curl -fsSL https://raw.githubusercontent.com/ahmadmhmdsy/agents-manager/main/bin/standalone-installer/install.sh | bash
+```
+
+Flags: `--target DIR`, `--version TAG`, `--repo ORG/REPO`, `--git MODE`, `--skills SCOPE`, `--yes`, `--dry-run`, `--help`.
 
 ---
 

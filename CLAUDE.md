@@ -58,6 +58,7 @@ tasks/                 — canonical task tracker (one .md per task id)
 research_doc/          — long-term research notes and decision records
 opencode.jsonc         — agent definitions + permissions
 CLAUDE.md              — this file
+agents_manager/memory/ — v0.13.0+ cross-session memory (global + projects) — see [Memory](#memory) section below
 ```
 
 ## Key conventions
@@ -76,6 +77,16 @@ CLAUDE.md              — this file
 - Do NOT spawn specialists from a specialist. Only the master orchestrates.
 - Do NOT skip the review phase because "it looks fine."
 - Do NOT accept the first review report without reading it.
+
+## Memory
+
+Cross-session memory lives in three scopes, read in this order on re-entry:
+
+1. **Global** — `agents_manager/memory/global/` — cross-project insights
+2. **Project** — `agents_manager/memory/projects/<slug>/` — active project memory (slug = `agents_manager/.active-project` if present, else `basename $(pwd)`)
+3. **Role** — `agents_manager/<role>/notes/{semantic,episodic}/` — per-specialist memory
+
+Master writes global + project; specialists write role. All entries follow the schema + lifecycle in [`agents_manager/memory/README.md`](agents_manager/memory/README.md). Validator: `bash scripts/validate-memory.sh`.
 
 ## See also
 

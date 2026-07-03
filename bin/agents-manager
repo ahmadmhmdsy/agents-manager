@@ -93,12 +93,15 @@ is_skill_installed() {
 
 # ───────────────────────────── install ─────────────────────────────
 cmd_install() {
-  local TARGET="." DRY_RUN="false" GIT_MODE="auto"
+  local TARGET="." DRY_RUN="false" GIT_MODE="auto" SCOPE=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --dry-run) DRY_RUN="true"; shift ;;
       --git) GIT_MODE="$2"; shift 2 ;;
       --git=*) GIT_MODE="${1#--git=}"; shift ;;
+      --skills|--scope) SCOPE="$2"; shift 2 ;;
+      --skills=*) SCOPE="${1#--skills=}"; shift ;;
+      --scope=*) SCOPE="${1#--scope=}"; shift ;;
       --yes|-y) shift ;;
       -*) err "unknown flag: $1"; return 1 ;;
       *) TARGET="$1"; shift ;;
@@ -106,6 +109,7 @@ cmd_install() {
   done
 
   case "$GIT_MODE" in auto|prompt|skip) ;; *) err "--git must be auto|prompt|skip (got '$GIT_MODE')"; return 1 ;; esac
+  case "$SCOPE" in both|global|local|skip|"") ;; *) err "--skills must be both|global|local|skip (got '$SCOPE')"; return 1 ;; esac
 
   if [[ ! -d "$TARGET" ]]; then err "target directory '$TARGET' does not exist."; return 1; fi
   local TARGET_ABS; TARGET_ABS="$(cd "$TARGET" && pwd)"
@@ -150,6 +154,11 @@ cmd_install() {
     mkdir -p "$TARGET_ABS/.agents/skills"
   fi
   copy_safe ".agents/skills/mavis-team"
+
+  # Skills: chain to cmd_skills add unless --skills skip.
+  if [[ -n "$SCOPE" && "$SCOPE" != "skip" ]]; then
+    cmd_skills add --all "--$SCOPE"
+  fi
 
   # gitignore
   echo
@@ -515,6 +524,7 @@ cmd_skills_add() {
       --all) ALL="true"; shift ;;
       --global) SCOPE="global"; shift ;;
       --local) SCOPE="local"; shift ;;
+      --both|--skip) shift ;;  # accepted but no-op; per-skill level decides
       --yes|-y) shift ;;
       --) shift; ;;
       -*) err "unknown flag: $1"; return 1 ;;

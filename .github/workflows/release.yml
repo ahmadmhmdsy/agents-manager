@@ -64,6 +64,22 @@ jobs:
             echo "ERROR: ${OUT} is missing bin/install.ps1"
             exit 1
           fi
+          if ! unzip -Z1 "${OUT}" | grep -qE '^agents-manager/bin/agents-manager\.py$'; then
+            echo "ERROR: ${OUT} is missing bin/agents-manager.py"
+            exit 1
+          fi
+          if ! unzip -Z1 "${OUT}" | grep -qE '^agents-manager/bin/install\.py$'; then
+            echo "ERROR: ${OUT} is missing bin/install.py"
+            exit 1
+          fi
+          if ! unzip -Z1 "${OUT}" | grep -qE '^agents-manager/bin/standalone-installer/install\.py$'; then
+            echo "ERROR: ${OUT} is missing bin/standalone-installer/install.py"
+            exit 1
+          fi
+          if ! unzip -Z1 "${OUT}" | grep -qE '^agents-manager/bin/standalone-installer/install\.cmd$'; then
+            echo "ERROR: ${OUT} is missing bin/standalone-installer/install.cmd"
+            exit 1
+          fi
 
           SIZE=$(stat -c %s "${OUT}")
           ENTRIES=$(unzip -Z1 "${OUT}" | wc -l)
