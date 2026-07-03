@@ -65,6 +65,24 @@ The controller lives in `agents_manager/`. The bus lives at the project root —
 
 Rule: **Never speak to the next agent out-of-band.** Write to `share/` and let the next agent read it.
 
+## Templates (v0.9.0+)
+
+agents_manager ships task templates at `<root>/templates/<name>/`. Each template is a self-contained folder:
+
+- `memory/` — 9 memory files governing how the 5 specialists approach a task
+- `skeleton/` — reference implementation
+- `prompts/` — copy-paste prompts for image/video generators (multi-LLM ready)
+- `decisions/` — decision-log template (append-only)
+- `assets/` — manifest schema + verify-list (MANIFEST.txt)
+
+The first shipped template is `templates/cinematic-landing/` (vendor-neutral, 4-branch runtime asset tree).
+
+When `am-planning` or `am-assets` recognizes a task as template-eligible, it reads `templates/<name>/memory/01-builder-flow.md` and follows the template's pipeline. A specialist finds an applicable template by grepping for the template's trigger phrases (per `templates/<name>/00-readme-first.md`).
+
+New templates can be added by writing the 9 memory files + skeleton + prompts into `templates/<new-name>/`. The owner reviews template additions via the `upstream-contrib/` folder convention (see `agents_manager/upstream-contrib/PROPOSED_PATCH_*.md` for examples).
+
+**am-assets specialist (v0.9.0+):** The 6th specialist handles the asset decision tree for visual templates. Dispatched at Phase 3a (between Planning and Build). Defined in `opencode.jsonc` and documented in `agents_manager/assets/`. See `agents_manager/assets/SKILL.md` for the full role.
+
 ## The mandatory pipeline
 
 Every user task flows through these phases. **Do not skip a phase. Do not reorder.**

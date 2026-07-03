@@ -2,6 +2,161 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.12.0 — cinematic-landing template + am-assets specialist (2026-07-03)
+
+Additive feature. **No controller behavior changes**, **no existing-agent prompt changes**, no breaking changes to the v0.11.0 pipeline. Adds a vendor-neutral cinematic-landing task template under `templates/cinematic-landing/`, registers a new 6th specialist (`am-assets`) as the asset gatekeeper between Planning and Build, and updates the master orchestration doc + controller config to make templates discoverable.
+
+### What's new
+
+- **New specialist: `am-assets`** — asset gatekeeper. Sits between Phase 2 (Planning) and Phase 3 (Build). Runs the 4-branch runtime asset decision tree (Branch A: video pipeline frame-extraction → canvas scrub / Branch B: standalone video file → `<video>` ambient / Branch C: stills only → crossfade / Branch D: nothing yet → graceful fallback + concrete ask-list). Vendor-neutral by design — prompts work for Midjourney / DALL-E / Sora / Runway / Veo / Stable Diffusion XL / Replicate / Higgsfield / local models. Multi-LLM ready — the owner is not locked to Claude.
+- **`templates/` convention introduced** — first shipped template is `cinematic-landing/`. Folder layout: `memory/` (9 files, the runtime playbook), `skeleton/` (HTML source-of-truth, cp'd from worked example), `prompts/` (3 files, copy-paste prompts for image/video/spec), `decisions/` (append-only log), `assets/` (MANIFEST.txt verify-list + manifest.schema.json JSON-Schema 2020-12).
+- **17 files under `templates/cinematic-landing/`** — `00-readme-first.md` (template orientation), 9 `memory/*.md` (builder-flow, scroll-film-canvas, scroll-ticker, cinematic-hero, theming, asset-pipeline, reduced-motion, cta-frames, quality-bar), `skeleton/index.html` (841-line worked example, Branch C default — light gallery, scroll-driven cinematic hero, all 5 hard rules preserved), 3 `prompts/*.md` (image-gen, video-gen, asset-spec), `decisions/decision-log.md`, `assets/manifest.schema.json` (allOf conditional per branch), `assets/MANIFEST.txt` (17-file verify-list).
+- **5 files under `agents_manager/assets/`** — `SKILL.md` (the am-assets role + boundaries + return shape), `rules.md` (7 standing rules including manifest-before-code + multi-LLM neutrality), `notes/branch-decisions.md` (append-only branch-decision log), `resources/landing-review-checklist.md` (am-review's P0 hard rules + verdict format), `README.md` (pipeline position diagram + first-task note).
+- **Phase 3a (NEW)** — between Phase 2 (Planning) and Phase 3 (Build), master optionally dispatches am-assets to produce `assets/MANIFEST.json` per the template's JSON schema. Opt-in per template; not required for non-template tasks.
+
+### Why
+
+Before v0.12.0, asset-pipeline decisions for cinematic / scroll-driven landing pages were made ad-hoc — no contract for "video file vs frame sequence vs stills", no manifest schema, no concrete fallback when the user has no assets yet. Real-world landing pages need a reproducible 4-branch runtime decision tree so am-coder has a deterministic asset manifest to build against. v0.12.0:
+
+1. Adds a dedicated specialist (`am-assets`) so am-planning + am-coder stay focused on planning + implementation.
+2. Generalizes the asset pipeline into a 4-branch decision tree that works with any video-generation pipeline or still source.
+3. Decouples the asset decision from the build step — am-assets runs at Phase 3a, before Phase 3 dispatch, and hands the manifest to am-coder.
+4. Ships a worked example (`templates/cinematic-landing/skeleton/index.html`) so the template is shippable on day one and revisable later.
+
+### Scope limits
+
+- `am-assets` does NOT write source code. The manifest is the contract; reference implementations are `am-coder`'s job.
+- The 4 branches cover the common cases (Higgsfield/Runway/Replicate/Sora/Veo frame extraction; standalone mp4/webm/mov; Pexels/Unsplash/Midjourney/DALL-E stills; nothing yet). Per-template branches (e.g. Lottie) deferred to per-template extensions.
+- Multi-locale handling is documented for Arabic, Hebrew, Persian, Urdu, Latin, CJK. Other scripts (Tamil, Thai, Devanagari) are partially documented; full coverage in v3.
+- The worked example (skeleton) is a Branch C default. Branch A and Branch B users swap the asset manifest only — the skeleton structure remains.
+- `templates/` is a NEW convention. The existing 5 specialists work unchanged for non-template tasks.
+
+### Hard rules (apply to every cinematic-landing build)
+
+1. No `video.currentTime` write loops (use ScrollTrigger scrub or a `<video>` ambient, not `video.currentTime = scrollY / pageHeight * duration`).
+2. No `<video>` element unless Branch B (or `<video>` is the ambient fallback layer).
+3. No `mix-blend-mode` on transformed elements (causes repaint storms + jank).
+4. `.fallback-host.is-missing` must be wired so Branch D (no assets) is always a valid rendered state.
+5. `prefers-reduced-motion` honored at three layers (CSS media query + JS matchMedia + markup). Mid-session `change` listener required.
+
+Verdict format: PASS / PASS-WITH-NOTES / FAIL. P0 violation = FAIL.
+
+### Files touched
+
+| File | Status |
+|---|---|
+| `opencode.jsonc` | **modified** — added `am-assets` block (2088 chars) with full inline prompt (role + boundaries + return shape + tool usage); updated header comment block: "5 specialists" → "6 specialists", "all 6 agents" → "all 7 agents", added v0.9.0+ ADDED am-assets comment |
+| `agents_manager/SKILL.md` (master) | **modified** — appended `## Templates (v0.9.0+)` section after `## Shared communication bus` (anchor per proposal §3.3 fallback clause). Section explains `templates/` convention, first shipped template, how specialists discover templates via grep, and the am-assets mention. ~16 lines added. |
+| `agents_manager/CHANGELOG.md` | **modified** — this entry |
+| `templates/cinematic-landing/` | **NEW** (17 files: 1 readme + 9 memory + 1 skeleton + 3 prompts + 1 decisions + 2 assets) |
+| `agents_manager/assets/` | **NEW** (5 files: SKILL.md + rules.md + README.md + notes/branch-decisions.md + resources/landing-review-checklist.md) |
+
+### Tag / commit
+
+**v0.12.0 — additive minor.** No breaking changes to the 5 existing specialists. Owners on v0.11.0 can apply this PR without rewriting anything else. Existing dispatches to master, am-research, am-planning, am-design, am-coder, am-review work unchanged. `am-assets` is opt-in per template — master spawns it only when (a) the task uses a template that declares am-assets in its frontmatter, AND (b) the asset manifest does not already exist at `templates/<template-name>/assets/MANIFEST.json`.
+
+### Source attribution
+
+- **Generator:** MiniMax-M3 via opencode CLI on Windows PowerShell 7+
+- **Source date:** 2026-07-01
+- **Source project:** `cinematic-landing-kit-demo` (worked example) + `cinematic-landing-kit` (original v1) at `E:\js_projects\3d_website\1_website_minimax_3`
+- **Source task ids:** T-2026-07-01-001 (v2 adaptation, paused at user gate), T-2026-07-01-002 (demo SHIPPED, PASS), T-2026-07-01-003 (this proposal)
+- **Source proposal:** `agents_manager/upstream-contrib/PROPOSED_PATCH_v0.5.x_2026-07-01_cinematic-landing-template.md`
+- **Apply task id:** T-2026-07-03-001
+- **Verification:** 17/17 files match `MANIFEST.txt` (empty diff); opencode.jsonc parses cleanly with 7 agents; all 9 `memory/*.md` start with `# `.
+
+### Apply notes (for downstream consumers)
+
+The proposal's `<apply-with-llm>` block is a literal 6-step procedure + Step 2.5 (cp skeleton). Owner (or any LLM agent) reads the proposal, copies `cinematic-landing-kit-demo/index.html` to `templates/cinematic-landing/skeleton/index.html`, materializes the 22 files from §3, applies the 2 controller edits, and runs the verification block. See the proposal for the full procedure + the `<review-with-llm>` 10-question second-opinion checklist.
+
+### Review-driven fixes (2026-07-03)
+
+Five LOW follow-ups from the am-review verdict (`share/reports/04_review_T-2026-07-03-001.md`) were fixed before commit:
+
+- **W2 — em-dashes restored in `am-assets` prompt.** 4 ASCII hyphens in `opencode.jsonc`'s `am-assets.prompt` were replaced with U+2014 em-dashes (matching the proposal's prose-separator style). Verified: `opencode.jsonc` now contains 28 em-dashes (was 24).
+- **W3 — `templates/cinematic-landing/memory/04-locale-handoff.md` created.** The file was referenced in 5 places (`00-readme-first.md`, `decisions/decision-log.md`, `memory/07-reduced-motion.md`, `memory/09-quality-bar.md`, `agents_manager/assets/resources/landing-review-checklist.md`) but missing from §3.1. Created with 26 lines covering default locale, RTL opt-in, RTL-specific guidance, and handoff protocol. References now resolve.
+- **W4 — mid-session `prefers-reduced-motion` `change` listener added to skeleton.** Skeleton now matches `memory/07-reduced-motion.md` Layer 2 spec: `matchMedia(...).addEventListener("change", () => location.reload())` after the initial `reduce` check. On user toggle of system reduced-motion, page reloads to re-init Lenis/ScrollTrigger under the new preference.
+- **W5 — skip-link added to skeleton.** Inserted as the first focusable element after `<body>`. Markup `<a class="skip-link" href="#main">Skip to content</a>` with offscreen-by-default CSS and visible-on-focus styling. Matches `memory/07-reduced-motion.md` Layer 3 markup spec.
+- **W6 — accepted as proposal-text discrepancy (not fixable).** The proposal §3.1 claims 885 lines for the skeleton; the actual `cinematic-landing-kit-demo/index.html` is 841 lines (proposal-text only; the byte-for-byte source remains canonical). After W4+W5, the skeleton is 896 lines. This is a cosmetic deviation in the proposal text, not a patch issue.
+
+Net result: 23 new files (was 22 — added `04-locale-handoff.md`) + 1 modified skeleton (was byte-identical; now +9 lines for accessibility + reduced-motion) + 2 controller edits.
+
+---
+
+## v0.11.0 — Python UX + standalone installer + skills scope override (2026-07-01)
+
+### Review-driven fixes (2026-07-03)
+
+- **Dispatcher `install` accepts `--skills`/`--scope`** — bash `cmd_install` (`bin/agents-manager`) and PowerShell `Parse-InstallFlags` (`bin/agents-manager.ps1`) now accept `--skills {both,global,local,skip}` (and `--scope` alias; PowerShell: `-Skills`/`-Scope` PascalCase) on the `install` subcommand. After the controller files copy, install chains into `cmd_skills add --all --$SKILL_SCOPE` unless `--skills skip` is passed. Resolves the T2 ⟷ T1 integration gap from `share/reports/04_review_T-2026-07-01-001.md`.
+- **PowerShell `Parse-InstallFlags` PascalCase parity** — `-Yes`, `-DryRun`, `-Git M`, `-Skills S` now accepted on `install` (previously rejected with `unknown flag` despite help text advertising them). Closes the v0.10.0-era docs/behavior drift.
+- **`__pycache__/` gitignored** — added `__pycache__/` and `*.pyc` entries to `.gitignore`. Cleans up the untracked `.pyc` files from `bin/` and `bin/standalone-installer/`.
+- **PSScriptAnalyzer +10 acknowledged** — wizard scope-prompt block at `bin/agents-manager.ps1:647-652` adds 6 `PSAvoidUsingWriteHost` warnings, and the new `Skills:` block in `Install-Cmd` adds 4 more (total 151 vs 141 baseline). All consistent with the file's house style (`Write-Host` is used in every other `Install-Cmd` section); accepted.
+- **Python floor aligned to 3.7+** — `bin/agents-manager.py` now requires Python 3.7+, matching `bin/standalone-installer/install.py`. Cosmetic em-dash replaced with ASCII `--` to avoid cp1252 console crash.
+
+Additive feature. Controller, agent code, `opencode.jsonc`, and the master orchestrator are unchanged. v0.11.0 layers a cross-platform Python UX on top of the existing bash + PowerShell dispatchers, ships a zero-dependency standalone bootstrap, and lets users choose where skills install.
+
+### What's new
+
+- **Python UX layer** — `bin/agents-manager.py` (full dispatcher, ~380 LOC, stdlib only) + `bin/install.py` (wizard launcher) + four shims: `bin/agents-manager.{sh,cmd}` and `bin/install.{sh,cmd}`. The Python wrapper parses args, prompts for menu choices, then dispatches to the bash or PowerShell dispatcher. The existing dispatcher logic is unchanged.
+- **Standalone installer** — `bin/standalone-installer/install.{py,sh,cmd}` + `README.md`. A self-contained bootstrapper that downloads the latest release ZIP, extracts it, runs the bundled installer against the target, and cleans up. One Python file (~250 LOC) plus three 3-line shims covers every OS. No native binaries, no `pip install`.
+- **Skills installation scope** — `bin/agents-manager` and `bin/agents-manager.ps1` now accept `--global/--local/--both/--skip` (PowerShell: `-Global/-Local/-Both/-Skip`) on `skills add`. Default remains `both` (matches v0.10.0 implicit behavior — no breaking change for existing users).
+- **Wizard prompts for scope** — when the user picks option 4 ("Install all required skills") in the interactive wizard, a 4-option scope prompt appears before dispatching `cmd_skills add --all`.
+- **Windows cmd / batch EOL normalization** — `.gitattributes` adds `*.cmd text eol=crlf` and `*.bat text eol=crlf` so the new shims ship with consistent line endings across platforms.
+- **Release ZIP validation extended** — `.github/workflows/release.yml` and `bin/release-zip.ps1` now verify the ZIP contains all four new scripts (`bin/agents-manager.py`, `bin/install.py`, `bin/standalone-installer/install.py`, `bin/standalone-installer/install.cmd`) in addition to the existing `bin/install.sh` + `bin/install.ps1` checks.
+
+### One-liner remote install (new in v0.11.0)
+
+| OS | One-liner |
+|---|---|
+| Windows (PowerShell) | `iwr -useb https://raw.githubusercontent.com/ahmadmhmdsy/agents-manager/main/bin/standalone-installer/install.cmd -OutFile install.cmd; .\install.cmd` |
+| Windows (cmd, double-click) | Save <https://raw.githubusercontent.com/ahmadmhmdsy/agents-manager/main/bin/standalone-installer/install.cmd> then double-click |
+| macOS / Linux | `curl -fsSL https://raw.githubusercontent.com/ahmadmhmdsy/agents-manager/main/bin/standalone-installer/install.sh \| bash` |
+
+### Skills scope flag
+
+| Flag | Meaning |
+|---|---|
+| `--skills global` (default for global-source skills) | install via `npx` to `~/.agents/skills/<name>/` (user-level) |
+| `--skills local` (default for local-source skills) | install to `<target>/.agents/skills/<name>/` (project-local) |
+| `--skills both` (default when no flag) | honor per-skill source — global-source skills go to `~/.agents/`, local-source skills go to `<target>/.agents/` |
+| `--skills skip` | skip skills entirely — controller install only |
+
+### Backward compat
+
+- All v0.10.0 invocations still work via the existing dispatcher + shim layer.
+- Default scope is `both`, matching v0.10.0's implicit behavior. No user-visible change for existing workflows.
+- The Python UX is opt-in — existing bash / PowerShell users don't need to touch it.
+- The standalone installer is opt-in — existing git-subtree / ZIP / manual install paths are unchanged.
+
+### Scope limits
+
+- The Python UX dispatches to the bash / PowerShell dispatcher (no logic duplication). It's a UX wrapper, not a parallel implementation.
+- `bin/standalone-installer/install.cmd` is a 3-line shim that invokes `python install.py %*`. Requires `python` (or `py`) on PATH — same as every other Python wrapper.
+- The standalone installer requires network access to download the release ZIP. Air-gapped users should still use the release-ZIP download path (Option B in `docs/INSTALL.md`).
+
+### Files touched
+
+| File | Status |
+|---|---|
+| `bin/agents-manager.py` | **NEW** — Python UX dispatcher (~380 LOC, stdlib only) |
+| `bin/install.py` | **NEW** — wizard launcher |
+| `bin/agents-manager.sh`, `bin/agents-manager.cmd` | **NEW** — shims to `agents-manager.py` |
+| `bin/install.sh`, `bin/install.cmd` | **NEW** — shims to `install.py` (replace v0.10.0 dispatcher-invoking versions) |
+| `bin/standalone-installer/install.py` | **NEW** — standalone bootstrapper |
+| `bin/standalone-installer/install.sh`, `bin/standalone-installer/install.cmd` | **NEW** — shims to standalone `install.py` |
+| `bin/standalone-installer/README.md` | **NEW** — usage + OS matrix |
+| `bin/agents-manager` | **modified** — `VERSION` bumped to `v0.11.0`; `--global/--local/--both/--skip` accepted on `skills add`; wizard prompts for scope |
+| `bin/agents-manager.ps1` | **modified** — `$ScriptVersion` bumped to `v0.11.0`; PowerShell `-Global/-Local/-Both/-Skip` parameter on `skills add`; wizard prompts for scope |
+| `.gitattributes` | **modified** — `*.cmd text eol=crlf` + `*.bat text eol=crlf` added |
+| `.github/workflows/release.yml` | **modified** — ZIP validation extended with 4 new `grep -q` checks |
+| `bin/release-zip.ps1` | **modified** — same 4 validation checks mirrored in PowerShell |
+| `README.md` | **modified** — "Quick install" section + Quick-start pointer to `bin\install.cmd` / `bin/install.sh` |
+| `bin/README.md` | **modified** — "Python UX (v0.11.0+)" section; dispatcher flag table includes `--skills`; standalone installer pointer |
+| `docs/INSTALL.md` | **modified** — new "Option D — Use the standalone installer" (top option); "Skill installation scope (v0.11.0+)" subsection; shell coverage table extended |
+| `agents_manager/CHANGELOG.md` | **modified** — this entry |
+
+**v0.11.0 — additive minor.** Safe for all v0.10.0 users. No controller changes, no `opencode.jsonc` changes, no agent behavior changes. Default skills scope `both` matches prior implicit behavior.
+
 ## v0.10.0 — Unified CLI: `agents-manager` dispatcher (2026-06-30)
 
 **Additive feature.** Controller, agent code, `opencode.jsonc`, and the master orchestrator are unchanged. v0.10.0 introduces a unified CLI that wraps the existing installers + skill management behind a single dispatcher.

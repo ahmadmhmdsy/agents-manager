@@ -1,0 +1,23 @@
+# MANIFEST.txt — verify-list for the cinematic-landing template proposal.
+# Run: cat agents_manager/upstream-contrib/MANIFEST.txt | sort > /tmp/expected.txt
+#      find templates/cinematic-landing/ agents_manager/assets/ -type f | sort > /tmp/actual.txt
+#      diff -u /tmp/expected.txt /tmp/actual.txt
+# Expected: empty diff.
+
+templates/cinematic-landing/00-readme-first.md
+templates/cinematic-landing/memory/01-builder-flow.md
+templates/cinematic-landing/memory/02-scroll-film-canvas.md
+templates/cinematic-landing/memory/03-scroll-ticker.md
+templates/cinematic-landing/memory/04-cinematic-hero.md
+templates/cinematic-landing/memory/05-theming.md
+templates/cinematic-landing/memory/06-asset-pipeline.md
+templates/cinematic-landing/memory/07-reduced-motion.md
+templates/cinematic-landing/memory/08-cta-frames.md
+templates/cinematic-landing/memory/09-quality-bar.md
+templates/cinematic-landing/skeleton/index.html
+templates/cinematic-landing/prompts/image-gen.md
+templates/cinematic-landing/prompts/video-gen.md
+templates/cinematic-landing/prompts/asset-spec.md
+templates/cinematic-landing/decisions/decision-log.md
+templates/cinematic-landing/assets/manifest.schema.json
+templates/cinematic-landing/assets/MANIFEST.txt

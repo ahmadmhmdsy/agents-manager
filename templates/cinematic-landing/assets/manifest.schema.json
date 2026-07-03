@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agents_manager/templates/cinematic-landing/assets/manifest.schema.json",
+  "title": "Cinematic Landing — Asset Manifest",
+  "description": "Records the user-supplied (or fallback) assets and the runtime branch the cinematic-landing template picks. Consumed by am-coder to choose implementation path from memory/02-scroll-film-canvas.md.",
+  "type": "object",
+  "required": ["branch"],
+  "properties": {
+    "branch": {
+      "type": "string",
+      "enum": ["A", "B", "C", "D"],
+      "description": "A = video pipeline; B = video file; C = stills only; D = nothing yet."
+    },
+    "pipeline": {
+      "type": "string",
+      "enum": ["higgsfield", "runway", "replicate", "sora", "veo", "custom"],
+      "description": "Optional. Set when branch = A. Names the extraction pipeline."
+    },
+    "frames": {
+      "type": "array",
+      "description": "Optional. Set when branch = A. Pre-extracted PNG frames.",
+      "items": { "type": "string", "format": "uri-reference" }
+    },
+    "video_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Optional. Set when branch = B. Hotlinkable mp4/webm URL."
+    },
+    "video_poster": {
+      "type": "string",
+      "format": "uri",
+      "description": "Optional. Poster image for the video element."
+    },
+    "still_urls": {
+      "type": "array",
+      "description": "Optional. Set when branch = C. 5–6 hotlinkable JPG/PNG URLs.",
+      "items": {
+        "type": "object",
+        "required": ["url", "subject"],
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "subject": { "type": "string", "description": "Free-text subject description for alt text." },
+          "aspect_ratio": { "type": "string", "pattern": "^[0-9]+:[0-9]+$" },
+          "source_license": { "type": "string", "description": "e.g. Pexels License, CC-BY, user-owned." }
+        }
+      }
+    },
+    "hero_cutout": {
+      "type": "string",
+      "format": "uri",
+      "description": "Transparent PNG of the foreground hero subject."
+    },
+    "hero_aura": {
+      "type": "string",
+      "format": "uri",
+      "description": "Soft-focus JPG of the same or similar subject."
+    },
+    "ask_list": {
+      "type": "array",
+      "description": "Optional. Set when branch = D. Concrete list of assets the user must supply.",
+      "items": { "type": "string" }
+    },
+    "parallax_intensity": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.5,
+      "description": "How much the video container parallaxes on scroll (branch = B)."
+    },
+    "locale": {
+      "type": "string",
+      "description": "BCP-47 locale code. Defaults to en-US."
+    },
+    "reduced_motion_compliant": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the asset + implementation honors prefers-reduced-motion."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "branch": { "const": "A" } } },
+      "then": { "required": ["pipeline", "frames"] }
+    },
+    {
+      "if": { "properties": { "branch": { "const": "B" } } },
+      "then": { "required": ["video_url"] }
+    },
+    {
+      "if": { "properties": { "branch": { "const": "C" } } },
+      "then": { "required": ["still_urls"] }
+    },
+    {
+      "if": { "properties": { "branch": { "const": "D" } } },
+      "then": { "required": ["ask_list"] }
+    }
+  ]
+}
