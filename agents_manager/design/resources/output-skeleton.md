@@ -103,7 +103,7 @@ Every dispatch creates `00_brief.md` (overwrite or append on re-entry) and `99_h
 |---|---|
 | `am-coder` | `99_handoff.md` → `03_system/tokens/*` → `03_system/components/components.json` → `03_system/pages/<name>.json` → `04_mockups/<viewport>/<screen>.html` |
 | Human designer (Figma import) | `99_handoff.md` → `02_brand/*` → `04_mockups/<viewport>/index.html` → `07_primitives/icons/` |
-| PM / Product owner | `99_hrief.md` → `04_mockups/<viewport>/index.html` → `01_research/competitive-analysis.md` |
+| PM / Product owner | `99_handoff.md` → `04_mockups/<viewport>/index.html` → `01_research/competitive-analysis.md` |
 | Stakeholder (executive) | `99_handoff.md` only (executive summary inside) |
 | Marketing team | `99_handoff.md` → `02_brand/*` → `06_copy/*` |
 | External agency | `99_handoff.md` → `02_brand/brand-guidelines.md` → `03_system/tokens/base.json` → `07_primitives/*` |

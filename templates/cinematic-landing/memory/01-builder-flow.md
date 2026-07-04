@@ -1,4 +1,4 @@
-# 01 · Builder flow — what to build, in what order
+# 01 · Builder flow — what to build, in what order — USE THIS WHEN: scaffolding a new template and need the stage-based build order
 
 The cinematic-landing build proceeds in 6 stages. Each stage produces one decision +
 one artifact. The skeleton in `skeleton/index.html` is the running target; stages
@@ -21,17 +21,16 @@ the build uses.
 
 ## Stage 3 — Section structure
 
-Six sections. Order is locked:
+Eight sections. Order is locked:
 
-1. `<header>` — sticky, hide on scroll-down / show on scroll-up.
-2. `<section data-section="hero">` — cutout + aura + motes + pointer tilt + sheen.
-3. `<section data-section="film">` — scroll-driven crossfade (Branch C) or frame-sequence
-   scrub (Branch A) or `<video>` ambient (Branch B) or graceful fallback (Branch D).
-4. `<section data-section="reveal">` — single still + scrollcue.
-5. <section data-section="ritual">` — two-up lifestyle stills + copy blocks.
-6. `<section data-section="cta">` — still backdrop + 3-frame click-advance (any branch).
-7. `<section data-section="editions">` — 3-card grid (or N-card for other counts).
-8. `<footer>` — placeholder; copyright stays fictitious in demos.
+1. `<header data-section="header">` — sticky; hide on scroll-down / show on scroll-up.
+2. `<section id="hero" data-section="hero" data-ambient="...">` — cutout + aura + motes + pointer tilt + sheen.
+3. `<section id="film" data-section="film" data-ambient="...">` — scroll-driven crossfade (Branch C) or frame-sequence scrub (Branch A) or `<video>` ambient (Branch B) or graceful fallback (Branch D).
+4. `<section id="reveal" data-section="reveal" data-ambient="...">` — single still + specs list.
+5. `<section id="ritual" data-section="ritual" data-ambient="...">` — two-up lifestyle stills + copy blocks.
+6. `<section id="cta" data-section="cta" data-ambient="...">` — still backdrop + 3-frame click-advance (any branch).
+7. `<section id="editions" data-section="editions" data-ambient="...">` — 3-card grid (or N-card for other counts).
+8. `<footer data-section="footer">` — placeholder; copyright stays fictitious in demos.
 
 ## Stage 4 — Lenis + GSAP single ticker
 

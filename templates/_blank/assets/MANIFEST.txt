@@ -1,0 +1,5 @@
+# MANIFEST.txt — placeholder
+# Verify-list for assets/. Every line MUST resolve in the working tree.
+# Run from repo root: find templates/<your-name>/ -type f -not -name '.gitkeep' | sort > /tmp/actual.txt
+#                    diff MANIFEST.txt /tmp/actual.txt   # empty diff expected.
+# Add your asset paths below, one per line:

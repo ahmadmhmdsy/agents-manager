@@ -2,6 +2,96 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.14.0 — cinematic-landing promoted to PASS + authoring standard v1.0.0 (2026-07-04)
+
+> **Version-bump note:** Plan brief requested `## v0.13.0` for this entry, but
+> `v0.13.0` is already used (memory system, line below). Per semver's "minor
+> for new feature" the system version bumps to the next minor (`v0.14.0`); the
+> *cinematic-landing template itself* still ships at its own internal v0.13.0
+> per the plan. **Reviewer decision required**: confirm `v0.14.0` or override.
+
+Additive feature. **No controller behavior changes**, **no specialist prompt
+rewrites**, no breaking changes to the v0.13.0 pipeline. Promotes the
+`cinematic-landing` exemplar from "PASS-WITH-NOTES" to "PASS", graduates the
+template authoring standard to a versioned rulebook at `templates/AUTHORING.md`
+(v1.0.0), and ships the supporting scaffold: a `_blank/` starter, a
+`CONTRIBUTING.md` discoverable entry point, an `INDEX.md` consumer map per
+template, and a `tests/verify.sh` oracle per template.
+
+### What's new
+
+- **`share/templates/AUTHORING.md` → `templates/AUTHORING.md`** — the
+  rulebook moves to the tree it governs. Original archived at
+  `share/templates/_archive/AUTHORING.md.pre-promotion`. Frontmatter added
+  (scope, topic, status, version: 1.0.0, created, last_verified). The "For
+  authors" section expanded from 6 steps to a 9-step recipe with one-line
+  worked traces from the cinematic-landing exemplar.
+- **`templates/_blank/`** (14 files) — minimal-legal starter that future
+  contributors `cp -r` and fill in. Includes placeholder `INDEX.md`,
+  `00-readme-first.md`, `decision-log.md`, `MANIFEST.txt`, `verify.sh`, plus
+  three subdirectories (`memory/`, `skeleton/`, `prompts/`) each with a
+  `.gitkeep` and README pointer back to `AUTHORING.md`.
+- **`templates/CONTRIBUTING.md`** — discoverable entry point covering four
+  contributor intents (add a template, fix a bug, add a memory file, bump
+  the standard). Each section has numbered steps that cite specific
+  `AUTHORING.md` rules.
+- **`templates/cinematic-landing/INDEX.md`** — single grep-targetable map of
+  every convention: 8 sections with skeleton attribute patterns, 4 runtime
+  branches, 5 hard rules, 14-token palette, a11y floor pointers, per-section
+  cross-reference. Includes 3-step consumer walkthrough.
+- **`templates/cinematic-landing/tests/verify.sh`** — bash, executable,
+  stdlib-only (rg preferred, grep -E fallback). 8 tests cover every
+  grep-testable acceptance claim (T1 ≥8 data-section attrs, T2 no memory
+  frontmatter, T3 MANIFEST entries resolve, T4 memory H1 matches filename,
+  T5 memory H1 carries USE THIS WHEN, T6 `--ink-faint:#7A6855` per Fix 1,
+  T7 cutout ≠ aura Pexels ID per Fix 7, T8 no legacy `handoff→99_*` typo per Fix 9).
+- **`templates/cinematic-landing/examples/`** — Maison Lumen Apothecary Light
+  recipe (`_recipe.md`) + minimal neutral-aesthetic application
+  (`_neutral/`). Pair shows the template's range: the recipe documents the
+  procedure; the neutral sample renders zero apothecary aesthetic.
+
+### Fixes applied (per `share/templates/cinematic-landing-fixes.md`)
+
+All 9 fixes from the prior review cycle landed: contrast values (Fix 1),
+`data-section` on every section element (Fix 2), memory file renumber +
+H1 realignment (Fix 3), `memory/05` dark block shrunk to pointer (Fix 4),
+section list updated to 8 (Fix 5), line-count drift fixed (Fix 6), cutout
+Pexels ID now distinct from aura (Fix 7), `MANIFEST.txt` trimmed + decision
+log `D-2026-07-04-am-assets-deferred` (Fix 8), `99_hrief` → `99_handoff`
+typo (Fix 9). All 14 memory H1s retrofitted with `USE THIS WHEN:`
+trigger-line coverage (4/14 → 14/14).
+
+### Files touched
+
+20 file operations across the `templates/` tree + 2 system edits
+(`agents_manager/design/resources/output-skeleton.md`,
+`agents_manager/upstream-contrib/PROPOSED_PATCH_v0.5.x_*.md`). Full table in
+`share/notes/03_coder_summary_T-2026-07-04-001.md`.
+
+### Scope limits / open review items
+
+- **Reviewer decision 1 — Fix 1 brief contradiction.** The Fix 1 brief directed
+  `#ritual .idx` to swap `--gold-bright` → `--gold-deep`. `memory/14-dark-theme.md §3`
+  documents the P5 measurement proving `--gold-deep` FAILS the actual on-screen
+  composite contrast (2.33–2.80:1) — `--gold-bright` was deliberately kept
+  (4.63–6.59:1 PASS AA). Coder executed the brief verbatim per dispatch;
+  reviewer should revert the swap or update memory/14 §3.
+- **Reviewer decision 2 — Fix 8 brief premise.** Brief assumed the
+  `agents_manager/assets/` subtree does NOT exist. Per v0.12.0 it in fact
+  does exist (6 files, ~14KB). MANIFEST trim + decision-log `deferred` entry
+  executed verbatim; reviewer should confirm or revert.
+- **Reviewer decision 3 — CHANGELOG version number.** Brief asked for v0.13.0
+  (taken by memory system). Coder used v0.14.0; reviewer should confirm.
+- **AG19 (empirical agent-usability)** — deferred to am-review Phase 4.
+
+### Tag / commit
+
+**v0.14.0 — additive minor.** No breaking changes to the v0.13.0 pipeline.
+`opencode.jsonc` is NOT modified. Specialist prompts are NOT rewritten. All
+controller-fence files (per AGENTS.md) remain untouched.
+
+---
+
 ## v0.12.0 — cinematic-landing template + am-assets specialist (2026-07-03)
 
 Additive feature. **No controller behavior changes**, **no existing-agent prompt changes**, no breaking changes to the v0.11.0 pipeline. Adds a vendor-neutral cinematic-landing task template under `templates/cinematic-landing/`, registers a new 6th specialist (`am-assets`) as the asset gatekeeper between Planning and Build, and updates the master orchestration doc + controller config to make templates discoverable.
@@ -10,7 +100,7 @@ Additive feature. **No controller behavior changes**, **no existing-agent prompt
 
 - **New specialist: `am-assets`** — asset gatekeeper. Sits between Phase 2 (Planning) and Phase 3 (Build). Runs the 4-branch runtime asset decision tree (Branch A: video pipeline frame-extraction → canvas scrub / Branch B: standalone video file → `<video>` ambient / Branch C: stills only → crossfade / Branch D: nothing yet → graceful fallback + concrete ask-list). Vendor-neutral by design — prompts work for Midjourney / DALL-E / Sora / Runway / Veo / Stable Diffusion XL / Replicate / Higgsfield / local models. Multi-LLM ready — the owner is not locked to Claude.
 - **`templates/` convention introduced** — first shipped template is `cinematic-landing/`. Folder layout: `memory/` (9 files, the runtime playbook), `skeleton/` (HTML source-of-truth, cp'd from worked example), `prompts/` (3 files, copy-paste prompts for image/video/spec), `decisions/` (append-only log), `assets/` (MANIFEST.txt verify-list + manifest.schema.json JSON-Schema 2020-12).
-- **17 files under `templates/cinematic-landing/`** — `00-readme-first.md` (template orientation), 9 `memory/*.md` (builder-flow, scroll-film-canvas, scroll-ticker, cinematic-hero, theming, asset-pipeline, reduced-motion, cta-frames, quality-bar), `skeleton/index.html` (841-line worked example, Branch C default — light gallery, scroll-driven cinematic hero, all 5 hard rules preserved), 3 `prompts/*.md` (image-gen, video-gen, asset-spec), `decisions/decision-log.md`, `assets/manifest.schema.json` (allOf conditional per branch), `assets/MANIFEST.txt` (17-file verify-list).
+- **17 files under `templates/cinematic-landing/`** — `00-readme-first.md` (template orientation), 14 `memory/*.md` (the 9 v0.12.0 base files plus 4 v2-axis files added in v0.12.1 — see below — for canvas-a11y, reduced-motion-listener, keyboard-nav, dark-theme; 04-locale-handoff from W3 brings the v0.12.0 base to 10), `skeleton/index.html` (841-line worked example at proposal-time, 896 lines post-apply in v0.12.0 after W4 skip-link + W5 mid-session reduce listener, 1133 lines post-v2-axis absorption in T-2026-07-03-003), 3 `prompts/*.md` (image-gen, video-gen, asset-spec), `decisions/decision-log.md`, `assets/manifest.schema.json` (allOf conditional per branch), `assets/MANIFEST.txt` (verify-list, 28 entries after v0.12.1 closes out the file set).
 - **5 files under `agents_manager/assets/`** — `SKILL.md` (the am-assets role + boundaries + return shape), `rules.md` (7 standing rules including manifest-before-code + multi-LLM neutrality), `notes/branch-decisions.md` (append-only branch-decision log), `resources/landing-review-checklist.md` (am-review's P0 hard rules + verdict format), `README.md` (pipeline position diagram + first-task note).
 - **Phase 3a (NEW)** — between Phase 2 (Planning) and Phase 3 (Build), master optionally dispatches am-assets to produce `assets/MANIFEST.json` per the template's JSON schema. Opt-in per template; not required for non-template tasks.
 
@@ -80,6 +170,95 @@ Five LOW follow-ups from the am-review verdict (`share/reports/04_review_T-2026-
 - **W6 — accepted as proposal-text discrepancy (not fixable).** The proposal §3.1 claims 885 lines for the skeleton; the actual `cinematic-landing-kit-demo/index.html` is 841 lines (proposal-text only; the byte-for-byte source remains canonical). After W4+W5, the skeleton is 896 lines. This is a cosmetic deviation in the proposal text, not a patch issue.
 
 Net result: 23 new files (was 22 — added `04-locale-handoff.md`) + 1 modified skeleton (was byte-identical; now +9 lines for accessibility + reduced-motion) + 2 controller edits.
+
+## v0.12.1 - v2-axis memory files integrated + source PROPOSED_PATCH.md §F sync (2026-07-03)
+
+Additive maintenance release. **No controller behavior changes**, **no existing-agent prompt changes**, no breaking changes to the v0.12.0 pipeline or v0.13.0 memory system. Brings our applied `cinematic-landing` template up to the source's post-T-005/T-004 state: 4 v2-axis memory files (canvas-a11y, mid-session reduce listener, keyboard nav, dark theme) landed in our template's `memory/` folder (renumbered 11/12/13/14 to avoid the existing duplicate-`04-` pattern), the worked-example demo folder + source PROPOSED_PATCH.md copied to our root for traceability, our skeleton extended ~286 lines to absorb v2 axes (dark theme + a11y + DPR + JS controller + FOUC script), source PROPOSED_PATCH.md §F (post-apply status) updated in all 7 zones, and the demo-folder copies get `MOVED →` pointers in their TODO headers.
+
+### What's new
+
+- **4 new memory files in `templates/cinematic-landing/memory/`** (renumbered 11/12/13/14 per user Q4=b):
+  - `11-canvas-a11y.md` (~122 lines, from source `09-canvas-a11y.md`) - `role="img"` + dynamic `aria-label` + hidden `<ol class="film-transcript">` recipe + memo on `_lastFilmN`.
+  - `12-reduced-motion-listener.md` (~123 lines, from source `10-reduced-motion-listener.md`) - mid-session reduce change listener contract: `__reducedMotionActive` flag, `__lastReduce` defensive guard, Safari < 14 `addListener` fallback.
+  - `13-keyboard-nav.md` (~122 lines, from source `12-keyboard-nav.md`) - PageDown/PageUp section-snap + CTA-scoped arrow keys with `IntersectionObserver` threshold 0.35 + `tabindex="-1"` on all 6 sections.
+  - `14-dark-theme.md` (~186 lines, from source `13-dark-theme.md`) - 14-token dark counter-table + K1 mode-aware `--gold-text-top` + K2 revert story + per-section `data-ambient-dark` + FOUC prevention + WebAIM audit + deuteranopia sim.
+- **`templates/cinematic-landing/memory/05-theming.md` shrunk to a pointer** - dark-mode sketch (L58-72, 15-line `[data-theme="dark"] { ... }` block with divergent hex values) replaced by a 4-line pointer to `14-dark-theme.md`. The 14-token dark counter-table, K1/K2 stories, per-section ambient-dark, FOUC prevention, WebAIM contrast audit, and deuteranopia sim live in the canonical recipe file.
+- **`cinematic-landing-kit-demo/` folder + `PROPOSED_PATCH_v0.5.x_2026-07-01_cinematic-landing-template.md` copied to our root** for traceability (~189 KB total). Both files byte-for-byte match source (SHA-256 verified).
+- **`templates/cinematic-landing/skeleton/index.html` extended** (~286 lines net, 896 -> ~1182 lines) to absorb the 24 v2-axis additions per the §J matrix in `share/notes/01_research_T-2026-07-03-003.md`: FOUC prevention `<head>` script, `:root[data-theme="dark"]` 14-token counter-table + `#grain` opacity bump, K1 mode-aware `--gold-text-top` token, universal `:focus-visible` + `section:focus-visible` gold-deep ring, `theme-toggle` button + styles, `data-ambient-dark` on all 6 sections, `tabindex="-1"` on all 6 sections + `<main>`, film `role="img"` + hidden `<ol class="film-transcript">` + 6 `<li>` with `aria-current="step"` toggled per scrub + memo on `_lastFilmN`, hero DPR srcset ladder (600/1200/1800/2400w) + `sizes="100vw"`, mid-session reduce listener contract (`__reducedMotionActive` + `__lastReduce` + Safari fallback), IntersectionObserver-gated CTA arrow keys with `e.target.tagName === "BUTTON"` guard + `focusInCta` check, PageDown/PageUp section-snap handler with `lenis.scrollTo` + `focus({preventScroll:true})`, theme controller IIFE (set + `__refreshAmbient` + `aria-pressed` + localStorage).
+- **`agents_manager/upstream-contrib/PROPOSED_PATCH_v0.5.x_2026-07-01_cinematic-landing-template.md` §F updated in all 7 zones** per the §G matrix in `share/notes/01_research_T-2026-07-03-003.md`: Z1 post-apply status paragraph + Z2 TL;DR extend + Z3 evidence row (885 -> 896 -> 1133) + Z4 MANIFEST count (24 -> 25 atomic units) + Z5 worked bullet for W3 + Z6 future-work item #4 + Z7 checklist (G6 RESOLVED + new G8_v2_axes_fold PENDING).
+- **`cinematic-landing-kit-demo/memory/{09,10,12,13}-*.md` TODO headers replaced with `MOVED -> templates/cinematic-landing/memory/1N-<name>.md` pointers** - 4 files, ~16 lines net (5-line TODO -> 1-line MOVED each).
+- **3 count references fixed** to reflect "9 -> 14 memory files": `agents_manager/CHANGELOG.md` L13 (this section's predecessors), `templates/cinematic-landing/00-readme-first.md:13`, `agents_manager/SKILL.md:72`.
+- **`templates/cinematic-landing/assets/MANIFEST.txt` updated** to list 28 files (was 17 at v0.12.0 base; +6 plan additions for `04-locale-handoff.md` + 5 `agents_manager/assets/`; +4 P3T1 memory files 11/12/13/14; +1 `agents_manager/assets/notes/README.md` from v0.13.0 memory scaffold). New exclude-clause: `find ... -not -name '.gitkeep'` so the 2 v0.13.0 `.gitkeep` placeholders don't break the verify diff.
+
+### Why
+
+Before v0.12.1, our applied v0.12.0 `cinematic-landing` template had a documentation-vs-runtime mismatch: source had shipped v2 axes (a11y + DPR + dark theme + JS controller + FOUC script) at T-005 + T-004 but those changes only lived in `cinematic-landing-kit-demo/` (the worked example), not our `templates/cinematic-landing/` runtime playbook. The 4 source memory files (`09-canvas-a11y`, `10-reduced-motion-listener`, `12-keyboard-nav`, `13-dark-theme`) had TODO headers saying "when T-003 applies, move to `templates/cinematic-landing/memory/`" but the move never happened. Apply-time verification per `share/reports/04_review_T-2026-07-03-001.md` PASS-WITH-NOTES flagged this gap as something to close in a follow-up. v0.12.1 closes it.
+
+### Scope limits
+
+- **No frontmatter on new template memory files.** Per `agents_manager/memory/README.md:113-116` no-write-into-templates fence. The 4 new files (11/12/13/14) are plain markdown, matching our 10 existing template memory files' convention. The v0.13.0 frontmatter schema does NOT apply to `templates/<name>/memory/`.
+- **File titles inside the 4 new files retain source numbering** ("# 09 · Canvas…" inside `11-canvas-a11y.md` etc.). Plan was to maintain byte-for-byte match with source; the title-vs-filename cosmetic discrepancy is noted in v0.12.1 known-issues and can be reconciled in a future doc-fix patch.
+- **No renumber of `templates/cinematic-landing/memory/04-locale-handoff.md`** (out of scope per user Q4=(c) not selected; the existing duplicate-`04-` pattern is a known cosmetic issue from W3).
+- **Skeleton extension is template-runtime only.** The byte-for-byte source `cinematic-landing-kit-demo/index.html` remains canonical (an exemplar for users to compare against). Our skeleton diverges from source only in the senses required by our template: brand-agnostic copy, multi-LLM asset manifest discipline, all 5 hard rules preserved.
+- **`agents_manager/SKILL.md:72` count fix included via am-coder dispatch** (per user Q-C decision; keeps count consistent in one pass). Master does NOT self-edit this file (per T-2026-07-03-001 precedent + the soft-wall convention).
+- **PROPOSED_PATCH.md edits use unique substrings** (not line numbers) for the 7-zone §F update. Line numbers may shift if the source-side state has minor drift from research brief's snapshots.
+
+### Hard rules (apply to every cinematic-landing build)
+
+Carried forward unchanged from v0.12.0:
+1. No `video.currentTime` write loops.
+2. No `<video>` element unless Branch B (or `<video>` is the ambient fallback layer).
+3. No `mix-blend-mode` on transformed elements.
+4. `.fallback-host.is-missing` must be wired so Branch D is always a valid rendered state.
+5. `prefers-reduced-motion` honored at three layers (CSS media query + JS matchMedia + markup). Mid-session `change` listener required.
+
+Verdict format: PASS / PASS-WITH-NOTES / FAIL. P0 violation = FAIL.
+
+### Files touched
+
+| File | Status |
+|---|---|
+| `templates/cinematic-landing/memory/11-canvas-a11y.md` | **NEW** (renumbered from source 09; TODO header stripped) |
+| `templates/cinematic-landing/memory/12-reduced-motion-listener.md` | **NEW** (renumbered from source 10; TODO header stripped) |
+| `templates/cinematic-landing/memory/13-keyboard-nav.md` | **NEW** (renumbered from source 12; TODO header stripped) |
+| `templates/cinematic-landing/memory/14-dark-theme.md` | **NEW** (renumbered from source 13; TODO header stripped) |
+| `cinematic-landing-kit-demo/index.html` | **NEW** (source cp - byte-identical, SHA-256 verified) |
+| `cinematic-landing-kit-demo/README.md` | **NEW** (source cp) |
+| `cinematic-landing-kit-demo/memory/{09-canvas-a11y, 10-reduced-motion-listener, 12-keyboard-nav, 13-dark-theme}.md` | **NEW** (source cp; TODO -> MOVED pointers in v0.12.1 P3T7) |
+| `agents_manager/upstream-contrib/PROPOSED_PATCH_v0.5.x_2026-07-01_cinematic-landing-template.md` | **NEW** +7-zone §F update (~17 lines added across Z1-Z7) |
+| `templates/cinematic-landing/skeleton/index.html` | **modified** +~286 LOC (896 -> 1182 lines; absorbed 24 v2-axis absences per §J matrix) |
+| `templates/cinematic-landing/assets/MANIFEST.txt` | **modified** (17 -> 28 entries; added 04-locale-handoff + 4 v2 memory + 5 agents_manager/assets + notes/README; new -not -name '.gitkeep' clause for verify) |
+| `templates/cinematic-landing/memory/05-theming.md` | **modified** (-12 / +3 - dark-mode sketch shrunk to pointer to `14-dark-theme.md`) |
+| `agents_manager/CHANGELOG.md` | **modified** (this entry; also L13 "9 `memory/*.md`" -> "14 `memory/*.md`") |
+| `templates/cinematic-landing/00-readme-first.md` | **modified** (L13 "9 memory files" -> "14 memory files") |
+| `agents_manager/SKILL.md` | **modified** (L72 "9 memory files" -> "14 memory files") |
+
+### Tag / commit
+
+**v0.12.1 - additive maintenance.** No breaking changes to v0.12.0 or v0.13.0. Owners on v0.12.0 can apply this PR without rewriting anything else. The 4 new memory files are pure additions (no contract changes); the skeleton extension preserves all 5 hard rules + the 5 specialized specialist concerns; the PROPOSED_PATCH.md §F update is a post-apply documentation sync to the canonical proposal source file.
+
+### Source attribution
+
+- **Generator:** MiniMax-M3 via opencode CLI on Windows PowerShell 7+
+- **Source date:** 2026-07-03
+- **Source project:** `cinematic-landing-kit-demo` (worked example) + `cinematic-landing-kit` (original v1) at `E:\js_projects\3d_website\1_website_minimax_3`
+- **Source task ids:** T-2026-07-01-001 (v2 adaptation, paused), T-2026-07-01-002 (demo SHIPPED), T-2026-07-01-004 (dark theme), T-2026-07-01-005 (a11y + DPR)
+- **Source proposal:** `agents_manager/upstream-contrib/PROPOSED_PATCH_v0.5.x_2026-07-01_cinematic-landing-template.md` (the canonical source-of-truth we synced)
+- **Apply task id:** T-2026-07-03-003
+- **Prior apply task ids:** T-2026-07-03-001 (cinematic-landing template apply), T-2026-07-03-002 (v0.13.0 memory-system scaffold)
+- **Research note:** `share/notes/01_research_T-2026-07-03-003.md` (24-item §J matrix is the source of truth for skeleton extensions)
+- **Plan files:** `share/notes/02_plan_T-2026-07-03-003.md` (consolidated) + `share/notes/02_plan_high_T-2026-07-03-003.md` + `share/notes/02_plan_phases_T-2026-07-03-003.md`
+- **Verification:** 4 SHA-256 matches for memory file bytes (sans TODO header) ✓; manifest `find` vs MANIFEST.txt empty diff ✓; skeleton extends 896 -> 1182 lines ✓; all 7 PROPOSED_PATCH.md zones updated ✓; 4 demo-folder MOVED pointers set ✓; 3 count references fixed ✓.
+
+### Review-driven fixes
+
+Applied 2026-07-03 (master, post-review): 12 line edits across 3 files.
+
+- **`agents_manager/CHANGELOG.md`** (6 edits) — L13 `1167 → 1133 lines` (our `Measure-Object` count, not source's); 4 occurrences in v0.12.1 entry: `1183 → 1182 lines` and `+~287 LOC → +~286 LOC` (`wc -l` vs `Measure-Object` consistency); 1 consistency edit on L98.
+- **`agents_manager/upstream-contrib/PROPOSED_PATCH_v0.5.x_2026-07-01_cinematic-landing-template.md`** (5 edits) — Z3 L177 `1167 lines post-v2-axis absorption → 1133`; §3.3 code-block 3 places L211 + L1576 + L1586 `9 memory files → 14`; Z7 L1823 `~271 LOC → ~286 LOC`.
+- **`agents_manager/SKILL.md`** (1 edit) — L82 `9 memory files → 14` (P3T8 fixed L72 but missed L82 10 lines below).
+
+Drift rationale: `Measure-Object -Line` (1133) and `wc -l` (1182) differ by 49 (blank-only lines). The v0.12.1 entry body uses `wc -l`; the v0.12.0 L13 claim was migrated to use `Measure-Object` to match how `wc -l` was previously cited. 1 known drift remains: **PROPOSED_PATCH.md L164** has stale `in progress; expected: ... skeleton extension ~271 LOC` text — out of scope for this 12-line follow-up; future "Z2 status update" task.
 
 ## v0.13.0 — Three-scope memory system for agents_manager (2026-07-03)
 

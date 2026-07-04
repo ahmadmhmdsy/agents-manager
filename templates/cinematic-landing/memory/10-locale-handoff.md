@@ -1,4 +1,4 @@
-# 04 — Locale handoff
+# 10 · Locale handoff — USE THIS WHEN: shipping a non-English locale and need to flip `<html lang dir>` + reverse-test CSS logical properties + reorder am-coder's locale dispatch brief
 
 The cinematic-landing template is locale-aware but locale-opinionated only on opt-in.
 

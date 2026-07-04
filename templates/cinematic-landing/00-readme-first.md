@@ -1,5 +1,7 @@
 # Cinematic Landing — Task Template
 
+**cinematic-landing template v0.14.0** — Read this file first.
+
 A vendor-neutral, multi-LLM-aware task template for building a cinematic, scroll-driven
 single-page product site. Works whether the user has:
 
@@ -10,10 +12,10 @@ single-page product site. Works whether the user has:
 
 The template ships with:
 
-- **`memory/`** — 9 memory files governing how am-research, am-planning, am-assets,
+- **`memory/`** — 14 memory files governing how am-research, am-planning, am-assets,
   am-coder, and am-review approach a cinematic-landing task. Each file is a prose
   contract, not a hard rule — adapt per project.
-- **`skeleton/`** — a 700-line reference implementation showing the engine wired up
+- **`skeleton/`** — a reference implementation (~1100 lines) showing the engine wired up
   in vanilla HTML/CSS/JS + Lenis + GSAP + ScrollTrigger. Edit, don't fork.
 - **`prompts/`** — copy-paste prompts for Midjourney, DALL-E, Sora, Runway, Veo,
   and a generic image/video gen prompt. Owner picks the LLM they trust.

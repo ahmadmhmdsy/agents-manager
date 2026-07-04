@@ -1,4 +1,4 @@
-# 02 · Scroll-driven film section — 3 implementation paths
+# 02 · Scroll-driven film section — 3 implementation paths — USE THIS WHEN: shipping a scroll-driven `<canvas>` and need film-strip pacing rules
 
 The "film" section is the cinematic-landing template's center-of-gravity moment. Three
 implementation paths exist; pick per `memory/06-asset-pipeline.md`.

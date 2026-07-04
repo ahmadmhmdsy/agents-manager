@@ -1,4 +1,4 @@
-# 04 · Cinematic hero — cutout + aura + motes + pointer tilt + sheen
+# 04 · Cinematic hero — cutout + aura + motes + pointer tilt + sheen — USE THIS WHEN: designing the hero canvas with cutout/aura coordination
 
 The hero is the cinematic-landing template's most opinionated section. Five layered
 elements work together to produce the "ritual moment" effect.

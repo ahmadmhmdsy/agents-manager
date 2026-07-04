@@ -1,4 +1,6 @@
-# 05 · Theming — CSS custom properties + per-section ambient tween
+# 05 · Theming — CSS custom properties + per-section ambient tween — USE THIS WHEN: defining light-mode brand tokens and theme-attribute switching
+
+> Dark mode is documented in `memory/14-dark-theme.md`. This file covers light-mode mechanics only.
 
 The cinematic-landing template uses CSS custom properties (`:root` + per-section
 overrides) for theming. Two layers:
@@ -55,21 +57,9 @@ gsap.ticker.add(() => {
 });
 ```
 
-## Dark mode (opt-in)
+## Dark mode — see [`14-dark-theme.md`](./14-dark-theme.md)
 
-For projects that want a dark variant, add:
-
-```css
-[data-theme="dark"] {
-  --paper:     #0F0B08;
-  --ink:       #F1E9D7;
-  --ink-soft:  #B8A687;
-  --ink-faint: #8E7B5F;
-  /* … invert line + accent with appropriate adjustments */
-}
-```
-
-Toggle via `<html data-theme="dark">`. JS reads `localStorage.getItem('theme')` and applies.
+The 14-token dark counter-table, K1 mode-aware `--gold-text-top`, K2 revert story, per-section `data-ambient-dark`, FOUC prevention `<head>` script, localStorage persistence, prefers-color-scheme auto-detect, the theme controller (`set`/`refreshAmbient`/`aria-pressed` toggle), WebAIM contrast audit, and deuteranopia sim live in [`memory/14-dark-theme.md`](./14-dark-theme.md) as the canonical recipe.
 
 ## Hard rules
 
@@ -77,4 +67,4 @@ Toggle via `<html data-theme="dark">`. JS reads `localStorage.getItem('theme')` 
 - **NEVER** introduce a color not in the palette (per `agents_manager/design/resources/brand-template.md`).
 - **ALWAYS** verify `--ink-faint` against `--paper` for 4.5:1 contrast (WCAG AA body text).
   The v1 default of `#9A8975` on `#FBF6EE` fails — use `#7A6855` instead.
-- **NEVER** apply `data-theme` to a non-`<html>` element. Theme is document-wide.
+- **ALWAYS** apply the theme attribute on the root `<html>` element only. Theme is document-wide; per-section overrides go on individual `<section data-ambient="…">` attributes (see `14-dark-theme.md` for the dark-mode ambient twin).

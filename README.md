@@ -39,6 +39,7 @@ See [`bin/standalone-installer/README.md`](bin/standalone-installer/README.md) f
 - [Usage](#usage)
 - [Repo layout](#repo-layout)
 - [FAQ](#faq)
+- [Contributing](CONTRIBUTING.md)
 - [Releases](#releases)
 - [License](#license)
 - [Status](#status)

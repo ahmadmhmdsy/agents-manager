@@ -6,6 +6,22 @@
 
 ---
 
+## D-2026-07-04-am-assets-live
+
+**Status:** live (since v0.12.0)
+**Context:** v0.12.0 (2026-07-03, commit f07ada5) shipped the
+  `am-assets` 6th specialist alongside the `agents_manager/assets/`
+  subtree (SKILL.md, rules.md, README.md, notes/branch-decisions.md,
+  notes/README.md, resources/landing-review-checklist.md). The
+  `cinematic-landing` template's MANIFEST.txt cites 3 of those files
+  as cross-tree asset sources.
+**Action:** WARN-2 revert restores those 3 MANIFEST entries that a
+  prior brief misread as phantom-specialist references.
+**Note:** Replaces the prior D-2026-07-04-am-assets-deferred entry,
+  which was based on the same misread.
+
+---
+
 ## <DATE> — am-assets
 **Decision:** Branch <A|B|C|D> selected per user input.
 **Why:** <evidence from user prompt>

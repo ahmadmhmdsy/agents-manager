@@ -1,4 +1,4 @@
-# 03 · Single ticker — Lenis + GSAP co-driven
+# 03 · Single ticker — Lenis + GSAP co-driven — USE THIS WHEN: implementing the single-ticker scroll system (Lenis + GSAP)
 
 The cinematic-landing template uses ONE `requestAnimationFrame` loop, owned by GSAP. Lenis
 attaches as the scroll source. ScrollTrigger watches ScrollTrigger-internal progress

@@ -1,4 +1,4 @@
-# 07 · Reduced-motion — the a11y floor
+# 07 · Reduced-motion — the a11y floor — USE THIS WHEN: shipping animation, transitions, or scroll-driven effects that need reduced-motion gating
 
 The cinematic-landing template honors `prefers-reduced-motion: reduce` at three layers:
 CSS, JS, and markup.

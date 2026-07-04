@@ -1,23 +1,35 @@
 # MANIFEST.txt — verify-list for the cinematic-landing template proposal.
-# Run: cat agents_manager/upstream-contrib/MANIFEST.txt | sort > /tmp/expected.txt
-#      find templates/cinematic-landing/ agents_manager/assets/ -type f | sort > /tmp/actual.txt
+# Run: cat templates/cinematic-landing/assets/MANIFEST.txt | sort > /tmp/expected.txt
+#      find templates/cinematic-landing/ agents_manager/assets/ -type f -not -name '.gitkeep' | sort > /tmp/actual.txt
 #      diff -u /tmp/expected.txt /tmp/actual.txt
 # Expected: empty diff.
+# Total: 28 files (was 17 at v0.12.0 base; +6 per plan P3T3 [04-locale + 5 agents_manager/assets] + +4 v2 memory files from P3T1 [11-canvas-a11y, 12-reduced-motion-listener, 13-keyboard-nav, 14-dark-theme] + +1 notes/README.md from v0.13.0 memory scaffold).
 
+agents_manager/assets/README.md
+agents_manager/assets/SKILL.md
+agents_manager/assets/notes/README.md
+agents_manager/assets/notes/branch-decisions.md
+agents_manager/assets/rules.md
+agents_manager/assets/resources/landing-review-checklist.md
 templates/cinematic-landing/00-readme-first.md
+templates/cinematic-landing/assets/MANIFEST.txt
+templates/cinematic-landing/assets/manifest.schema.json
+templates/cinematic-landing/decisions/decision-log.md
 templates/cinematic-landing/memory/01-builder-flow.md
 templates/cinematic-landing/memory/02-scroll-film-canvas.md
 templates/cinematic-landing/memory/03-scroll-ticker.md
 templates/cinematic-landing/memory/04-cinematic-hero.md
+templates/cinematic-landing/memory/10-locale-handoff.md
 templates/cinematic-landing/memory/05-theming.md
 templates/cinematic-landing/memory/06-asset-pipeline.md
 templates/cinematic-landing/memory/07-reduced-motion.md
 templates/cinematic-landing/memory/08-cta-frames.md
 templates/cinematic-landing/memory/09-quality-bar.md
-templates/cinematic-landing/skeleton/index.html
+templates/cinematic-landing/memory/11-canvas-a11y.md
+templates/cinematic-landing/memory/12-reduced-motion-listener.md
+templates/cinematic-landing/memory/13-keyboard-nav.md
+templates/cinematic-landing/memory/14-dark-theme.md
+templates/cinematic-landing/prompts/asset-spec.md
 templates/cinematic-landing/prompts/image-gen.md
 templates/cinematic-landing/prompts/video-gen.md
-templates/cinematic-landing/prompts/asset-spec.md
-templates/cinematic-landing/decisions/decision-log.md
-templates/cinematic-landing/assets/manifest.schema.json
-templates/cinematic-landing/assets/MANIFEST.txt
+templates/cinematic-landing/skeleton/index.html

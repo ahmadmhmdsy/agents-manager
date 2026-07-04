@@ -1,4 +1,4 @@
-# 09 · Quality bar — what `am-review` checks for
+# 09 · Quality bar — what `am-review` checks for — USE THIS WHEN: running the pre-merge quality bar (visual + a11y + perf)
 
 The cinematic-landing template's quality bar is codified in
 `agents_manager/assets/resources/landing-review-checklist.md`. The 7 dimensions

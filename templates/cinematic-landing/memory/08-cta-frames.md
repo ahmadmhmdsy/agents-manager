@@ -1,4 +1,4 @@
-# 08 · CTA frames — 3-frame click-advance pattern
+# 08 · CTA frames — 3-frame click-advance pattern — USE THIS WHEN: composing CTA section copy + frame layout
 
 The cinematic-landing template's CTA section uses a 3-frame click-advance pattern instead
 of autoplay. Three reasons:

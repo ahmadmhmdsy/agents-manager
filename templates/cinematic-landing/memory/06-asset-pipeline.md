@@ -1,4 +1,4 @@
-# 06 · Asset pipeline — 4-branch runtime decision tree
+# 06 · Asset pipeline — 4-branch runtime decision tree — USE THIS WHEN: sourcing assets through the 4-branch runtime tree
 
 The cinematic-landing template MUST work whether the user has any combination of:
 - A video pipeline (Higgsfield / Runway / Replicate / Sora)
