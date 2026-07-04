@@ -2,6 +2,48 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.14.1 — am-research enhancements (additive patch, 2026-07-04)
+
+Additive patch on v0.14.0. **No breaking changes**, **no controller fence edits**, **no specialist prompt rewrites**. Closes the 8 gap categories surfaced by the T-2026-07-04-004 audit (audit at `share/notes/01_research_T-2026-07-04-004.md`).
+
+### What's new
+
+- **Populated `agents_manager/research/resources/`** — was empty except for README.md; now ships 6 starter files: `tech-stack.md`, `glossary.md`, `prior-decisions.md`, `known-pitfalls.md`, `external-docs.md`, plus `example-research-output.md` (synthetic gold-standard exemplar). Each carries a `last-verified: 2026-07-04` footer.
+- **Seeded `agents_manager/research/notes/episodic/`** — was empty (`.gitkeep` only); now has 3 backfilled files (`T-2026-07-03-001/002/003.md`) with frontmatter per `agents_manager/memory/README.md` schema. Each ≤20 L body.
+- **`agents_manager/research/SKILL.md` additive upgrades (4 new sections, +77 L, NO renumbering, NO deletions):**
+  1. **Preflight (3 questions before writing)** — does this task warrant research? Is the scope small? Is the deliverable a file path I can name? If "no" → STOP and ask master.
+  2. **Calibrated feasibility verdict** — adds `confidence: HIGH|MEDIUM|LOW` to the verdict template, with explicit driver in the paragraph.
+  3. **Wrong-specialist handoff** — new section with `HANDOFF-TO-PLANNING` / `-DESIGN` / `-CODER` / `-MASTER` tokens for tasks that don't belong to am-research.
+  4. **`## Metrics` footer** — appends to the output template: `findings`, `risks_HIGH`, `risks_MEDIUM`, `risks_LOW`, `clarifying_Qs` as integers.
+- **`agents_manager/research/rules.md` additive (2 new rules, +21 L, existing rules 1-10 unchanged):**
+  11. **Confidence scoring rule** — every Feasibility verdict must carry a confidence level (HIGH = verified by direct read + path:line; MEDIUM = partial verification; LOW = inferred).
+  12. **Handoff rule** — if the task is not research, return with `HANDOFF-TO-*` token + one-line rationale. Do NOT write a research file.
+- **`scripts/backfill-research-metrics.sh`** — idempotent bash, stdlib only. Scans `share/notes/01_research_*.md`, appends a `## Metrics` block (with `<!-- backfilled -->` stamp) to any file missing one. Exits 1 if work done, 0 if no-op. <10s on ≤50 files. Self-test proven on first run (4 prior research outputs backfilled).
+- **`agents_manager/SKILL.md` (master) gate-table extended** — the Research row now also checks for the `## Metrics` block in the research output file.
+
+### Cross-cutting concerns (separately queued — NOT in this patch)
+
+- T-2026-07-04-005: master memory-asymmetry fix (master should read `agents_manager/research/notes/semantic/` on re-entry)
+- T-2026-07-04-006: master self-critique loop (per-task `## Master-self-critique` block at Phase 4 close)
+- T-2026-07-04-007: 90-day sweep tooling
+- T-2026-07-04-008: `opencode.jsonc` dedupe (controller fence — user-maintained)
+
+### Files touched
+
+13 files: 9 new (`agents_manager/research/resources/{tech-stack,glossary,prior-decisions,known-pitfalls,external-docs,example-research-output}.md`, `agents_manager/research/notes/episodic/T-2026-07-03-{001,002,003}.md`, `scripts/backfill-research-metrics.sh`) + 2 modified (`agents_manager/research/SKILL.md`, `agents_manager/research/rules.md`) + 1 controller edit (`agents_manager/SKILL.md` master gate-table). Plus 4 prior research notes received backfilled `## Metrics` blocks via the script's self-test run.
+
+### Scope limits / open review items
+
+- **Reviewer decision 1 — `opencode.jsonc` dedupe deferred.** The inline-prompt duplication between `opencode.jsonc` L30 and `agents_manager/research/SKILL.md` L69-77 was identified but not applied — `opencode.jsonc` is a controller fence owned by the user, no specialist may edit it without explicit maintenance-phase authorization. Queued as T-2026-07-04-008.
+- **W1 (LOW, auto-accepted):** backfilled `## Metrics` counts are inferred via regex and undercount for table-style severity headers. Stamped `<!-- backfilled -->` to flag inferred values; future dispatches will author the block directly.
+- **W2 (LOW, auto-accepted):** `agents_manager/research/resources/glossary.md` is ≈ 30 L — small. Future expansion expected.
+
+### Tag / commit
+
+**v0.14.1 — additive patch.** No breaking changes to v0.14.0 pipeline. `opencode.jsonc` is NOT modified. Specialist prompts are NOT rewritten. All controller-fence files (per AGENTS.md) remain untouched.
+
+---
+
 ## v0.14.0 — cinematic-landing promoted to PASS + authoring standard v1.0.0 (2026-07-04)
 
 > **Version-bump note:** Plan brief requested `## v0.13.0` for this entry, but

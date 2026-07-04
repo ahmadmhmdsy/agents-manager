@@ -202,3 +202,80 @@ When you have multiple edits to make across files (or to independent regions of 
 ### Read once, edit many
 
 The full pattern: read all relevant files in one parallel batch, then issue all edits in one parallel batch. Two messages, not N.
+
+---
+
+## Preflight (v0.14.1+)
+
+Before you write a single line of the research file, answer three questions in your head:
+
+1. **Does this task warrant research?** If the user asked for a plan, a design, code, or an ops action — it is NOT research. See `## Wrong-specialist handoff` below.
+2. **Is the scope small enough for one report?** If the task has more than one deliverable, or the planning agent will need to break it into phases, say so up front in the **What we know** section so the master can dispatch a planning pass before research.
+3. **Is the deliverable a file path I can name now?** Research writes `share/notes/01_research_<task-id>.md`. If the master prompt asked for something else (a chat reply, a one-liner, a decision), this is the wrong specialist — see handoff below.
+
+If any answer is "no" → STOP. Return to master with `HANDOFF-TO-*` + one-line rationale. Do not write a research file for a non-research task.
+
+---
+
+## Calibrated feasibility verdict (v0.14.1+)
+
+The Feasibility verdict in the canonical template is `yes | partial | no`. For high-stakes tasks this is too coarse. When you fill the verdict, also fill the **confidence** line:
+
+```markdown
+## Feasibility verdict
+
+- **Can do:** yes | partial | no
+- **Confidence:** HIGH | MEDIUM | LOW
+- **Why:** <one short paragraph citing the confidence driver>
+```
+
+Confidence drivers:
+
+- **HIGH** — verified by direct read + `path:line` citation, AND no contradicting evidence in `share/notes/99_decisions.md` or the latest CHANGELOG entry.
+- **MEDIUM** — partial verification (one source, or one path I did not open), OR a single ambiguity that could flip the call.
+- **LOW** — inferred from context only, contradicted by another finding, OR the task is genuinely novel and I have no prior precedent.
+
+Pick the LOWEST confidence that the evidence supports. Honest calibration beats confident-sounding verdicts every time.
+
+---
+
+## Wrong-specialist handoff (v0.14.1+)
+
+If the dispatch prompt is design-, planning-, coding-, or ops-shaped, return immediately. Do not write a research file. Use one of these tokens + a one-line rationale:
+
+- `HANDOFF-TO-PLANNING` — the user asked for a step-by-step plan, a task breakdown, or a phase schedule.
+- `HANDOFF-TO-DESIGN` — the user asked for a mockup, a layout, a UX flow, or a visual comparison.
+- `HANDOFF-TO-CODER` — the user asked for code, a script, a config file, or a build artifact.
+- `HANDOFF-TO-MASTER` — the dispatch is malformed, the task id is missing, or the request needs a scope conversation with the user before any specialist is dispatched.
+
+Triggers (any of these is enough):
+
+- The dispatch prompt says "plan", "design", "implement", "build", "fix this bug", "write a script".
+- The expected deliverable is a file in `src/**`, `templates/**`, `scripts/**`, or `share/notes/02_plan_*` / `03_coder_*` / `04_*`.
+- The user asked for an opinion / a recommendation on which library to pick (that's planning's call, see `rules.md` rule 1).
+
+When in doubt, return `HANDOFF-TO-MASTER` — master will route. Never silently absorb a non-research task and produce a research file for it.
+
+---
+
+## Metrics footer (v0.14.1+)
+
+Every research output ends with a `## Metrics` block listing five integer counts. The block is mandatory and appears at the very end of the file, after `## Self-critique`. Format:
+
+```markdown
+## Metrics
+
+- findings: <int>
+- risks_HIGH: <int>
+- risks_MEDIUM: <int>
+- risks_LOW: <int>
+- clarifying_Qs: <int>
+```
+
+Counting rules:
+
+- `findings` = total bullets under `## Technical findings`.
+- `risks_HIGH` / `risks_MEDIUM` / `risks_LOW` = bullets under `## Risks and doubts` whose `**Severity:**` matches.
+- `clarifying_Qs` = bullets under `## What we don't know (ambiguities)` that include a `**Suggested clarifying question:**` line. If the section is empty, count is 0.
+
+The block is machine-readable for `scripts/backfill-research-metrics.sh` (idempotent — appends only when missing). Master uses it to compute per-dispatch health metrics and to detect drift over time.

@@ -207,7 +207,7 @@ Before advancing from any phase, the master checks:
 
 | Phase | Gate |
 |---|---|
-| Research | Output file exists and contains ≥1 risk with `Severity:` ∈ {low, medium, high}. If `NEEDS_USER_INPUT=true`, master does NOT advance. |
+| Research | Output file exists and contains ≥1 risk with `Severity:` ∈ {low, medium, high}. If `NEEDS_USER_INPUT=true`, master does NOT advance.<br>Output file contains a `## Metrics` block with 5 integer fields (findings, risks_HIGH, risks_MEDIUM, risks_LOW, clarifying_Qs), all ≥0. Per `agents_manager/research/SKILL.md` § `## Metrics footer`. |
 | Planning | Plan files exist; each phase has ≥1 testable `Done when` clause; `## Plan self-score` is filled with all 4 dimensions. |
 | Coder | Summary exists; `## Tasks attempted` covers every assigned task id; status is ∈ {done, partial, skipped} for each. |
 | Review | Report exists; `## Per-task verdicts` covers every assigned task id; per-task verdict ∈ {PASS, WARN, FAIL}. |
