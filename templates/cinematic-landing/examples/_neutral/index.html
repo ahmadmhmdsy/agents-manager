@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<!-- _neutral · minimal neutral-aesthetic application of the cinematic-landing template.
+     Companion to ../_recipe.md (Maison Lumen Apothecary Light). This file exists to
+     show the template's range: Latin LTR, sans-serif (Inter), monochrome slate-on-white,
+     one ambient color shift. Render with: python3 -m http.server -->
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Neutral — minimal application of cinematic-landing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --paper:    #ffffff;
+    --ink:      #1f2937;
+    --ink-soft: #475569;
+    --ink-faint:#94a3b8;
+    --accent:   #334155;
+    --ambient:  #ffffff;
+    --maxw:     980px;
+    --ease:     cubic-bezier(.22,.61,.36,1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, system-ui, sans-serif; background: var(--paper); color: var(--ink); line-height: 1.55; }
+  .wrap { max-width: var(--maxw); margin-inline: auto; padding: 0 24px; }
+  header { padding: 28px 0; border-bottom: 1px solid #e2e8f0; }
+  header nav a { color: var(--ink-soft); text-decoration: none; margin-right: 24px; font-size: 14px; letter-spacing: .02em; }
+  header nav a:hover { color: var(--ink); }
+  section { padding: 88px 0; }
+  #hero { background: var(--paper); }
+  #hero h1 { font-size: clamp(40px, 7vw, 88px); font-weight: 700; line-height: 1.05; letter-spacing: -.02em; }
+  #hero .lede { font-size: 18px; color: var(--ink-soft); max-width: 56ch; margin-top: 24px; }
+  #film { background: #f1f5f9; }
+  #film h2 { font-size: clamp(28px, 4vw, 56px); font-weight: 600; letter-spacing: -.01em; }
+  #film p { color: var(--ink-soft); margin-top: 16px; max-width: 56ch; }
+  #cta { background: var(--accent); color: #fff; text-align: center; }
+  #cta h2 { font-size: clamp(28px, 4vw, 48px); font-weight: 600; }
+  #cta .btn { display: inline-block; margin-top: 24px; padding: 14px 32px; border-radius: 999px; background: #fff; color: var(--accent); text-decoration: none; font-weight: 500; }
+  footer { padding: 36px 0; border-top: 1px solid #e2e8f0; color: var(--ink-faint); font-size: 13px; }
+</style>
+</head>
+<body>
+<header data-section="header"><div class="wrap">
+  <nav><a href="#hero">Home</a><a href="#film">Section</a><a href="#cta">CTA</a></nav>
+</div></header>
+
+<section id="hero" data-section="hero"><div class="wrap">
+  <h1>Minimal, neutral, functional.</h1>
+  <p class="lede">A working sample that renders the template's 8-section structure without the apothecary aesthetic. Latin LTR, Inter sans-serif, monochrome slate-on-white.</p>
+</div></section>
+
+<section id="film" data-section="film"><div class="wrap">
+  <h2>Section subtitle here.</h2>
+  <p>Body copy goes in `.lede`-style paragraphs; the `.idx` markers and ambient tween are opt-in per the cinematic-landing template's memory files.</p>
+</div></section>
+
+<section id="cta" data-section="cta"><div class="wrap">
+  <h2>Call to action.</h2>
+  <p>Single-button frame; the click-advance pattern is a separate template primitive.</p>
+  <a class="btn" href="#cta">Continue</a>
+</div></section>
+
+<footer data-section="footer"><div class="wrap">
+  <span>Neutral sample · cinematic-landing template · <a href="../">back</a></span>
+</div></footer>
+</body>
+</html>
