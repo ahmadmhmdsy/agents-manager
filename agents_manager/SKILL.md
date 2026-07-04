@@ -405,11 +405,12 @@ Invoke `finishing-a-development-branch` to give the user a 4-option menu:
 
 ### 5b. Non-git project menu (the common case for sandbox/exploration projects)
 
-Give the user a 4-option next-steps menu:
+Give the user a 5-option next-steps menu:
 1. **Run the smoke test** — if the task involves an external API and the user provided a key in Phase 0, the master runs `npm run smoke` (or the project's equivalent) in its own session and reports pass/fail.
 2. **Polish open WARNs** — spawn am-coder in a fix-loop for each remaining WARN in `share/notes/04_warns_register_<task-id>.md`. Stay within `max_fix_loops=3` per chunk.
 3. **Build a follow-up chunk** — dispatch a new am-coder call against the next planned phase (e.g. Phase 6 proxy server, Phase 6 server-side rendering, etc.).
 4. **Close out** — task is done; the user takes it from here. Append the `## Completion` block.
+5. **Extract to template / core knowledge** — turn the finished project into either a reusable `templates/<slug>/` template OR tagged memory entries (`agents_manager/memory/{global,projects/<slug>}/`, filter words `tech_stack:` / `domain:`). See `templates/EXTRACTION.md` for the rulebook. Only if `agents_manager/memory/.extract-config.yaml` exists AND `extract_enabled: true`; otherwise runs only on explicit user request.
 
 **Opt-in flag:** Phase 5 is disabled by default. Enable per-task by setting `Phase 5 enabled: true` in the task's `tasks/<task-id>.md` row when capturing the user task.
 

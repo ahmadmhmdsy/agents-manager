@@ -1,5 +1,6 @@
 ---
 title: Memory System
+description: Three-scope memory schema (global / projects/<slug> / per-role semantic+episodic), entry lifecycle, and read/write protocol for agents-manager.
 scope: canonical-schema
 status: active
 created: 2026-07-03
@@ -59,7 +60,7 @@ last_verified: YYYY-MM-DD
 <how a future agent can re-verify — file path + line number>
 ```
 
-Required frontmatter keys: `scope` (`global` | `project` | `role`), `topic`, `status` (`active` | `superseded`), `created`, `last_verified`. `superseded_by:` is required only when `status: superseded`.
+Required frontmatter keys: `scope` (`global` | `project` | `role`), `topic`, `status` (`active` | `superseded`), `created`, `last_verified`. `tech_stack:` and `domain:` are **soft-required** (comma-separated; required on entries produced by `agents_manager/extract/SKILL.md`, optional on hand-written entries — used by the read-side soft filter below to prefer entries whose tags match the current task). `superseded_by:` is required only when `status: superseded`.
 
 ## Lifecycle
 
@@ -77,6 +78,7 @@ Each specialist reads on re-entry, in order:
 2. `agents_manager/memory/projects/<active-slug>/*.md` — ≤200 lines; same order.
 3. `agents_manager/<this-role>/notes/semantic/*.md` — ≤200 lines; curated insights.
 4. `agents_manager/<this-role>/notes/episodic/<task-id>.md` — past notes on the same task; skim for continuity.
+5. **Optional soft filter (v0.15.0+):** if your current task declares `tech_stack:` or `domain:` tags, prefer memory entries whose own `tech_stack:` / `domain:` frontmatter matches. Specialist judgment, NOT a hard gate — unfiltered reading is still correct.
 
 Master has a third source: `share/notes/99_progress_<task-id>.md` (existing progress-ledger convention), same 200-line cap.
 

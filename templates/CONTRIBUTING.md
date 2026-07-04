@@ -33,6 +33,28 @@ matches your intent, then click through to the rulebook.
 5. **Open a PR.** Title: `templates(<name>): v0.1.0 initial cut`. The
    reviewer is the final tick on the Rule 8 checklist.
 
+## I want to extract a finished project into a template
+
+You already built something with agents-manager and want to reuse it — turn a
+finished project into a starter template (or into tagged core-knowledge memory
+entries) instead of authoring one from scratch.
+
+1. **Read `EXTRACTION.md`** — the extraction rulebook (sibling of
+   `AUTHORING.md`). It carries the pre-flight checklist (license scan, secrets
+   denylist, overlap check, source WARN-register status), the 9-step extraction
+   recipe, and the "what the agent can't decide" section.
+2. **Load the extract skill.** `agents_manager/extract/SKILL.md` is the
+   procedure any specialist runs; `agents_manager/extract/rules.md` carries the
+   8 hard rules (R1–R8). Trigger it by picking the Phase 5 "Extract" menu option
+   (opt-in via `agents_manager/memory/.extract-config.yaml`) or by saying
+   "extract this" / "template this project" in conversation.
+3. **Extraction is additive; manual authoring is a full write.** Extraction
+   *reads* a finished project and *scaffolds* a starter (fast, placeholder-fill
+   only) — it never edits the source. Manual authoring (the section above)
+   starts from `_blank/` and writes every file by hand. Either way, the scaffold
+   is finished by the same `AUTHORING.md` "For authors" recipe and passes the
+   same Rule 8 acceptance checklist before promotion.
+
 ## I want to fix a bug in an existing template
 
 1. **Open an issue** describing the symptom + which file(s) reproduce it.

@@ -1,3 +1,5 @@
 **/*.md
+**/.extract-config.yaml
 !**/.gitkeep
 !README.md
+!.extract-config.yaml.example
