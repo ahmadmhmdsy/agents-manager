@@ -1,0 +1,38 @@
+# assets/MANIFEST.txt
+#
+# Every line below must resolve in the working tree (see verify.sh T5).
+# Lines starting with `#` are comments and ignored by the check.
+# Paths are repo-relative to templates/docs-site/.
+
+00-readme-first.md
+INDEX.md
+decisions/decision-log.md
+
+# Memory contracts (12, monotonic)
+memory/01-builder-flow.md
+memory/02-content-shape.md
+memory/03-markdown-rendering.md
+memory/04-code-blocks.md
+memory/05-navigation-and-sidebar.md
+memory/06-search.md
+memory/07-theming.md
+memory/08-reduced-motion.md
+memory/09-keyboard-nav.md
+memory/10-screen-reader-a11y.md
+memory/11-dark-theme.md
+memory/12-quality-bar.md
+
+# Reference implementation
+skeleton/index.html
+skeleton/data.js
+
+# Worked example
+examples/_recipe.md
+
+# Prompts and tests
+prompts/scaffolding.md
+tests/verify.sh
+tests/README.md
+
+# Top-level registry entry
+../README.md

@@ -1,0 +1,863 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Acme SDK · docs</title>
+  <meta name="description" content="Acme SDK — install, quick start, guides, and API reference.">
+  <link rel="stylesheet" href="data:text/css,"> <!-- ponytail: skeleton is single-file; stylesheet below -->
+  <style>
+    /* ============================================================
+       Tokens (14) — light theme default; dark via :root[data-theme="dark"]
+       ============================================================ */
+    :root {
+      --surface: #ffffff;
+      --surface-2: #f7f8fa;
+      --surface-3: #eef0f4;
+      --ink: #0b0d12;
+      --ink-soft: #404552;
+      --ink-faint: #6b7280;
+      --line: #e5e7eb;
+      --line-soft: #eef0f4;
+      --accent: #4338ca;
+      --accent-soft: #eef2ff;
+      --code-bg: var(--surface-2);
+      --code-fg: var(--ink-soft);
+      --code-inline-bg: #f1f2f6;
+      --code-border: var(--line);
+
+      --radius: 6px;
+      --gap: 1rem;
+      --gap-lg: 2rem;
+      --topbar-h: 56px;
+      --sidebar-w: 264px;
+      --toc-w: 220px;
+      --content-max: 760px;
+
+      --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+    :root[data-theme="dark"] {
+      --surface: #0b0d12;
+      --surface-2: #11141a;
+      --surface-3: #161a22;
+      --ink: #f3f4f6;
+      --ink-soft: #c7c9d1;
+      --ink-faint: #9aa0aa;
+      --line: #232732;
+      --line-soft: #1a1e27;
+      --accent: #818cf8;
+      --accent-soft: #1e1b4b;
+      --code-bg: #11141a;
+      --code-fg: #c7c9d1;
+      --code-inline-bg: #1a1e27;
+      --code-border: #232732;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        --surface: #0b0d12;
+        --surface-2: #11141a;
+        --surface-3: #161a22;
+        --ink: #f3f4f6;
+        --ink-soft: #c7c9d1;
+        --ink-faint: #9aa0aa;
+        --line: #232732;
+        --line-soft: #1a1e27;
+        --accent: #818cf8;
+        --accent-soft: #1e1b4b;
+        --code-bg: #11141a;
+        --code-fg: #c7c9d1;
+        --code-inline-bg: #1a1e27;
+        --code-border: #232732;
+      }
+    }
+
+    /* ============================================================
+       Reset + base
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font: 16px/1.6 var(--font-body);
+      color: var(--ink);
+      background: var(--surface);
+      min-height: 100vh;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code, pre { font-family: var(--font-mono); font-size: 0.92em; }
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 3px;
+    }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+
+    /* ============================================================
+       App shell — grid: topbar / [sidebar main toc] / footer
+       ============================================================ */
+    body[data-section="app-shell"] {
+      display: grid;
+      grid-template-rows: var(--topbar-h) 1fr auto;
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr) var(--toc-w);
+      grid-template-areas:
+        "topbar topbar topbar"
+        "sidebar main toc"
+        "footer footer footer";
+    }
+    @media (max-width: 1100px) {
+      body[data-section="app-shell"] {
+        grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+        grid-template-areas:
+          "topbar topbar"
+          "sidebar main"
+          "footer footer";
+      }
+      [data-section="toc-aside"] { display: none; }
+    }
+    @media (max-width: 720px) {
+      body[data-section="app-shell"] {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+          "topbar"
+          "main"
+          "footer";
+      }
+      [data-section="sidebar-nav"] { display: none; }
+    }
+
+    .skip {
+      position: absolute;
+      top: -100px; left: 8px;
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      z-index: 100;
+    }
+    .skip:focus { top: 8px; }
+
+    /* ============================================================
+       Topbar
+       ============================================================ */
+    [data-section="topbar"] {
+      grid-area: topbar;
+      display: flex;
+      align-items: center;
+      gap: var(--gap);
+      padding: 0 var(--gap-lg);
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .brand { font-weight: 700; color: var(--ink); }
+    .brand-mark { color: var(--accent); }
+    .search {
+      flex: 1; max-width: 420px; position: relative;
+    }
+    .search input {
+      width: 100%;
+      padding: 6px 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      font: inherit;
+    }
+    .search-results {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      max-height: 360px; overflow-y: auto;
+      display: none;
+    }
+    .search-results[data-open="true"] { display: block; }
+    .search-count { padding: 8px 12px; margin: 0; color: var(--ink-faint); font-size: 0.85em; border-bottom: 1px solid var(--line-soft); }
+    .search-results ul { list-style: none; margin: 0; padding: 0; }
+    .search-results a {
+      display: block; padding: 8px 12px; color: var(--ink);
+    }
+    .search-results a:hover, .search-results a:focus { background: var(--accent-soft); text-decoration: none; }
+    .search-results .group-label { color: var(--ink-faint); font-size: 0.8em; margin-left: 6px; }
+    .search-empty { padding: 12px; color: var(--ink-faint); margin: 0; }
+
+    .topbar-actions { display: flex; gap: 8px; align-items: center; }
+    .icon-btn {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--ink);
+      border-radius: var(--radius);
+      padding: 6px;
+      cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .icon-btn:hover { background: var(--surface-2); }
+    [aria-pressed="true"] { background: var(--accent-soft); }
+
+    /* ============================================================
+       Sidebar nav
+       ============================================================ */
+    [data-section="sidebar-nav"] {
+      grid-area: sidebar;
+      border-right: 1px solid var(--line);
+      padding: var(--gap);
+      overflow-y: auto;
+      position: sticky;
+      top: var(--topbar-h);
+      height: calc(100vh - var(--topbar-h));
+    }
+    .sidebar-nav details { margin-bottom: 8px; }
+    .sidebar-nav summary {
+      cursor: pointer;
+      padding: 6px 8px;
+      font-weight: 600;
+      color: var(--ink);
+      list-style: none;
+      border-radius: var(--radius);
+    }
+    .sidebar-nav summary::-webkit-details-marker { display: none; }
+    .sidebar-nav summary::before {
+      content: "▸"; color: var(--ink-faint);
+      display: inline-block; width: 14px;
+    }
+    .sidebar-nav details[open] > summary::before { content: "▾"; }
+    .sidebar-nav ul { list-style: none; margin: 4px 0 8px; padding: 0 0 0 14px; }
+    .sidebar-nav li { margin: 2px 0; }
+    .sidebar-nav a {
+      display: block; padding: 4px 8px;
+      border-radius: var(--radius);
+      color: var(--ink-soft);
+    }
+    .sidebar-nav a:hover { background: var(--surface-2); text-decoration: none; }
+    .sidebar-nav a[aria-current="page"] {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ============================================================
+       Main
+       ============================================================ */
+    [data-section="main"] {
+      grid-area: main;
+      padding: var(--gap-lg);
+      max-width: 100%;
+      min-width: 0;
+    }
+    .article {
+      max-width: var(--content-max);
+      margin: 0 auto;
+    }
+    .article h1 { font-size: 2rem; margin: 0 0 8px; }
+    .article .lede { color: var(--ink-soft); margin: 0 0 var(--gap-lg); font-size: 1.1rem; }
+    .article h2 { margin-top: 2.5rem; border-bottom: 1px solid var(--line-soft); padding-bottom: 6px; }
+    .article h3 { margin-top: 1.5rem; }
+    .article p { margin: 0.8em 0; }
+    .article ul, .article ol { padding-left: 1.4em; }
+    .article blockquote {
+      margin: 1em 0;
+      padding: 8px 16px;
+      border-left: 4px solid var(--accent);
+      background: var(--surface-2);
+      color: var(--ink-soft);
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+    .article hr { border: 0; border-top: 1px solid var(--line-soft); margin: 2rem 0; }
+    .article :not(pre) > code {
+      padding: 0.1em 0.35em;
+      background: var(--code-inline-bg);
+      border-radius: 4px;
+      color: var(--ink);
+    }
+
+    /* ============================================================
+       Code blocks
+       ============================================================ */
+    figure.code {
+      margin: 1em 0;
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .code-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 10px;
+      background: var(--code-bg);
+      border-bottom: 1px solid var(--code-border);
+      font-size: 0.85em;
+    }
+    .code-lang { color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .code-copy {
+      background: transparent;
+      border: 0;
+      color: var(--ink-soft);
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 4px;
+      display: inline-flex; align-items: center;
+    }
+    .code-copy:hover { background: var(--surface-3); color: var(--ink); }
+    figure.code pre {
+      margin: 0;
+      padding: 12px 14px;
+      overflow-x: auto;
+      color: var(--code-fg);
+      background: transparent;
+    }
+    figure.code pre code { background: transparent; padding: 0; color: inherit; }
+    /* hand-marked colour classes — six, no more */
+    .k { color: #7c3aed; }   /* ponytail: keyword, dark-mode override in :root[data-theme=dark] */
+    .s { color: #047857; }   /* ponytail: string */
+    .c { color: #6b7280; font-style: italic; } /* ponytail: comment */
+    .n { color: #b45309; }   /* ponytail: number */
+    .f { color: #1d4ed8; }   /* ponytail: function name */
+    .t { color: #be185d; }   /* ponytail: type name */
+    :root[data-theme="dark"] .k { color: #c4b5fd; }
+    :root[data-theme="dark"] .s { color: #86efac; }
+    :root[data-theme="dark"] .c { color: #6b7280; }
+    :root[data-theme="dark"] .n { color: #fcd34d; }
+    :root[data-theme="dark"] .f { color: #93c5fd; }
+    :root[data-theme="dark"] .t { color: #f9a8d4; }
+
+    /* ============================================================
+       TOC aside
+       ============================================================ */
+    [data-section="toc-aside"] {
+      grid-area: toc;
+      padding: var(--gap-lg) var(--gap);
+      position: sticky;
+      top: var(--topbar-h);
+      height: calc(100vh - var(--topbar-h));
+      overflow-y: auto;
+    }
+    [data-section="toc-aside"] h2 {
+      font-size: 0.85em;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-faint);
+      margin: 0 0 8px;
+    }
+    [data-section="toc-aside"] ul { list-style: none; padding: 0; margin: 0; }
+    [data-section="toc-aside"] li { margin: 4px 0; font-size: 0.9em; }
+    [data-section="toc-aside"] ul ul { padding-left: 12px; margin: 4px 0; }
+    [data-section="toc-aside"] a { color: var(--ink-soft); }
+    [data-section="toc-aside"] a:hover { color: var(--accent); }
+
+    /* ============================================================
+       Footer (prev/next)
+       ============================================================ */
+    [data-section="footer"] {
+      grid-area: footer;
+      border-top: 1px solid var(--line);
+      padding: var(--gap-lg);
+      background: var(--surface-2);
+    }
+    .paging {
+      max-width: var(--content-max);
+      margin: 0 auto;
+      display: flex; justify-content: space-between; gap: var(--gap);
+    }
+    .paging a {
+      flex: 1;
+      display: block;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+    }
+    .paging a:hover { background: var(--surface); text-decoration: none; }
+    .paging .label { display: block; color: var(--ink-faint); font-size: 0.85em; margin-bottom: 4px; }
+    .paging .title { font-weight: 600; }
+    .paging .next { text-align: right; }
+    .paging .placeholder { visibility: hidden; }
+    .last-updated {
+      max-width: var(--content-max);
+      margin: var(--gap) auto 0;
+      color: var(--ink-faint);
+      font-size: 0.85em;
+      text-align: center;
+    }
+  </style>
+</head>
+<body data-section="app-shell">
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header data-section="topbar">
+    <a class="brand" href="#">
+      <span class="brand-mark">Acme</span> SDK
+    </a>
+    <div class="search" role="search">
+      <label class="sr-only" for="search">Search docs</label>
+      <input id="search" type="search" placeholder="Search docs… (press /)" autocomplete="off">
+      <div class="search-results" id="search-results" aria-label="Search results"></div>
+    </div>
+    <div class="topbar-actions">
+      <a class="icon-btn" href="https://example.com/edit/docs/getting-started.md" aria-label="Edit on GitHub" title="Edit on GitHub">
+        <svg aria-hidden="true" focusable="false" viewBox="0 0 16 16" width="16" height="16"><path d="M11 2l3 3-8 8H3v-3l8-8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      </a>
+      <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle theme" aria-pressed="false">
+        <svg aria-hidden="true" focusable="false" viewBox="0 0 16 16" width="16" height="16"><path d="M8 2a6 6 0 1 0 6 6 5 5 0 0 1-6-6z" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <nav data-section="sidebar-nav" aria-label="Pages" id="sidebar"></nav>
+
+  <main data-section="main" id="main" tabindex="-1">
+    <article class="article" id="article"></article>
+  </main>
+
+  <aside data-section="toc-aside" aria-label="On this page">
+    <h2>On this page</h2>
+    <nav id="toc"></nav>
+  </aside>
+
+  <footer data-section="footer">
+    <div class="paging" id="paging"></div>
+    <p class="last-updated" id="last-updated"></p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script>
+  (function () {
+    "use strict";
+
+    /* ============================================================
+       Markdown -> HTML (60 lines)
+       ============================================================ */
+    function slug(text) {
+      return text.toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "section";
+    }
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+    function convertMd(md) {
+      const lines = md.replace(/\r\n/g, "\n").split("\n");
+      const seen = {};
+      const out = [];
+      let i = 0;
+      while (i < lines.length) {
+        const line = lines[i];
+
+        // fenced code block
+        const fence = /^```(\w*)\s*$/.exec(line);
+        if (fence) {
+          const lang = fence[1] || "";
+          const buf = [];
+          i++;
+          while (i < lines.length && !/^```\s*$/.test(lines[i])) {
+            buf.push(lines[i]); i++;
+          }
+          i++; // skip closing fence
+          out.push(`<pre><code class="lang-${escapeHtml(lang)}">${escapeHtml(buf.join("\n"))}</code></pre>`);
+          continue;
+        }
+
+        // heading
+        const h = /^(#{1,6})\s+(.+?)\s*$/.exec(line);
+        if (h) {
+          const level = h[1].length;
+          const text = h[2];
+          let id;
+          if (level === 1) { id = ""; } // h1 doesn't need an id (skip link targets main)
+          else {
+            const base = slug(text);
+            id = base + (seen[base] ? `-${seen[base] + 1}` : "");
+            seen[base] = (seen[base] || 0) + 1;
+          }
+          out.push(`<h${level}${id ? ` id="${id}"` : ""}>${escapeHtml(text)}</h${level}>`);
+          i++;
+          continue;
+        }
+
+        // hr
+        if (/^---\s*$/.test(line)) { out.push("<hr>"); i++; continue; }
+
+        // blockquote
+        if (/^>\s?/.test(line)) {
+          const buf = [];
+          while (i < lines.length && /^>\s?/.test(lines[i])) {
+            buf.push(lines[i].replace(/^>\s?/, "")); i++;
+          }
+          out.push(`<blockquote>${convertMd(buf.join("\n")).replace(/^<p>|<\/p>$/g, "")}</blockquote>`);
+          continue;
+        }
+
+        // unordered list
+        if (/^[-*]\s+/.test(line)) {
+          const buf = [];
+          while (i < lines.length && /^[-*]\s+/.test(lines[i])) {
+            buf.push(lines[i].replace(/^[-*]\s+/, "")); i++;
+          }
+          out.push("<ul>" + buf.map(li => `<li>${inlineMd(li)}</li>`).join("") + "</ul>");
+          continue;
+        }
+
+        // blank line
+        if (/^\s*$/.test(line)) { i++; continue; }
+
+        // paragraph
+        const buf = [];
+        while (i < lines.length && !/^\s*$/.test(lines[i]) && !/^(#{1,6})\s+/.test(lines[i]) && !/^```/.test(lines[i]) && !/^[-*]\s+/.test(lines[i]) && !/^>\s?/.test(lines[i])) {
+          buf.push(lines[i]); i++;
+        }
+        if (buf.length) out.push(`<p>${inlineMd(buf.join(" "))}</p>`);
+      }
+      return out.join("\n");
+    }
+    function inlineMd(s) {
+      let t = escapeHtml(s);
+      t = t.replace(/`([^`]+)`/g, (_m, c) => `<code>${c}</code>`);
+      t = t.replace(/\*\*([^*]+)\*\*/g, (_m, c) => `<strong>${c}</strong>`);
+      t = t.replace(/\*([^*]+)\*/g, (_m, c) => `<em>${c}</em>`);
+      t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, url) => {
+        const safeUrl = /^(https?:|mailto:|#|\/)/i.test(url) ? url : "#";
+        return `<a href="${safeUrl}">${label}</a>`;
+      });
+      return t;
+    }
+
+    /* ============================================================
+       Code-block post-process: wrap each <pre> in <figure class="code">,
+       add copy button + language label + sr-only status span.
+       ============================================================ */
+    function postProcessCodeBlocks(html) {
+      return html.replace(
+        /<pre>(<code\b[^>]*>)([\s\S]*?)(<\/code>)<\/pre>/g,
+        function (m, open, body, close) {
+          const langMatch = /class="lang-([^"]*)"/.exec(open);
+          const lang = langMatch ? langMatch[1] : "";
+          return (
+            '<figure class="code">' +
+              '<div class="code-head">' +
+                (lang ? `<span class="code-lang" aria-hidden="true">${lang}</span>` : `<span class="code-lang" aria-hidden="true"></span>`) +
+                '<button class="code-copy" type="button" aria-label="Copy code">' +
+                  '<svg aria-hidden="true" focusable="false" viewBox="0 0 16 16" width="14" height="14">' +
+                    '<rect x="5" y="2" width="9" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/>' +
+                    '<path d="M2 5h2v9h7v2H3.5A1.5 1.5 0 0 1 2 14.5V5z" fill="currentColor"/>' +
+                  '</svg>' +
+                  '<span class="sr-only" aria-live="polite"></span>' +
+                '</button>' +
+              '</div>' +
+              `<pre>${open}${body}${close}</pre>` +
+            '</figure>'
+          );
+        }
+      );
+    }
+
+    /* ============================================================
+       Sidebar render
+       ============================================================ */
+    function renderSidebar() {
+      const groups = new Map();
+      PAGES.forEach(p => {
+        if (!groups.has(p.group)) groups.set(p.group, []);
+        groups.get(p.group).push(p);
+      });
+      // group order = first occurrence in PAGES
+      const orderedGroups = [];
+      const seen = new Set();
+      PAGES.forEach(p => { if (!seen.has(p.group)) { seen.add(p.group); orderedGroups.push(p.group); } });
+
+      const html = orderedGroups.map(g => {
+        const pages = groups.get(g).slice().sort((a, b) => a.order - b.order);
+        const items = pages.map(p =>
+          `<li><a href="#${p.id}" data-page-link="${p.id}">${p.title}</a></li>`
+        ).join("");
+        return `<details class="group"><summary>${g}</summary><ul>${items}</ul></details>`;
+      }).join("");
+      document.getElementById("sidebar").innerHTML = html;
+    }
+
+    /* ============================================================
+       TOC render — walks rendered article for h2/h3
+       ============================================================ */
+    function renderToc() {
+      const article = document.getElementById("article");
+      const headings = article.querySelectorAll("h2, h3");
+      const toc = document.getElementById("toc");
+      if (!headings.length) { toc.innerHTML = "<p style='color:var(--ink-faint);font-size:0.85em;'>No sections.</p>"; return; }
+      const items = [];
+      headings.forEach(h => {
+        if (!h.id) return;
+        const tag = h.tagName.toLowerCase();
+        items.push(`<li><a href="#${h.id}" data-toc-link="${h.id}">${h.textContent}</a></li>`);
+      });
+      // build nested ul
+      const html = [];
+      html.push("<ul>");
+      const stack = [{ level: 1, list: html }];
+      headings.forEach(h => {
+        const lvl = parseInt(h.tagName.slice(1), 10);
+        while (stack[stack.length - 1].level >= lvl) stack.pop();
+        const top = stack[stack.length - 1].list;
+        const li = `<li><a href="#${h.id}" data-toc-link="${h.id}">${h.textContent}</a>`;
+        top.push(li);
+        if (lvl === 2) {
+          html.push("<ul>"); stack.push({ level: lvl, list: html });
+        }
+      });
+      while (stack.length > 1) { html.push("</ul>"); stack.pop(); }
+      html.push("</ul>");
+      toc.innerHTML = html.join("");
+    }
+
+    /* ============================================================
+       Paging render — prev/next based on PAGES order
+       ============================================================ */
+    function renderPaging() {
+      const id = currentId();
+      const idx = PAGES.findIndex(p => p.id === id);
+      const prev = idx > 0 ? PAGES[idx - 1] : null;
+      const next = idx < PAGES.length - 1 ? PAGES[idx + 1] : null;
+      document.getElementById("paging").innerHTML =
+        (prev
+          ? `<a class="prev" href="#${prev.id}" data-page-link="${prev.id}"><span class="label">← Previous</span><span class="title">${prev.title}</span></a>`
+          : `<span class="placeholder"></span>`) +
+        (next
+          ? `<a class="next" href="#${next.id}" data-page-link="${next.id}"><span class="label">Next →</span><span class="title">${next.title}</span></a>`
+          : `<span class="placeholder"></span>`);
+      document.getElementById("last-updated").textContent =
+        "Last updated " + new Date().toISOString().slice(0, 10);
+    }
+
+    /* ============================================================
+       Page render (main)
+       ============================================================ */
+    function renderPage(page) {
+      let html = convertMd(page.body);
+      html = postProcessCodeBlocks(html);
+      document.getElementById("article").innerHTML = html;
+    }
+
+    /* ============================================================
+       Active state
+       ============================================================ */
+    function setActive(id) {
+      document.querySelectorAll('[data-section="sidebar-nav"] a[data-page-link]')
+        .forEach(a => {
+          if (a.getAttribute("data-page-link") === id) a.setAttribute("aria-current", "page");
+          else a.removeAttribute("aria-current");
+        });
+      document.querySelectorAll('[data-section="sidebar-nav"] details').forEach(d => {
+        if (d.querySelector(`a[data-page-link="${id}"]`)) d.setAttribute("open", "");
+      });
+    }
+
+    function currentId() {
+      const h = location.hash.slice(1);
+      if (h && PAGES.some(p => p.id === h)) return h;
+      return PAGES[0].id;
+    }
+
+    function navigate() {
+      const id = currentId();
+      const page = PAGES.find(p => p.id === id);
+      renderPage(page);
+      renderToc();
+      renderPaging();
+      setActive(id);
+      document.title = `${page.title} · Acme SDK docs`;
+    }
+
+    /* ============================================================
+       Search (client-side inverted index; see memory/06-search.md)
+       ============================================================ */
+    const STOPWORDS = new Set([
+      "the","is","at","which","on","a","an","and","or","to","for","of","with","in","as","by","that","this","it","be","are","was"
+    ]);
+    function tokensOf(text) {
+      return text.toLowerCase().replace(/[`*_#\[\]()]/g, " ")
+        .split(/[^a-z0-9]+/).filter(t => t.length >= 2 && !STOPWORDS.has(t));
+    }
+    const IDX = new Map();
+    function buildIndex() {
+      for (const p of PAGES) {
+        const text = (p.title + " " + (p.summary || "") + " " + p.body).toLowerCase();
+        const seen = new Set();
+        for (const tok of tokensOf(text)) {
+          if (seen.has(tok)) continue; // ponytail: dedupe per page so title hits > body spam
+          seen.add(tok);
+          if (!IDX.has(tok)) IDX.set(tok, new Set());
+          IDX.get(tok).add(p.id);
+        }
+      }
+    }
+    function search(q) {
+      const toks = tokensOf(q);
+      if (!toks.length) return [];
+      let set = null;
+      for (const t of toks) {
+        const next = IDX.get(t);
+        if (!next) return [];
+        set = set ? new Set([...set].filter(x => next.has(x))) : new Set(next);
+      }
+      const ranked = [...set].map(id => PAGES.find(p => p.id === id))
+        .sort((a, b) => score(b, toks) - score(a, toks));
+      return ranked;
+    }
+    function score(page, toks) {
+      let s = 0;
+      const tl = page.title.toLowerCase();
+      const sl = (page.summary || "").toLowerCase();
+      const bl = page.body.toLowerCase();
+      for (const t of toks) {
+        if (tl.includes(t)) s += 5;
+        if (sl.includes(t)) s += 2;
+        if (bl.includes(t)) s += 1;
+      }
+      return s;
+    }
+    function renderSearchResults(q) {
+      const panel = document.getElementById("search-results");
+      if (!q.trim()) { panel.removeAttribute("data-open"); panel.innerHTML = ""; return; }
+      const hits = search(q);
+      const count = `<p class="search-count" aria-live="polite">${
+        hits.length ? `${hits.length} match${hits.length === 1 ? "" : "es"}` : "No matches"
+      } for &ldquo;${escapeHtml(q)}&rdquo;</p>`;
+      const list = hits.length
+        ? "<ul>" + hits.map(p =>
+            `<li><a href="#${p.id}" data-page-link="${p.id}">${p.title}<span class="group-label">· ${p.group}</span></a></li>`
+          ).join("") + "</ul>"
+        : `<p class="search-empty">No matches for &ldquo;${escapeHtml(q)}&rdquo;.</p>`;
+      panel.innerHTML = count + list;
+      panel.setAttribute("data-open", "true");
+    }
+
+    /* ============================================================
+       Theme toggle
+       ============================================================ */
+    function applyTheme(t) {
+      if (t === "dark") document.documentElement.setAttribute("data-theme", "dark");
+      else document.documentElement.removeAttribute("data-theme");
+      const btn = document.getElementById("theme-toggle");
+      btn.setAttribute("aria-pressed", t === "dark" ? "true" : "false");
+    }
+    function initTheme() {
+      const saved = localStorage.getItem("theme");
+      applyTheme(saved === "dark" ? "dark" : "light");
+    }
+
+    /* ============================================================
+       Keyboard shortcuts
+       ============================================================ */
+    let lastG = 0;
+    function initKeyboard() {
+      document.addEventListener("keydown", e => {
+        const tag = (e.target.tagName || "").toLowerCase();
+        const isTyping = tag === "input" || tag === "textarea";
+
+        if (!isTyping && e.key === "/") {
+          e.preventDefault();
+          document.getElementById("search").focus();
+          return;
+        }
+        if (isTyping && e.target.id === "search" && e.key === "Escape") {
+          e.target.value = "";
+          renderSearchResults("");
+          e.target.blur();
+          return;
+        }
+        if (e.key.toLowerCase() === "g" && Date.now() - lastG < 1000) {
+          // wait for second key
+        } else if (e.key.toLowerCase() === "g") {
+          lastG = Date.now();
+          return;
+        } else {
+          lastG = 0;
+        }
+        if (Date.now() - lastG < 1000 && e.key.toLowerCase() === "s") {
+          e.preventDefault();
+          const link = document.querySelector('[data-section="sidebar-nav"] a[data-page-link]');
+          if (link) link.focus();
+          lastG = 0;
+        } else if (Date.now() - lastG < 1000 && e.key.toLowerCase() === "t") {
+          e.preventDefault();
+          const link = document.querySelector('[data-section="toc-aside"] a');
+          if (link) link.focus();
+          lastG = 0;
+        }
+      });
+    }
+
+    /* ============================================================
+       Copy code (delegated)
+       ============================================================ */
+    function initCopyCode() {
+      document.addEventListener("click", e => {
+        const btn = e.target.closest(".code-copy");
+        if (!btn) return;
+        const fig = btn.closest("figure.code");
+        const code = fig && fig.querySelector("pre code");
+        if (!code) return;
+        const status = btn.querySelector("[aria-live]");
+        const reset = () => { btn.setAttribute("aria-label", "Copy code"); if (status) status.textContent = ""; };
+        const navigator_clipboard = navigator.clipboard;
+        const finish = (ok) => {
+          btn.setAttribute("aria-label", ok ? "Copied" : "Copy failed");
+          if (status) status.textContent = ok ? "Copied" : "Copy failed";
+          setTimeout(reset, 1500);
+        };
+        // ponytail: clipboard.writeText requires secure context; fall back gracefully
+        if (navigator_clipboard && window.isSecureContext) {
+          navigator_clipboard.writeText(code.textContent).then(() => finish(true), () => finish(false));
+        } else {
+          finish(false);
+        }
+      });
+    }
+
+    /* ============================================================
+       Reduced motion helper
+       ============================================================ */
+    function reducedMotion() {
+      return matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+
+    /* ============================================================
+       Boot
+       ============================================================ */
+    document.addEventListener("DOMContentLoaded", function () {
+      renderSidebar();
+      buildIndex();
+      initTheme();
+      initKeyboard();
+      initCopyCode();
+      navigate();
+      window.addEventListener("hashchange", navigate);
+
+      // search input
+      const search = document.getElementById("search");
+      search.addEventListener("input", e => renderSearchResults(e.target.value));
+      search.addEventListener("focus", e => { if (e.target.value) renderSearchResults(e.target.value); });
+      document.addEventListener("click", e => {
+        if (!e.target.closest(".search") && !e.target.closest(".search-results")) {
+          const panel = document.getElementById("search-results");
+          panel.removeAttribute("data-open");
+        }
+      });
+
+      // theme
+      document.getElementById("theme-toggle").addEventListener("click", () => {
+        const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        applyTheme(next);
+        localStorage.setItem("theme", next);
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

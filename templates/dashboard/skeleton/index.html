@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Atlas Admin</title>
+  <script>
+    // First-paint theme + reduced-motion (per memory/06 + memory/07).
+    // Inline in <head> to avoid FOUC.
+    (function () {
+      try {
+        var t = localStorage.getItem('theme');
+        if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.dataset.theme = t;
+
+        var rm = matchMedia('(prefers-reduced-motion: reduce)');
+        var applyRM = function () {
+          document.documentElement.dataset.reducedMotion = rm.matches ? 'reduce' : 'no-preference';
+        };
+        rm.addEventListener('change', applyRM);
+        applyRM();
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    /* ── Tokens (memory/06 light + memory/11 dark) ─────────────────────── */
+    :root[data-theme="light"] {
+      --surface: #FFFFFF; --surface-2: #F8FAFC;
+      --ink: #0F172A; --ink-soft: #475569; --ink-faint: #94A3B8;
+      --line: #E2E8F0; --line-soft: #F1F5F9;
+      --accent: #2563EB; --accent-soft: #DBEAFE;
+      --status-info: #3B82F6; --status-success: #10B981;
+      --status-warn: #F59E0B; --status-error: #EF4444;
+    }
+    :root[data-theme="dark"] {
+      --surface: #0B0F19; --surface-2: #111827;
+      --ink: #F1F5F9; --ink-soft: #94A3B8; --ink-faint: #64748B;
+      --line: #1F2937; --line-soft: #111827;
+      --accent: #60A5FA; --accent-soft: #1E3A8A;
+      --status-info: #60A5FA; --status-success: #34D399;
+      --status-warn: #FBBF24; --status-error: #F87171;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--surface); color: var(--ink); }
+    body { font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+    /* Skip link (memory/08). */
+    .skip {
+      position: absolute; left: -9999px; top: 0;
+      background: var(--accent); color: #fff; padding: 8px 12px; z-index: 100;
+      text-decoration: none; border-radius: 0 0 4px 4px;
+    }
+    .skip:focus { left: 8px; top: 8px; }
+
+    /* Focus ring (memory/08 rule 1). */
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+    /* sr-only utility. */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* ── App shell (data-section="app-shell") ──────────────────────────── */
+    [data-section="app-shell"] { display: grid; grid-template-rows: 56px 1fr 32px; min-height: 100vh; }
+
+    /* Topbar */
+    [data-section="topbar"] {
+      display: flex; align-items: center; gap: 16px; padding: 0 16px;
+      background: var(--surface); border-bottom: 1px solid var(--line);
+    }
+    [data-section="topbar"] .brand { font-weight: 700; font-size: 15px; color: var(--ink); text-decoration: none; }
+    [data-section="topbar"] .spacer { flex: 1; }
+    [data-section="topbar"] input[type="search"] {
+      background: var(--surface-2); border: 1px solid var(--line);
+      color: var(--ink); border-radius: 6px; padding: 6px 10px; font: inherit; min-width: 240px;
+    }
+    [data-section="topbar"] .theme-btn {
+      background: transparent; border: 1px solid var(--line);
+      color: var(--ink); border-radius: 6px; padding: 6px 10px; cursor: pointer;
+    }
+
+    /* Shell layout: sidebar + main */
+    [data-section="app-shell"] > .shell-body { display: grid; grid-template-columns: 200px 1fr; min-height: 0; }
+
+    /* Sidebar */
+    [data-section="sidebar"] {
+      border-right: 1px solid var(--line); padding: 16px 8px; background: var(--surface);
+    }
+    [data-section="sidebar"] ul { list-style: none; padding: 0; margin: 0; }
+    [data-section="sidebar"] li { margin: 2px 0; }
+    [data-section="sidebar"] a {
+      display: block; padding: 8px 12px; border-radius: 6px;
+      color: var(--ink-soft); text-decoration: none;
+    }
+    [data-section="sidebar"] a:hover { background: var(--surface-2); color: var(--ink); }
+    [data-section="sidebar"] a[aria-current="page"] {
+      background: var(--accent-soft); color: var(--accent); font-weight: 600;
+    }
+
+    /* Main column */
+    main { padding: 24px; overflow: auto; min-width: 0; }
+    .section { display: none; max-width: 1100px; }
+    .section.is-visible { display: block; }
+
+    /* Section headings */
+    .section h1 { margin: 0 0 16px; font-size: 20px; color: var(--ink); }
+
+    /* ── Data table (data-section="data-table") ────────────────────────── */
+    [data-section="data-table"] .filters {
+      display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;
+    }
+    [data-section="data-table"] .filters input,
+    [data-section="data-table"] .filters select {
+      background: var(--surface); border: 1px solid var(--line);
+      color: var(--ink); border-radius: 6px; padding: 6px 10px; font: inherit;
+    }
+    [data-section="data-table"] table {
+      width: 100%; border-collapse: collapse; background: var(--surface);
+      border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+    }
+    [data-section="data-table"] caption {
+      text-align: left; padding: 12px 16px; font-weight: 600;
+      color: var(--ink); border-bottom: 1px solid var(--line);
+    }
+    [data-section="data-table"] caption .caption-meta { color: var(--ink-faint); font-weight: 400; margin-left: 6px; }
+    [data-section="data-table"] th, [data-section="data-table"] td {
+      padding: 10px 16px; text-align: left; border-bottom: 1px solid var(--line-soft);
+    }
+    [data-section="data-table"] th {
+      color: var(--ink-soft); font-weight: 600; font-size: 12px;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    [data-section="data-table"] th button {
+      background: transparent; border: 0; color: inherit; font: inherit; cursor: pointer;
+      padding: 0; display: inline-flex; align-items: center; gap: 4px;
+    }
+    [data-section="data-table"] th button[data-sort-active="true"]::after { content: " ▾"; color: var(--accent); }
+    [data-section="data-table"] tbody tr:hover { background: var(--surface-2); }
+    [data-section="data-table"] .role-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 999px;
+      font-size: 12px; font-weight: 500;
+    }
+    [data-section="data-table"] .role-admin { background: var(--accent-soft); color: var(--accent); }
+    [data-section="data-table"] .role-member { background: var(--surface-2); color: var(--ink-soft); }
+    [data-section="data-table"] .role-viewer { background: var(--line-soft); color: var(--ink-faint); }
+    [data-section="data-table"] .status-dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      margin-right: 6px; vertical-align: middle;
+    }
+    [data-section="data-table"] .status-active .status-dot { background: var(--status-success); }
+    [data-section="data-table"] .status-invited .status-dot { background: var(--status-warn); }
+    [data-section="data-table"] .status-disabled .status-dot { background: var(--status-error); }
+    [data-section="data-table"] .empty {
+      padding: 48px 16px; text-align: center; color: var(--ink-soft);
+    }
+    [data-section="data-table"] .empty button {
+      margin-top: 8px; background: transparent; border: 1px solid var(--line);
+      color: var(--accent); padding: 6px 12px; border-radius: 6px; cursor: pointer;
+    }
+    [data-section="data-table"] .pagination {
+      display: flex; gap: 4px; align-items: center; margin-top: 16px;
+      justify-content: flex-end;
+    }
+    [data-section="data-table"] .pagination button {
+      background: transparent; border: 1px solid var(--line);
+      color: var(--ink); padding: 4px 10px; border-radius: 4px; cursor: pointer;
+    }
+    [data-section="data-table"] .pagination button[aria-current="page"] {
+      background: var(--accent); color: #fff; border-color: var(--accent);
+    }
+    [data-section="data-table"] .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* State machine: data-state on data-section (memory/03). */
+    [data-section="data-table"][data-state="empty"] .table-ready,
+    [data-section="data-table"][data-state="empty"] .table-loading,
+    [data-section="data-table"][data-state="empty"] .table-error { display: none; }
+    [data-section="data-table"][data-state="loading"] .table-ready,
+    [data-section="data-table"][data-state="loading"] .table-empty,
+    [data-section="data-table"][data-state="loading"] .table-error { display: none; }
+    [data-section="data-table"][data-state="ready"] .table-empty,
+    [data-section="data-table"][data-state="ready"] .table-loading,
+    [data-section="data-table"][data-state="ready"] .table-error { display: none; }
+    [data-section="data-table"][data-state="error"] .table-ready,
+    [data-section="data-table"][data-state="error"] .table-empty,
+    [data-section="data-table"][data-state="error"] .table-loading { display: none; }
+
+    /* ── Metrics (data-section="metrics") ──────────────────────────────── */
+    [data-section="metrics"] {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    }
+    [data-section="metrics"] .metric {
+      background: var(--surface-2); border: 1px solid var(--line);
+      border-radius: 8px; padding: 16px;
+    }
+    [data-section="metrics"] .metric-label { color: var(--ink-soft); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+    [data-section="metrics"] .metric-value { color: var(--ink); font-size: 28px; font-weight: 700; margin-top: 4px; }
+    [data-section="metrics"] .metric-delta { font-size: 12px; margin-top: 4px; }
+    [data-section="metrics"] .metric-delta.up { color: var(--status-success); }
+    [data-section="metrics"] .metric-delta.down { color: var(--status-error); }
+
+    /* ── Form (data-section="form") ────────────────────────────────────── */
+    [data-section="form"] form {
+      background: var(--surface-2); border: 1px solid var(--line);
+      border-radius: 8px; padding: 20px; max-width: 480px;
+    }
+    [data-section="form"] .field { display: grid; gap: 4px; margin-bottom: 14px; }
+    [data-section="form"] label { color: var(--ink); font-weight: 500; font-size: 13px; }
+    [data-section="form"] input,
+    [data-section="form"] select,
+    [data-section="form"] textarea {
+      background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+      border-radius: 6px; padding: 8px 10px; font: inherit;
+    }
+    [data-section="form"] textarea { resize: vertical; min-height: 80px; }
+    [data-section="form"] .help { color: var(--ink-faint); font-size: 12px; }
+    [data-section="form"] .err { color: var(--status-error); font-size: 12px; min-height: 1em; }
+    [data-section="form"] input[aria-invalid="true"],
+    [data-section="form"] select[aria-invalid="true"],
+    [data-section="form"] textarea[aria-invalid="true"] { border-color: var(--status-error); }
+    [data-section="form"] button[type="submit"] {
+      background: var(--accent); color: #fff; border: 0;
+      border-radius: 6px; padding: 8px 16px; cursor: pointer; font-weight: 600;
+    }
+    [data-section="form"] button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
+    [data-section="form"] .success {
+      color: var(--status-success); font-size: 13px; margin-top: 12px;
+    }
+
+    /* ── Footer (data-section="footer") ────────────────────────────────── */
+    [data-section="footer"] {
+      padding: 8px 16px; border-top: 1px solid var(--line); color: var(--ink-faint); font-size: 12px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    /* Reduced motion (memory/07). */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body data-section="app-shell">
+
+  <a class="skip" href="#main">Skip to main content</a>
+
+  <!-- ─────── Topbar (data-section="topbar") ─────── -->
+  <header data-section="topbar" role="banner">
+    <a class="brand" href="#/dashboard">Atlas Admin</a>
+    <span class="spacer"></span>
+    <label for="global-search" class="sr-only">Search</label>
+    <input id="global-search" type="search" placeholder="Search… (press / to focus)" autocomplete="off">
+    <button type="button" class="theme-btn" id="theme-toggle" aria-label="Toggle theme">
+      <span aria-hidden="true">☀/☾</span>
+    </button>
+  </header>
+
+  <div class="shell-body">
+
+    <!-- ─────── Sidebar (data-section="sidebar") ─────── -->
+    <nav data-section="sidebar" aria-label="Primary">
+      <ul>
+        <li><a href="#/dashboard" data-route="#/dashboard">Dashboard</a></li>
+        <li><a href="#/users" data-route="#/users">Users</a></li>
+        <li><a href="#/settings" data-route="#/settings">Settings</a></li>
+      </ul>
+    </nav>
+
+    <main id="main" tabindex="-1">
+
+      <!-- ─────── Data table (data-section="data-table") ─────── -->
+      <section class="section" data-section="data-table" data-state="ready" aria-labelledby="users-heading">
+
+        <h1 id="users-heading">Users</h1>
+
+        <div class="filters" role="search" aria-label="Filter users">
+          <label for="filter-q" class="sr-only">Search users</label>
+          <input id="filter-q" type="search" placeholder="Search by name or email…" autocomplete="off">
+          <label for="filter-role" class="sr-only">Filter by role</label>
+          <select id="filter-role">
+            <option value="">All roles</option>
+            <option value="admin">Admins</option>
+            <option value="member">Members</option>
+            <option value="viewer">Viewers</option>
+          </select>
+        </div>
+
+        <table aria-describedby="sort-announcer">
+          <caption>
+            Users <span class="caption-meta" id="users-count">(0 of 0)</span>
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">
+                <button type="button" data-sort-key="name">Name</button>
+              </th>
+              <th scope="col" aria-sort="none">
+                <button type="button" data-sort-key="email">Email</button>
+              </th>
+              <th scope="col" aria-sort="none">
+                <button type="button" data-sort-key="role">Role</button>
+              </th>
+              <th scope="col">Status</th>
+              <th scope="col">Last seen</th>
+              <th scope="col">Invited by</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody" class="table-ready">
+            <!-- Rows injected by script. -->
+          </tbody>
+          <tbody class="table-empty is-empty">
+            <tr><td colspan="7">
+              <div class="empty">
+                <p>No users match the current filter.</p>
+                <button type="button" data-action="clear-filters">Clear filters</button>
+              </div>
+            </td></tr>
+          </tbody>
+          <tbody class="table-loading">
+            <tr><td colspan="7">
+              <div class="empty" role="status" aria-live="polite">Loading users…</div>
+            </td></tr>
+          </tbody>
+          <tbody class="table-error" role="alert">
+            <tr><td colspan="7">
+              <div class="empty">
+                <p>Couldn't load users.</p>
+                <button type="button" data-action="retry">Retry</button>
+              </div>
+            </td></tr>
+          </tbody>
+        </table>
+
+        <nav class="pagination" aria-label="Users pagination" id="users-pagination"></nav>
+
+        <div id="sort-announcer" class="sr-only" aria-live="polite"></div>
+      </section>
+
+      <!-- ─────── Metrics (data-section="metrics") ─────── -->
+      <section class="section" data-section="metrics" aria-labelledby="metrics-heading">
+        <h1 id="metrics-heading">Overview</h1>
+        <div class="metric">
+          <div class="metric-label">MRR</div>
+          <div class="metric-value" id="m-mrr">$0</div>
+          <div class="metric-delta up" id="m-mrr-delta">↑ 0% vs last month</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Active seats</div>
+          <div class="metric-value" id="m-seats">0</div>
+          <div class="metric-delta up" id="m-seats-delta">↑ 0% MoM</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">NRR</div>
+          <div class="metric-value" id="m-nrr">0%</div>
+          <div class="metric-delta down" id="m-nrr-delta">↓ 0% vs target</div>
+        </div>
+      </section>
+
+      <!-- ─────── Form (data-section="form") ─────── -->
+      <section class="section" data-section="form" aria-labelledby="invite-heading">
+        <h1 id="invite-heading">Invite a teammate</h1>
+        <form id="invite-form" novalidate aria-labelledby="invite-heading">
+
+          <div class="field">
+            <label for="invite-email">Email</label>
+            <input id="invite-email" name="email" type="email" required
+                   autocomplete="email" placeholder="ali@example.com"
+                   aria-describedby="invite-email-err"
+                   aria-invalid="false">
+            <span class="err" id="invite-email-err"></span>
+          </div>
+
+          <div class="field">
+            <label for="invite-role">Role</label>
+            <select id="invite-role" name="role"
+                    aria-describedby="invite-role-help invite-role-err"
+                    aria-invalid="false">
+              <option value="member">Member</option>
+              <option value="admin">Admin</option>
+              <option value="viewer">Viewer</option>
+            </select>
+            <span class="help" id="invite-role-help">What they'll be able to do.</span>
+            <span class="err" id="invite-role-err"></span>
+          </div>
+
+          <div class="field">
+            <label for="invite-message">Message (optional)</label>
+            <textarea id="invite-message" name="message" maxlength="280"
+                      aria-describedby="invite-message-err"
+                      aria-invalid="false"></textarea>
+            <span class="err" id="invite-message-err"></span>
+          </div>
+
+          <button type="submit" id="invite-submit">Invite</button>
+          <div class="success" id="invite-success" hidden>Invitation sent.</div>
+
+        </form>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ─────── Footer (data-section="footer") ─────── -->
+  <footer data-section="footer" role="contentinfo">
+    <span>Atlas Admin · fictional demo · v0.1.0</span>
+    <span>Press <kbd>?</kbd> for help · <kbd>/</kbd> to search</span>
+  </footer>
+
+  <!-- Mock data + engine. -->
+  <script src="data.js"></script>
+  <script>
+    'use strict';
+    (function () {
+      // ─── Routes (memory/02) ────────────────────────────────────
+      var routes = [
+        { hash: '#/dashboard', section: 'metrics',   label: 'Dashboard' },
+        { hash: '#/users',     section: 'data-table', label: 'Users', query: true },
+        { hash: '#/settings',  section: 'form',      label: 'Settings' }
+      ];
+      var defaultHash = '#/dashboard';
+
+      function parseHash() {
+        var h = location.hash || defaultHash;
+        var route = routes.filter(function (r) { return r.hash === h; })[0];
+        return route || routes[0];
+      }
+
+      function showSection(section) {
+        document.querySelectorAll('.section').forEach(function (s) {
+          s.classList.toggle('is-visible', s.dataset.section === section);
+        });
+      }
+
+      function syncSidebar(hash) {
+        document.querySelectorAll('[data-section="sidebar"] a').forEach(function (a) {
+          if (a.getAttribute('href') === hash) {
+            a.setAttribute('aria-current', 'page');
+          } else {
+            a.removeAttribute('aria-current');
+          }
+        });
+      }
+
+      function readQuery() {
+        var q = {};
+        var s = location.search.replace(/^\?/, '');
+        if (!s) return q;
+        s.split('&').forEach(function (kv) {
+          var p = kv.split('=');
+          q[decodeURIComponent(p[0])] = decodeURIComponent((p[1] || '').replace(/\+/g, ' '));
+        });
+        return q;
+      }
+      function writeQuery(q) {
+        var keys = Object.keys(q).filter(function (k) { return q[k] !== '' && q[k] != null; });
+        if (keys.length === 0) {
+          history.replaceState(null, '', location.pathname + location.hash);
+          return;
+        }
+        var s = keys.map(function (k) {
+          return encodeURIComponent(k) + '=' + encodeURIComponent(q[k]);
+        }).join('&');
+        history.replaceState(null, '', '?' + s + location.hash);
+      }
+
+      function applyRoute() {
+        var route = parseHash();
+        showSection(route.section);
+        syncSidebar(route.hash);
+        if (route.query) {
+          var q = readQuery();
+          applyTableQuery(q);
+        }
+      }
+
+      window.addEventListener('hashchange', applyRoute);
+
+      // ─── Table (memory/03) ────────────────────────────────────
+      var rowsState = {
+        data: window.MOCK_USERS.slice(),
+        filtered: [],
+        sort: { key: 'role', dir: 'asc' },
+        page: 1,
+        pageSize: 10,
+        q: '',
+        role: ''
+      };
+
+      var tbody = document.getElementById('users-tbody');
+      var emptyTbody = document.querySelector('.table-empty');
+      var readyTbody = document.querySelector('.table-ready');
+      var countSpan = document.getElementById('users-count');
+      var paginationEl = document.getElementById('users-pagination');
+      var announcer = document.getElementById('sort-announcer');
+
+      function applyFilters() {
+        var q = rowsState.q.toLowerCase();
+        var role = rowsState.role;
+        rowsState.filtered = rowsState.data.filter(function (r) {
+          if (role && r.role !== role) return false;
+          if (q && (r.name.toLowerCase().indexOf(q) === -1 && r.email.toLowerCase().indexOf(q) === -1)) return false;
+          return true;
+        });
+        applySort();
+      }
+      function applySort() {
+        var k = rowsState.sort.key, d = rowsState.sort.dir === 'asc' ? 1 : -1;
+        rowsState.filtered.sort(function (a, b) {
+          var av = (a[k] || '').toLowerCase ? (a[k] || '').toLowerCase() : a[k];
+          var bv = (b[k] || '').toLowerCase ? (b[k] || '').toLowerCase() : b[k];
+          if (av < bv) return -1 * d;
+          if (av > bv) return  1 * d;
+          return 0;
+        });
+      }
+      function renderTable() {
+        var n = rowsState.filtered.length;
+        var pageSize = rowsState.pageSize;
+        var pageCount = Math.max(1, Math.ceil(n / pageSize));
+        if (rowsState.page > pageCount) rowsState.page = pageCount;
+        var start = (rowsState.page - 1) * pageSize;
+        var slice = rowsState.filtered.slice(start, start + pageSize);
+
+        var section = document.querySelector('[data-section="data-table"]');
+        if (n === 0) {
+          section.dataset.state = 'empty';
+        } else {
+          section.dataset.state = 'ready';
+        }
+        countSpan.textContent = '(' + n + ' of ' + rowsState.data.length + ')';
+
+        // Render rows.
+        tbody.innerHTML = '';
+        slice.forEach(function (r) {
+          var tr = document.createElement('tr');
+          tr.innerHTML =
+            '<td>' + esc(r.name) + '</td>' +
+            '<td>' + esc(r.email) + '</td>' +
+            '<td><span class="role-badge role-' + esc(r.role) + '">' + esc(r.role) + '</span></td>' +
+            '<td class="status-' + esc(r.status) + '"><span class="status-dot" aria-hidden="true"></span>' + esc(r.status) + '</td>' +
+            '<td>' + esc(r.lastSeen) + '</td>' +
+            '<td>' + esc(r.invitedBy) + '</td>' +
+            '<td><button type="button" data-action="remove" data-id="' + esc(r.id) + '">Remove</button></td>';
+          tbody.appendChild(tr);
+        });
+
+        // Pagination.
+        paginationEl.innerHTML = '';
+        var mkBtn = function (label, page, opts) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.textContent = label;
+          if (opts && opts.current) b.setAttribute('aria-current', 'page');
+          if (opts && opts.disabled) b.disabled = true;
+          b.addEventListener('click', function () {
+            rowsState.page = page;
+            syncQueryToUrl();
+            renderTable();
+          });
+          return b;
+        };
+        paginationEl.appendChild(mkBtn('Prev', Math.max(1, rowsState.page - 1), { disabled: rowsState.page <= 1 }));
+        for (var p = 1; p <= pageCount; p++) {
+          paginationEl.appendChild(mkBtn(String(p), p, { current: p === rowsState.page }));
+        }
+        paginationEl.appendChild(mkBtn('Next', Math.min(pageCount, rowsState.page + 1), { disabled: rowsState.page >= pageCount }));
+      }
+
+      function applyTableQuery(q) {
+        rowsState.q = q.q || '';
+        rowsState.role = q.role || '';
+        rowsState.sort.key = q.sort || 'role';
+        rowsState.sort.dir = q.dir || 'asc';
+        rowsState.page = parseInt(q.page || '1', 10) || 1;
+        document.getElementById('filter-q').value = rowsState.q;
+        document.getElementById('filter-role').value = rowsState.role;
+        applyFilters();
+        renderTable();
+      }
+      function syncQueryToUrl() {
+        if (parseHash().query) {
+          writeQuery({
+            q: rowsState.q, role: rowsState.role,
+            sort: rowsState.sort.key, dir: rowsState.sort.dir,
+            page: rowsState.page
+          });
+        }
+      }
+
+      function esc(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+
+      // Filter inputs.
+      document.getElementById('filter-q').addEventListener('input', function (e) {
+        rowsState.q = e.target.value; rowsState.page = 1; applyFilters(); renderTable(); syncQueryToUrl();
+      });
+      document.getElementById('filter-role').addEventListener('change', function (e) {
+        rowsState.role = e.target.value; rowsState.page = 1; applyFilters(); renderTable(); syncQueryToUrl();
+      });
+
+      // Sort buttons.
+      document.querySelectorAll('[data-section="data-table"] th [data-sort-key]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var key = btn.dataset.sortKey;
+          if (rowsState.sort.key === key) {
+            rowsState.sort.dir = rowsState.sort.dir === 'asc' ? 'desc' : 'asc';
+          } else {
+            rowsState.sort.key = key; rowsState.sort.dir = 'asc';
+          }
+          announcer.textContent = 'Sorted by ' + key + ', ' + rowsState.sort.dir + 'ending';
+          document.querySelectorAll('[data-section="data-table"] th [data-sort-key]').forEach(function (b) {
+            b.parentElement.setAttribute('aria-sort', 'none');
+            b.dataset.sortActive = 'false';
+          });
+          var th = btn.parentElement;
+          th.setAttribute('aria-sort', rowsState.sort.dir === 'asc' ? 'ascending' : 'descending');
+          btn.dataset.sortActive = 'true';
+          applySort(); renderTable(); syncQueryToUrl();
+        });
+      });
+
+      // Empty-state action: clear filters.
+      document.querySelector('[data-action="clear-filters"]').addEventListener('click', function () {
+        rowsState.q = ''; rowsState.role = ''; rowsState.page = 1;
+        document.getElementById('filter-q').value = '';
+        document.getElementById('filter-role').value = '';
+        applyFilters(); renderTable(); syncQueryToUrl();
+      });
+
+      // ─── Form (memory/04 + memory/10) ─────────────────────────
+      var form = document.getElementById('invite-form');
+      var submitBtn = document.getElementById('invite-submit');
+      var successEl = document.getElementById('invite-success');
+      var emailInput = document.getElementById('invite-email');
+      var roleInput = document.getElementById('invite-role');
+      var emailErr = document.getElementById('invite-email-err');
+      var roleErr = document.getElementById('invite-role-err');
+      var emailOk = false, roleOk = true; // role has default.
+
+      function setError(input, span, msg) {
+        span.textContent = msg || '';
+        input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+      }
+      function validateEmail() {
+        var v = emailInput.value.trim();
+        var ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        setError(emailInput, emailErr, v === '' ? 'Email is required.' : (ok ? '' : 'Email looks wrong (e.g. ali@example.com).'));
+        emailOk = v !== '' && ok;
+        updateSubmit();
+      }
+      function validateRole() { roleOk = !!roleInput.value; setError(roleInput, roleErr, ''); updateSubmit(); }
+      function updateSubmit() { submitBtn.disabled = !(emailOk && roleOk); }
+
+      emailInput.addEventListener('blur', validateEmail);
+      emailInput.addEventListener('input', function () { if (emailInput.getAttribute('aria-invalid') === 'true') validateEmail(); });
+      roleInput.addEventListener('change', validateRole);
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        validateEmail(); validateRole();
+        if (emailInput.getAttribute('aria-invalid') === 'true') { emailInput.focus(); return; }
+        if (roleInput.getAttribute('aria-invalid') === 'true')  { roleInput.focus(); return; }
+        // Mock success.
+        var newRow = {
+          id: 'u-' + Date.now(),
+          name: emailInput.value.split('@')[0],
+          email: emailInput.value,
+          role: roleInput.value,
+          status: 'invited',
+          lastSeen: '—',
+          invitedBy: 'You'
+        };
+        rowsState.data.unshift(newRow);
+        applyFilters(); renderTable(); syncQueryToUrl();
+        form.reset();
+        successEl.hidden = false;
+        setTimeout(function () { successEl.hidden = true; }, 3000);
+        // Focus first row.
+        var firstLink = tbody.querySelector('button[data-action="remove"]');
+        if (firstLink) firstLink.focus();
+      });
+
+      updateSubmit();
+
+      // ─── Keyboard shortcuts (memory/08) ────────────────────────
+      document.addEventListener('keydown', function (e) {
+        var t = e.target;
+        var inField = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT');
+        if (e.key === '/' && !inField) {
+          e.preventDefault();
+          var gs = document.getElementById('global-search');
+          gs.focus(); gs.select();
+        } else if (e.key === 'Escape') {
+          if (inField && t.type === 'search') { t.value = ''; t.blur(); }
+        }
+      });
+
+      // ─── Theme toggle ─────────────────────────────────────────
+      document.getElementById('theme-toggle').addEventListener('click', function () {
+        var cur = document.documentElement.dataset.theme;
+        var next = cur === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem('theme', next); } catch (e) {}
+      });
+
+      // ─── First paint ───────────────────────────────────────────
+      applyRoute();
+      applyFilters();
+      renderTable();
+    })();
+  </script>
+
+</body>
+</html>

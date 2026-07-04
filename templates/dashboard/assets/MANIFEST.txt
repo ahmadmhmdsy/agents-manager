@@ -1,0 +1,30 @@
+# MANIFEST.txt — verify-list for the dashboard template.
+# Run from repo root:
+#   find templates/dashboard/ -type f -not -name '.gitkeep' | sort > /tmp/actual.txt
+#   grep -v '^#' templates/dashboard/assets/MANIFEST.txt | grep -v '^$' | sort > /tmp/expected.txt
+#   diff -u /tmp/expected.txt /tmp/actual.txt
+# Expected: empty diff.
+
+templates/dashboard/00-readme-first.md
+templates/dashboard/INDEX.md
+templates/dashboard/decisions/decision-log.md
+templates/dashboard/memory/01-builder-flow.md
+templates/dashboard/memory/02-routing-and-layout.md
+templates/dashboard/memory/03-data-table.md
+templates/dashboard/memory/04-forms-and-validation.md
+templates/dashboard/memory/05-loading-empty-error-states.md
+templates/dashboard/memory/06-theming.md
+templates/dashboard/memory/07-reduced-motion.md
+templates/dashboard/memory/08-keyboard-nav.md
+templates/dashboard/memory/09-table-a11y.md
+templates/dashboard/memory/10-form-a11y.md
+templates/dashboard/memory/11-dark-theme.md
+templates/dashboard/memory/12-quality-bar.md
+templates/dashboard/skeleton/index.html
+templates/dashboard/skeleton/data.js
+templates/dashboard/prompts/scaffolding.md
+templates/dashboard/examples/_recipe.md
+templates/dashboard/assets/MANIFEST.txt
+templates/dashboard/assets/README.md
+templates/dashboard/tests/verify.sh
+templates/dashboard/tests/README.md
