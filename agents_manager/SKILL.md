@@ -83,9 +83,47 @@ New templates can be added by writing the 9 memory files + skeleton + prompts in
 
 **am-assets specialist (v0.9.0+):** The 6th specialist handles the asset decision tree for visual templates. Dispatched at Phase 3a (between Planning and Build). Defined in `opencode.jsonc` and documented in `agents_manager/assets/`. See `agents_manager/assets/SKILL.md` for the full role.
 
-## The mandatory pipeline
+## Adaptive orchestration (v0.16.0+)
 
-Every user task flows through these phases. **Do not skip a phase. Do not reorder.**
+The pipeline (research → plan → build → review) is the **default shape**, not an absolute rule. Master adapts to the project's actual complexity. The specialists below are a toolkit, not a sequence — master picks what the task needs, in the order the task needs it.
+
+**Complexity triage — what does this task need?**
+
+| Task shape | Master's action |
+|---|---|
+| Trivial fix / one-line edit / single read | Master does it directly. No pipeline, no dispatch. |
+| One-step work (quick edit, single-file refactor, one-off question) | Dispatch one specialist directly. No full pipeline. |
+| Standard multi-step work (research + plan + build + review) | Run the default pipeline. Expect to loop within phases. |
+| Complex / ambiguous work (open design space, conflicting requirements, multi-area change, high stakes) | Pipeline + adaptive orchestration: parallel research, brainstorming, re-dispatch, deep reflection as needed. |
+
+**Master's authority** (within lane; see "Your responsibilities" below):
+
+- **Spawn any specialist, any number of times.** Phase boundaries are not single-use gates. Re-dispatch researcher mid-plan if research reveals a gap. Re-dispatch designer mid-build if visual evidence is missing. Re-dispatch coder mid-review if a fix is feasible in the current chunk. Re-dispatch reviewer against a plan or a design brief, not only against code.
+- **Run specialists in parallel** when independent (see "Parallel research mode"). Research + explorer + designer can co-exist; combine their outputs before planning.
+- **Go backward when needed:** build → plan (plan change required), plan → research (gap discovered), anywhere → user (clarification required). Non-linear flow is the norm for complex work, not the exception.
+- **Validate every specialist output.** Do not trust verdicts on faith. Spot-check claims, cross-reference `path:line` evidence, ask the user when in doubt. The master's value is not dispatch — it is verification.
+- **Apply review to any artifact, not just code.** A plan can be reviewed (peer review via `am-review`). A design brief can be reviewed. The review agent is a quality-gate, not a code-gate.
+- **Propose better solutions proactively.** If master (or a sub-agent) finds a path that's better than the user's request — a different architecture, a cleaner approach, an answer the user didn't ask for — surface it with full reasoning before proceeding. The user decides; master implements. Never silently substitute the user's intent with master's preference, but never silently ship a known-worse path either.
+
+**Inform the user — keep them in the loop:**
+
+- Each significant action (dispatch, decision, loop) → tell the user what's happening and why, with pros/cons where they exist.
+- Each fork in the road → present options. Do not pick silently.
+- Each "I found a better way" → present the alternative before acting on it.
+- Final result → verified working before handoff. Never ship "should work" — verify, then ship.
+
+**Audit trail — every action is logged:**
+
+- `share/notes/99_progress_<task-id>.md` — phase completions, dispatches, decisions (compaction-safe)
+- `share/notes/04_warns_register_<task-id>.md` — per-phase WARNs
+- `share/handoffs/` — inter-agent handoffs (incl. auto-answers, design briefs)
+- `tasks/<task-id>.md` — task tracker with Loop history
+
+If something goes wrong, the trail must let the user reconstruct what happened, in what order, on whose authority.
+
+## The mandatory pipeline (default shape)
+
+Every user task **defaults** through these phases. Master may adapt the shape to the project's complexity — simple tasks skip the pipeline entirely, complex tasks loop backward or parallelize. See "Adaptive orchestration" above for the triage rules and authority levers.
 
 ```
    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
@@ -105,6 +143,11 @@ Every user task flows through these phases. **Do not skip a phase. Do not reorde
 - **Git-status check (v0.6.0+):** Run `git status 2>&1` after capturing the user task. If the output contains "not a git repository", prompt the user: "This project isn't git-tracked. Want me to `git init` + initial commit now? (yes/no — default no)". Default to **don't auto-init**. If yes, run `git init` with a sensible `.gitignore` (covering `node_modules/`, `dist/`, `.env*`, etc.), then create the initial commit at the captured-task state. Set `git_initialized: true` on the task tracker header.
 - **API-key preflight (v0.6.0+):** During scope clarification, ask: "Does this task require an external API key for end-to-end verification (e.g. Gemini, OpenAI, Stripe)? If yes, paste it now or after scaffold so I can run the smoke test myself at Phase 4 review time, instead of dispatching it to a sub-agent." If the user provides a key, store it in `share/notes/02_secrets_<task-id>.md` (must be gitignored) or — preferred — route through the project's documented proxy path. Never let the key appear in a git-tracked file, in a sub-agent dispatch prompt, or in any artifact outside the master session.
 - **WARN-register preflight (v0.6.0+):** Note the canonical path `share/notes/04_warns_register_<task-id>.md` — the master creates this file at the first Phase 4 dispatch (see Phase 4 WARN register protocol below).
+- **Auto-approve semantics (v0.16.0+):** `auto-approve` is TWO orthogonal flags on the task tracker header, not one:
+  - `fill_defaults: bool` — am-research may answer its own open questions with sensible defaults.
+  - `skip_gates: bool` — master may proceed past user-confirmation gates without waiting.
+  
+  When `fill_defaults: true` is used, master STILL requires `share/handoffs/auto-answers_<task-id>.md` to exist before advancing past Phase 1. Format: one row per auto-answered question — `Qn:` / `An (auto):` / `Source: <research-output path:section>`. Without this file, master does NOT advance. Auto-approval means "fill confident defaults and document them" — not "absorb silently." `skip_gates` is orthogonal: it controls whether master waits at user gates, NOT whether defaults are documented.
 
 ### PHASE 1 — Research (spawn `am-research`)
 - Hand the user task + task id to the research sub-agent.
@@ -112,6 +155,21 @@ Every user task flows through these phases. **Do not skip a phase. Do not reorde
 - **If the research agent asks the user questions, STOP. Surface them to the user. Wait.**
 - Otherwise the research output goes to Phase 2.
 - Optional: see `## Parallel research mode` below.
+
+### Design preflight (v0.16.0+)
+
+Between Phase 1 and Phase 2, master runs a design-trigger check on the user task. **Dispatch `am-design` BEFORE Phase 2 when ANY of:**
+
+- Cultural / religious / heritage / scriptural domain signals (Quran, prayer, scripture, holy book, meditation, faith-based, etc.)
+- Strong visual identity requirements (branded UI, "feels like X", premium aesthetic, marketing site, designer-facing)
+- Phase 1 research surfaced "design intent" or "visual brief" as an open question
+- Task has explicit user-language about appearance, mood, or cultural fit
+
+**Output contract:** `share/design/<task-id>/brief.md` containing — at minimum — color palette + semantic tokens, typography hierarchy (incl. RTL/Arabic where relevant), layout philosophy, ornamental guidelines, and a 5–7 item cultural-fit checklist.
+
+Phase 2 plan MUST reference the brief and reflect its constraints. Phase 4 review MUST validate against the brief, not only the plan spec.
+
+**Why this exists:** a research → plan → build pipeline without an explicit design-intent step produces "technically correct, culturally empty" outputs for culturally rich apps. The T-minimax2.7 Kotlin Quran reflection (`share/notes/99_decisions.md`, 2026-07-05) documented exactly this failure mode.
 
 ### PHASE 2 — Planning (spawn `am-planning`)
 - Hand the research findings to the planning sub-agent.
@@ -195,6 +253,24 @@ For phases that touch **visible UI**, take a screenshot before dispatching revie
 - **WARN register (v0.6.0+):** Create `share/notes/04_warns_register_<task-id>.md` at the **first** Phase 4 dispatch. After every review verdict, append a `## Phase N — <date> — <verdict>` block listing the per-phase issue-level WARNs (one line each: severity + concision + `path:line` if available). This file is the user's single surface for "all known WARNs across all phases" at task close. The consolidated WARN-acceptance question at task completion reads from this file, not from N separate per-phase messages.
 - **`max_fix_loops = 3`.** After 3 fix-loops on the same chunk, STOP. Surface the report to the user and ask for direction (accept with WARNs / cut scope / abandon / new plan).
 
+### Phase 4 review — user-intent alignment check (v0.16.0+)
+
+Review validates TWO things, not one:
+
+1. **Spec compliance** — does the code match the plan?
+2. **User-intent alignment** — does the output satisfy what the user actually wanted?
+
+When Phase 1 design brief exists OR the task triggered the Design preflight (cultural/visual identity), the review prompt MUST include:
+
+- The cultural-fit checklist from `share/design/<task-id>/brief.md` (if present)
+- A "does this look/feel like an app of this kind?" assertion per checklist item
+- Visual evidence references — `path:line` to screenshots, mockups, or font/color samples
+- The auto-answers file (`share/handoffs/auto-answers_<task-id>.md`) if `fill_defaults: true` was used — verify each auto-default is still reflected in the implementation
+
+If review PASSes spec but FAILs user-intent alignment, that is a **FAIL** — not a WARN. The pipeline shipped a "technically correct, culturally empty" output. The user is the ground truth, not the plan.
+
+**Why this exists:** spec compliance validates "did the coder do what was planned." User-intent alignment validates "did the coder do what the user needed." For culturally significant apps, the gap between these two is the entire failure mode.
+
 ### Completion
 - A task is **done** when the latest review report has no `FAIL` and no `WARN` (or the user explicitly accepts open WARNs).
 - Append a `## Completion` block to `tasks/<task-id>.md` with date, final commit/branch, review report path, and stamp `Closed` in `## Metrics`.
@@ -208,7 +284,7 @@ Before advancing from any phase, the master checks:
 | Phase | Gate |
 |---|---|
 | Research | Output file exists and contains ≥1 risk with `Severity:` ∈ {low, medium, high}. If `NEEDS_USER_INPUT=true`, master does NOT advance.<br>Output file contains a `## Metrics` block with 5 integer fields (findings, risks_HIGH, risks_MEDIUM, risks_LOW, clarifying_Qs), all ≥0. Per `agents_manager/research/SKILL.md` § `## Metrics footer`. |
-| Planning | Plan files exist; each phase has ≥1 testable `Done when` clause; `## Plan self-score` is filled with all 4 dimensions. |
+| Planning | Plan files exist; each phase has ≥1 testable `Done when` clause; `## Plan self-score` is filled with all 4 dimensions. **If ANY dimension is <5**, master surfaces "what would raise this to 5?" to the planner (and to the user at the Phase 2 gate) before advancing. A 4/5/5/5 is not a pass — it is a documented planning gap. |
 | Coder | Summary exists; `## Tasks attempted` covers every assigned task id; status is ∈ {done, partial, skipped} for each. |
 | Review | Report exists; `## Per-task verdicts` covers every assigned task id; per-task verdict ∈ {PASS, WARN, FAIL}. |
 | All phases | Output file is non-empty and contains every section listed in the sub-agent's SKILL.md template. |
@@ -277,6 +353,16 @@ If any answer is "I don't know," pause and resolve before dispatching. "Just see
 
 > **v0.5.0 architecture change:** permission preflight and task() retry protocol were retired. All 5 agents now have `permission: "allow"` (see `opencode.jsonc`). Walls are soft — enforced by you reading the SKILL.md boundaries + the inline prompt's Can/Can't list, not by OpenCode. If a `task()` dispatch fails, OpenCode surfaces the error in the chat; surface it to the user. Do not loop silently.
 
+## Skill routing (v0.15.0+)
+
+Skills are non-roster procedures (e.g., `agents_manager/extract/SKILL.md`) any specialist loads on demand — no `opencode.jsonc` slot, no master-dispatch route. Master watches for trigger phrases and routes accordingly.
+
+| Trigger phrases | Skill path |
+|---|---|
+| `extract`, `template this`, `convert to template`, `extract the core knowledge`, `what would I reuse from this?` | `agents_manager/extract/SKILL.md` |
+
+**When to consult:** if the user task matches a row above, read the skill's `SKILL.md` first, then dispatch the appropriate specialist with a prompt that names the skill + the ground-truth files it needs (for extract: `templates/EXTRACTION.md` + `agents_manager/extract/rules.md`). Phase 5b option 5 handles the same trigger at task close; this section handles mid-conversation triggers. Explicit user request always wins over opt-in flag gating.
+
 ## Subagent dispatch contract
 
 Each specialist is a fresh OpenCode agent dispatched via `task()`. Follows the `subagent-driven-development` protocol (installed at `~/.agents/skills/subagent-driven-development/`) with **explicit overrides for our design** below.
@@ -298,7 +384,7 @@ When dispatching a specialist, the prompt must include:
 4. **Expected output path** (e.g. `share/notes/02_plan_high_<task-id>.md`).
 5. **Boundary reminders** (e.g. "do NOT edit `agents_manager/**`", "do NOT propose a plan").
 
-The specialist runs in its own context window with its own permission block (see `opencode.jsonc`). The master does not paste session history into the dispatch — the specialist gets only what it needs.
+The specialist runs in its own context window with its own permission block (see `opencode.jsonc`). The master does not paste session history into the dispatch — the specialist gets only what it needs. `task()` calls in this protocol always create a fresh specialist context; we deliberately do NOT pass OpenCode's `task_id` between dispatches even when one is returned, because state carries through `share/notes/` + `tasks/<id>.md` instead.
 
 ### Override: pause-at-phase-2
 
@@ -311,6 +397,15 @@ The specialist runs in its own context window with its own permission block (see
 ### Override: no per-task model selection
 
 `subagent-driven-development` recommends model selection per task complexity. **Skip** — OpenCode does not currently support per-agent model selection.
+
+### Runtime contract: OpenCode `task` tool
+
+The dispatch protocol above depends on these `task()` fields/behaviors. The public OpenCode docs (`https://opencode.ai/docs/tools/`) do NOT currently list the `task` tool — the contract lives only in the embedded source at `packages/opencode/src/tool/task.txt` of the OpenCode repo. If OpenCode's runtime changes the contract, our dispatches may break silently. Re-verify against the source if any dispatch behavior looks unexpected.
+
+Fields/behaviors we rely on:
+- `subagent_type`, `prompt`, `description` — required.
+- `task_id` — optional; if set, resumes an existing session (we deliberately do NOT pass this between dispatches; see the rationale above).
+- Returned `task_id` from each dispatch — captured but not used.
 
 ## Progress ledger (compaction safety)
 
