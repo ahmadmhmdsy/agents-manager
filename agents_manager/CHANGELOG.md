@@ -2,6 +2,58 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.16.0 — Quran 5-recommendation protocol + adaptive orchestration propagation (2026-07-05)
+
+Additive maintenance release. **No controller behavior changes**, **no specialist prompt rewrites**, no breaking changes to the v0.15.0 pipeline. Ships the 5-protocol response to the T-minimax2.7 (Kotlin Quran) reflection, reframes the pipeline as a default shape (not absolute rule), and propagates adaptive-mode to all 7 agents.
+
+### What's new
+
+- **5-protocol response to T-minimax2.7** — design-as-first-class phase, mandatory `share/handoffs/auto-answers_<task-id>.md` when `fill_defaults: true`, review user-intent-alignment check, strengthened self-score gate (any dimension <5 → "what would raise this to 5?"), orthogonal `fill_defaults` / `skip_gates` flags. Full table in [`share/notes/99_decisions.md` entry 2026-07-05](share/notes/99_decisions.md#2026-07-05--protocol-response-to-t-minimax27-kotlin-quran-reflection).
+- **Adaptive orchestration (pipeline as default, not rule)** — new "Adaptive orchestration (v0.16.0+)" section in `agents_manager/SKILL.md` BEFORE "The mandatory pipeline." 5 authority levers: complexity triage (trivial/one-step/standard/complex), re-dispatch any specialist any number of times, parallel specialists, review-any-artifact, propose-better proactively. See [decision entry 2](share/notes/99_decisions.md#2026-07-05--adaptive-orchestration-pipeline-as-default-not-rule).
+- **`opencode.jsonc` + 6 specialist SKILL.md propagate adaptive mode (13 edits)** — soft-wall override invoked with explicit surface + user consent. See [decision entry 3](share/notes/99_decisions.md#2026-07-05--maintenance-phase-adaptive-mode-propagated-to-all-7-agents).
+- **Adaptive-mode smoke test PASSED** — dispatched am-research on a question designed to exercise all 5 adaptive reflexes; produced path:line citations, confidence calibration, two concrete workarounds, and a bonus catch (OpenCode public docs do NOT list the `ask` tool). See [decision entry 4](share/notes/99_decisions.md#2026-07-05--adaptive-mode-smoke-test--1-sentence-rationale-add).
+- **OpenCode `ask` tool contract documented in `agents_manager/SKILL.md`** — new `### Runtime contract: OpenCode ask tool` subsection (8 L) at end of "Subagent dispatch contract." Adds a 1-sentence rationale to L377 explaining why `ask_id` is deliberately NOT reused across dispatches. See [decision entry 5](share/notes/99_decisions.md#2026-07-05--opencode-ask-tool-contract-documented-in-skillmd).
+
+### Why
+
+Before v0.16.0, the master's orchestration doc framed the pipeline as the dominant paradigm with specialists as exceptions within it. The Quran-app run documented in `agent_reflect_minimax2.7_kotlin.txt` (Downloads) shipped technically correct but culturally empty — surfacing 5 protocol gaps (design preflight, auto-approve defaults documentation, intent-alignment check, self-score gates, orthogonal auto-approve signal). v0.16.0 closes the gaps with the minimum protocol surface and broadens the master's authority levers so future runs treat specialists as a toolkit with the pipeline as the default shape, not the rule.
+
+### Scope limits
+
+- **No new agents / no new mandatory phases.** All 5 protocols are additive (one new section + one new subsection + one strengthening rule + two-flag rename + one new `share/handoffs/auto-answers_*.md` artifact).
+- **Soft-wall override is invoked with explicit surface.** Master normally CANNOT edit `opencode.jsonc` or other specialists' `SKILL.md`. v0.5.0+ clause permits this with explicit surface — declared at the top of the work and applied with user consent.
+- **`am-design` + `am-review` + `am-research` contracts NOT updated.** Master now dispatches them more aggressively, but their per-specialist contracts (what the brief MUST contain, what review MUST validate, how defaults are answered) are owned by their authors. Queued for a future per-specialist maintenance phase.
+
+### Files touched
+
+14 files: `agents_manager/SKILL.md` (master, +Adaptive section + ask subsection + L377 sentence), `opencode.jsonc` (×7 — adaptive-mode block added to all 7 agent prompts), `agents_manager/{research,planning,design,coder,review,assets}/SKILL.md` (×6 — 8-line adaptive-mode section in each), plus this `agents_manager/CHANGELOG.md` entry + the 5 entries in `share/notes/99_decisions.md`.
+
+### Tag / commit
+
+`2a4439e — feat: v0.16.0 Quran 5-recommendation protocol + adaptive orchestration propagation`. Additive minor. No breaking changes to v0.15.0. Existing dispatches to master + 6 specialists work unchanged.
+
+---
+
+## v0.15.0 — extract-to-template + WARN fix-loop (2026-07-04)
+
+Additive maintenance release. **No controller behavior changes**, **no specialist prompt rewrites**, no breaking changes to the v0.14.1 pipeline. Promotes the extract-to-template recipe to a first-class specialist at `agents_manager/extract/` and closes the WARN-9 fix-loop flagged in `share/reports/04_review_T-2026-07-03-003.md`.
+
+### What's new
+
+- **`agents_manager/extract/` specialist.** Third non-orchestrator specialist. Authored recipe moves out of `research/notes/semantic/` and into a full specialist lane (`SKILL.md` + `rules.md`). Owns the extract-feature-framing-vs-existing-protocol decision and the extract-skill-as-non-roster-soft-skill recipe. Closes the WARN-9 (`Extract skill must be a registered specialist`) from `T-2026-07-03-003`.
+- **3 semantic notes reseeded.** `agents_manager/{coder,research}/notes/semantic/{extract-skill-as-non-roster-soft-skill,extract-feature-framing-vs-existing-protocol,template-memory-cp-fence}.md` moved from research-lane into their proper per-specialist lane (coder or research) where they belong.
+- **`share/reports/04_review_T-2026-07-03-003.md` accepted in full.** WARN-1..WARN-8 left as documented ACCEPTED with rationale; WARN-9 closed by the `extract/` specialist promotion.
+
+### Files touched
+
+5 files: `agents_manager/extract/SKILL.md` + `agents_manager/extract/rules.md` (NEW), `agents_manager/{coder,research}/notes/semantic/{extract-skill-as-non-roster-soft-skill,extract-feature-framing-vs-existing-protocol,template-memory-cp-fence}.md` (moved).
+
+### Tag / commit
+
+`d71305d — feat: v0.15.0 extract-to-template capability + WARN fix-loop`. Additive minor. No breaking changes to v0.14.1.
+
+---
+
 ## v0.14.1 — am-research enhancements (additive patch, 2026-07-04)
 
 Additive patch on v0.14.0. **No breaking changes**, **no controller fence edits**, **no specialist prompt rewrites**. Closes the 8 gap categories surfaced by the T-2026-07-04-004 audit (audit at `share/notes/01_research_T-2026-07-04-004.md`).
