@@ -1,11 +1,13 @@
 # AGENTS.md — context_gen
 
-This repo IS the **agents-manager controller**: an OpenCode multi-agent orchestration system. 6 specialist agents are defined in `opencode.jsonc`. Walls are enforced by prose (v0.5.0+ soft walls — every agent has `permission: "allow"`), not by OpenCode's permission layer.
+This repo IS the **agents-manager controller**: an OpenCode multi-agent orchestration system. 6 specialist agents are defined in `opencode.jsonc` (master + research + planning + design + assets + coder + review). Walls are enforced by prose (v0.5.0+ soft walls — every agent has `permission: "allow"`), not by OpenCode's permission layer.
 
-## Pipeline
+**Working in this repo:** when the task is to edit the controller itself (a specialist's `SKILL.md`, a release, a controller bug), edit directly — do NOT spawn the `master` agent. Master is for downstream projects that have installed the controller. The same hard rules still apply (no auto-commits, no skipping review, no editing other specialists' `SKILL.md` unless it's a deliberate controller redesign).
+
+## Pipeline (default shape — v0.16.0+ adaptive)
 
 ```
-master -> am-research -> am-planning -> am-design -> am-coder -> am-review
+master -> am-research -> am-planning -> [am-assets if visual template] -> am-design + am-coder (parallel) -> am-review
 ```
 
 - **master** orchestrates ONLY. Never codes, plans, designs, or reviews directly.
@@ -13,6 +15,8 @@ master -> am-research -> am-planning -> am-design -> am-coder -> am-review
 - All inter-agent communication goes through files in `share/`. No out-of-band chat.
 - Review reports must be brutally honest. False PASS ships bugs; false FAIL just costs a fix loop.
 - Master runs a 5-question preflight before dispatching any specialist.
+- `am-assets` is dispatched at **Phase 3a** (between Planning and Build) only when the task uses a visual template that declares assets in its frontmatter AND no `assets/MANIFEST.json` exists yet. v0.16.0+ allows `am-design` and `am-coder` to run in parallel.
+- `agents_manager/extract/` is a non-roster on-demand skill (loaded by any specialist for "extract this to a template" requests). It is **not** registered in `opencode.jsonc`.
 
 ## Auto-routing
 
@@ -35,7 +39,8 @@ master -> am-research -> am-planning -> am-design -> am-coder -> am-review
 | master | `share/handoffs/`, `share/notes/99_decisions.md`, `tasks/` |
 | am-research | `share/notes/01_research_*.md` |
 | am-planning | `share/notes/02_plan_*.md`, `tasks/<id>.md` rows |
-| am-design | `share/design/<task-id>/**` |
+| am-design (v0.9.0+) | `share/design/<task-id>/**` |
+| am-assets (v0.9.0+, Phase 3a) | `assets/MANIFEST.json`, `share/notes/03a_assets_*.md`, `share/handoffs/03a_assets-to-coder-*.md` |
 | am-coder | source code, `share/notes/03_coder_summary_*.md` |
 | am-review | `share/reports/04_review_*.md` |
 
@@ -60,6 +65,12 @@ All three accept `--global/--local/--both/--skip` on `skills add` (v0.11.0). Def
 ## Standalone installer (downloads alone, runs anywhere)
 
 `bin/standalone-installer/install.{py,sh,cmd}` + `README.md`. Downloads latest release from GitHub API, extracts to temp, runs bundled installer, cleans up. Stdlib only.
+
+## Releases (tag-driven, fully automated)
+
+1. Add a `## vX.Y.Z — <theme> (YYYY-MM-DD)` block to `agents_manager/CHANGELOG.md` (newest on top) **before** tagging. The release workflow extracts this block as the GitHub Release notes; without it the release body is a placeholder.
+2. `git tag -a vX.Y.Z -m "vX.Y.Z: <one-line>"` then `git push origin vX.Y.Z`. `release.yml` builds the ZIP from a fixed allowlist (`opencode.jsonc`, `CLAUDE.md`, `agents_manager`, `share`, `tasks`, `.agents/skills/mavis-team`, `bin`) and runs a 3-step gh-api dance (create→PATCH→upload) to dodge an HTTP 500 quirk on the initial POST when `name`/`body` are set.
+3. Release appears in <2 min at `https://github.com/<owner>/agents-manager/releases/tag/vX.Y.Z`.
 
 ## Lint / verify
 

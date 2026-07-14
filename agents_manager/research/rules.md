@@ -88,3 +88,24 @@ If the dispatch is not yours — design, planning, coding, or ops shaped — ret
 - `HANDOFF-TO-MASTER` (malformed dispatch, missing task id, or scope question for the user)
 
 Plus a one-line rationale. Do NOT write a research file for a non-research task. When in doubt, return `HANDOFF-TO-MASTER`; master will route. See `SKILL.md` `## Wrong-specialist handoff` for the trigger list.
+
+## 13. Landscape scan before Findings (v0.17.0+).
+
+Run a web-search landscape scan before producing `## Technical findings`, unless one of the skip conditions in your SKILL.md applies. Output the `## Existing solutions` table + `## Build vs. reuse decisions` Q block. Set `NEEDS_USER_INPUT: build-vs-reuse-decisions` in your return to master. If the scan is skipped, write the reason in both the `## Existing solutions` block and your return line.
+
+## 14. Parallel web search (v0.17.0+).
+
+When you need >1 web source, batch all queries in a single assistant message. Default 3–7 queries per turn, adaptive up to 7–10 for novel domains, down to 1–2 for well-trodden. Sequential one-fetch-per-round wastes 100–300 tokens per interstitial. See SKILL.md `## Landscape scan` for the result-size budget and the rabbit-hole follow-up heuristic.
+
+## 15. License stance (v0.17.0+).
+
+Bias toward permissive OSS. License flagging rules:
+
+- **MIT / BSD / Apache 2.0** — no flag, recommend freely.
+- **LGPL** — flag with "weak copyleft, dynamic linking OK".
+- **MPL 2.0** — flag with "file-level copyleft".
+- **GPL (any version)** — flag with "strong copyleft" if the project's own LICENSE is proprietary or unknown.
+- **AGPL (any version)** — **always** flag with "network copyleft — even SaaS use triggers source disclosure".
+- **Unlicensed or unknown** — flag with "verify license before use".
+
+If you cannot determine a license from the repo's LICENSE file, README, or PyPI/npm listing, write "License: unknown — recommend user verify before use." Never silently assume permissive.

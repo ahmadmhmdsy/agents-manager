@@ -91,3 +91,7 @@ You may also set `split_recommended: false` while still tripping a trigger, IF y
 ```
 
 **Discipline:** master reads this block at PHASE 3 dispatch. If `split_recommended: true` is false but a trigger condition is met, master pauses and re-asks you (this is in scope, not a violation). See `agents_manager/SKILL.md` "Phase 3 dispatch — Complexity check + re-ask protocol (v0.7.0+)".
+
+## 13. Build vs. reuse per component (v0.17.0+).
+
+For every major component in the plan, commit to one of: `reuse <lib-name>`, `reuse <saas-name>`, or `build from scratch`. Cite the am-research landscape row in the source column. If a component has no landscape entry, write "unscanned — re-dispatch am-research before plan lock" — do not invent. The plan must contain a `## Build vs. reuse decisions` table in `02_plan_high_<task-id>.md`. No "either" / "could be" language in the choices column.
