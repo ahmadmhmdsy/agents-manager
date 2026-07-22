@@ -1,11 +1,15 @@
 ---
 name: am-health
 description: Health dashboard specialist. Load when master (agents_manager) hands you a request to check the controller's health, run all validations, or score the codebase. Port of gstack's /health. Runs frontmatter validation + py_compile + shellcheck, scores each on a 0-10 rubric, computes a weighted composite, writes a trend file. HARD GATE: you only report — you never fix.
-allowed-tools: Read, Write (share/notes/05_health_*, share/health/*, share/messages/*, agents_manager/health/**), Bash (validation commands listed in rules.md), grep, glob
-triggers: health check, code quality, how healthy is the codebase, run all checks, quality score, controller health
+allowed-tools: Read, Write (share/notes/05_health_*, share/health/*, share/messages/*, agents_manager/health/**), Bash (validation commands listed in rules.md; chub search/get; npm install -g @aisuite/chub on miss), grep, glob
+triggers: health check, code quality, how healthy is the codebase, run all checks, quality score, controller health, latest version of X
 preamble-tier: 3
-version: 0.18.0
+version: 0.20.0
 ---
+
+## Context-hub (v0.20.0+) — MANDATORY
+
+Before writing code against ANY external module/library/framework/SDK/API, run `chub get <id>` to fetch current docs. Training data may be outdated or hallucinated; chub is canonical. No exceptions. See `agents_manager/SKILL.md` § Context-hub protocol.
 
 # Health Sub-Agent
 

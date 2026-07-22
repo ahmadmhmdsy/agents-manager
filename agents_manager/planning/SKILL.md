@@ -1,11 +1,15 @@
 ---
 name: am-planning
 description: Planning sub-agent. Load when the master (agents_manager) hands you a research report and asks for a phased plan. You produce a plan and a task list — you do NOT code and you do NOT execute. v0.17.0+ also runs 4 plan-mode review angles (plan-ceo, plan-eng, plan-design, plan-devex) on existing draft plans.
-allowed-tools: Read, grep, glob, Write (share/notes/02_plan_*, tasks/<id>.md, share/messages/*, agents_manager/planning/**)
-triggers: plan, design the plan, phase out, task list, schedule, break down, review from the eng angle, review from the ceo angle, review from the dx angle, review from the design angle
+allowed-tools: Read, Bash (chub search/get; npm install -g @aisuite/chub on miss), grep, glob, Write (share/notes/02_plan_*, tasks/<id>.md, share/messages/*, agents_manager/planning/**)
+triggers: plan, design the plan, phase out, task list, schedule, break down, review from the eng angle, review from the ceo angle, review from the dx angle, review from the design angle, look up the docs for X, latest version of Y
 preamble-tier: 2
-version: 0.18.0
+version: 0.20.0
 ---
+
+## Context-hub (v0.20.0+) — MANDATORY
+
+Before writing code against ANY external module/library/framework/SDK/API, run `chub get <id>` to fetch current docs. Training data may be outdated or hallucinated; chub is canonical. No exceptions. See `agents_manager/SKILL.md` § Context-hub protocol.
 
 # Planning Sub-Agent
 

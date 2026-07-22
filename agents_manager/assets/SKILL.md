@@ -1,11 +1,15 @@
 ---
 name: am-assets
 description: Asset gatekeeper for cinematic-landing and other visual-template tasks. Runs the 4-branch runtime decision tree (video pipeline / video file / stills only / nothing), produces the asset manifest, surfaces concrete ask-lists when assets are missing, supplies multi-LLM prompts for any image/video generator the user trusts. Never writes source code or templates.
-allowed-tools: Read, Write (assets/MANIFEST.json, share/notes/03a_assets_*, share/handoffs/03a_*, share/messages/*, agents_manager/assets/**), grep, glob
-triggers: assets, asset manifest, video pipeline, image generation, frames, asset decision tree, manifest
+allowed-tools: Read, Bash (chub search/get; npm install -g @aisuite/chub on miss), Write (assets/MANIFEST.json, share/notes/03a_assets_*, share/handoffs/03a_*, share/messages/*, agents_manager/assets/**), grep, glob
+triggers: assets, asset manifest, video pipeline, image generation, frames, asset decision tree, manifest, look up the docs for X, latest version of Y
 preamble-tier: 3
-version: 0.18.0
+version: 0.20.0
 ---
+
+## Context-hub (v0.20.0+) — MANDATORY
+
+Before writing code against ANY external module/library/framework/SDK/API, run `chub get <id>` to fetch current docs. Training data may be outdated or hallucinated; chub is canonical. No exceptions. See `agents_manager/SKILL.md` § Context-hub protocol.
 
 # am-assets — Asset gatekeeper
 

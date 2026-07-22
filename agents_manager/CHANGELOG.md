@@ -2,6 +2,69 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.20.0 — context-hub (chub) integration (2026-07-22)
+
+**Additive capability release.** v0.19.0 → v0.20.0.
+
+Wires chub v0.1.4 (https://github.com/andrewyng/context-hub) into every specialist as a mandatory library-doc fetcher. chub is a CLI (`npm install -g @aisuite/chub`), not an MCP — invoked via Bash. The protocol is canonical in `agents_manager/SKILL.md` § Context-hub protocol and referenced from each specialist's SKILL.md.
+
+### What's new
+
+1. **Master canonical section** — `## Context-hub protocol (v0.20.0+) — MANDATORY` in master SKILL.md. Covers commands table, 5-step workflow, install-or-install-fallback rule, when NOT to use chub, source attribution.
+2. **Every specialist (9) gets chub capability** — added `Bash (chub search/get; npm install -g @aisuite/chub on miss)` to allowed-tools. coder and ship already had Bash scope wide enough. Triggers extended on all 10 agents: `look up the docs for X`, `latest version of Y`, `current API for Z`.
+3. **Mandatory rule** — before writing code against ANY external module/library/framework/SDK/API, agents must `chub get <id>` first. Training data may be outdated or hallucinated; chub is canonical.
+4. **Install-on-demand** — if `chub --help` errors in the target project, the agent runs `npm install -g @aisuite/chub`. If install fails (no node/npm/network), surface to master — do NOT silently fall back to training data.
+5. **Feedback loop** — after use, agents `chub annotate <id> "<gap>"` to persist local notes and `chub feedback <id> up|down --label ...` to rate the doc (sent to maintainers).
+
+### When NOT to use chub
+
+- Internal code in the current repo → `codebase-memory` (v0.19.0+) instead
+- Brand-new library not yet in chub registry → `webfetch` + official docs
+- Pure refactors that don't touch external APIs → skip
+- Docs already in current context from a recent fetch → don't refetch
+
+### Skipped per ponytail
+
+- Per-specialist chub body section for am-assets/am-ship/am-health — none of them write code against external APIs; chub-capable but unused; the reference is in master + triggers cover natural-language invocation.
+- Asking user clarifying question about scope — user was explicit; shipped the literal interpretation.
+- Custom chub wrappers or pre-flight checks — chub is a stable CLI; docs are in `chub --help`; we trust it.
+- Pre-installing chub in target projects — downstream-project concern; documented in master SKILL.md protocol.
+
+### Validator
+
+`python3 scripts/validate-frontmatter.py` ran on all 11 SKILL.md files: "All SKILL.md frontmatter valid."
+
+## v0.19.0 — MCP tool surface (codebase-memory + github + testsprite) (2026-07-22)
+
+**Additive capability release.** v0.18.0 → v0.19.0.
+
+Wires the four MCP servers already enabled in the host `opencode.json` (`codebase-memory`, `github`, `testsprite`) into the specialists that can actually use them. `browsermcp` was wired in v0.18.0. No breaking changes — specialists run with the same walls; only the documented tool surface is wider.
+
+### What's new
+
+1. **am-research + codebase-memory** — graph search for code-aware research. Four tools: `search_graph` (BM25 + structural boost), `search_code` (grep with graph context), `get_architecture` (Leiden clusters, real architectural seams), `get_code_snippet` (read function bodies). Fallback to grep/glob when the MCP isn't enabled in the target project.
+2. **am-review + codebase-memory** — impact tracing + complexity audit before signing off. `trace_path` (mode=calls/data_flow), `query_graph` (Cypher for multi-hop patterns), `detect_changes` (git-aware blast radius).
+3. **am-investigate + codebase-memory** — call-path tracing for root-cause analysis. `trace_path` to find upstream callers and downstream data assumptions. Iron law still applies: graph tells WHERE; you read code to name WHY.
+4. **am-coder + codebase-memory** — find similar implementations before writing new code. Rule: if a function with the same intent exists in this repo, extend it; re-implementing what lives a few files over is the most common slop.
+5. **am-coder + testsprite (optional)** — post-build UI smoke test via `testsprite_generate_code_and_execute`. Runs only when the downstream project has a running UI AND testsprite MCP is enabled. Cite verdict in coder summary.
+6. **am-review + testsprite (optional)** — cite am-coder's testsprite verdict in the review report via `testsprite_open_test_result_dashboard`. Skip if am-coder didn't run testsprite.
+7. **am-ship + github MCP** — prefer github MCP for releases. `create_pull_request`, `list_releases`, `get_release_by_tag`, `get_latest_release`, `create_or_update_file`, `list_pull_requests`, `get_pull_request`, `search_issues`, `list_issues`. `gh` CLI retained as fallback when the MCP is unavailable.
+
+### Architectural note
+
+The controller uses `permission: "allow"` for all agents (v0.5.0+ soft walls). MCP tools are enabled at the host level (`opencode.json`), not per-agent — so availability is environment-dependent. Each SKILL.md documents the fallback for when the MCP isn't installed in the target project.
+
+### Skipped per ponytail
+
+- Wiring testsprite into am-planning / am-design — not useful, those don't ship code or verify builds.
+- Wiring github MCP into am-coder — coder doesn't open PRs; am-ship does.
+- Wiring testsprite into am-investigate — UI bugs aren't typically what `/investigate` cares about.
+- Wiring codebase-memory into am-design / am-assets — design and asset work is mostly file-system, not code-graph.
+
+### Validator
+
+`python3 scripts/validate-frontmatter.py` ran on all 11 SKILL.md files: "All SKILL.md frontmatter valid." Frontmatter extensions are accepted silently (only `name` + `description` are required).
+
 ## v0.18.0 — gstack adoption (frontmatter + voice + plan-mode reviews + investigate + ship + health + browser research) (2026-07-22)
 
 **Additive maintenance release.** v0.17.0 → v0.18.0.

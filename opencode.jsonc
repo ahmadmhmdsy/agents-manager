@@ -26,6 +26,22 @@
   //   Runs frontmatter + py_compile + shellcheck, scores 0-10, writes share/health/.
   //   HARD GATE: report only, never fix.
   //
+  // v0.19.0 ADDED MCP tool surface (codebase-memory + github + testsprite).
+  //   All three MCPs are enabled at the host level (opencode.json), not per-agent.
+  //   Each specialist's SKILL.md documents which MCP tools it can use + fallback
+  //   when the target project hasn't enabled them:
+  //     - codebase-memory: am-research, am-review, am-investigate, am-coder
+  //     - github (PRs/releases): am-ship (gh CLI retained as fallback)
+  //     - testsprite (UI smoke tests, optional): am-coder (run), am-review (cite)
+  //
+  // v0.20.0 ADDED context-hub (chub) integration. chub v0.1.4 is a CLI tool
+  //   (npm install -g @aisuite/chub), NOT an MCP — invoked via Bash. Every
+  //   specialist's Bash allowlist now includes chub commands + install fallback.
+  //   Master SKILL.md § Context-hub protocol defines the MANDATORY workflow
+  //   (search → get → use → annotate → feedback) for every external module/
+  //   library/framework/SDK/API decision. chub complements codebase-memory:
+  //   codebase-memory = internal code, chub = external libs.
+  //
   // v0.5.0 ARCHITECTURE CHANGE: all 10 agents have full `permission: allow`.
   // Walls are now soft - enforced by the SKILL.md "Boundaries" prose + the
   // inline prompt's Can/Can't list, not by OpenCode's permission layer.

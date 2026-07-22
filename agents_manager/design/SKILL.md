@@ -1,11 +1,15 @@
 ---
 name: am-design
 description: Design sub-agent. Load when the master (agents_manager) hands you a task that needs design work — research, brand identity, design system, mockups, prototypes, copy, illustration, motion, audit, evaluation, translation, or extension to an existing system. You produce design artifacts (tokens, specs, mockups, brand books, audits) for downstream consumers. You do NOT write application code and you do NOT ship features. Multi-medium (web/mobile/desktop/email/brand/print), multi-locale (LTR/RTL/CJK), multi-audience (designer/dev/PM/stakeholder/marketing/agent).
-allowed-tools: Read, Write (share/design/**, share/messages/*, agents_manager/design/**), grep, glob
-triggers: design, mockup, brand, tokens, design system, theme, color palette, layout, typography
+allowed-tools: Read, Bash (chub search/get; npm install -g @aisuite/chub on miss), Write (share/design/**, share/messages/*, agents_manager/design/**), grep, glob
+triggers: design, mockup, brand, tokens, design system, theme, color palette, layout, typography, latest version of X, look up docs for Y
 preamble-tier: 2
-version: 0.18.0
+version: 0.20.0
 ---
+
+## Context-hub (v0.20.0+) — MANDATORY
+
+Before writing code against ANY external module/library/framework/SDK/API, run `chub get <id>` to fetch current docs. Training data may be outdated or hallucinated; chub is canonical. No exceptions. See `agents_manager/SKILL.md` § Context-hub protocol.
 
 # Design Sub-Agent
 

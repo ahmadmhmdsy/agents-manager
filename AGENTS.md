@@ -47,6 +47,7 @@ master -> am-research -> am-planning -> [am-assets if visual template] -> am-des
 - **max_fix_loops = 3.** Cap on review -> fix -> re-review cycles; surface to user after.
 - **Do NOT edit `agents_manager/<role>/SKILL.md`** unless explicitly redesigning the controller.
 - **v0.9.0+**: `am-design` never writes `src/**`; reference implementations are `am-coder`'s job.
+- **v0.20.0+**: Every agent must validate external module/library/framework/SDK/API usage with `chub` before writing code against it. Training data may be outdated or hallucinated; chub is canonical. If chub isn't installed in the target project, install it (`npm install -g @aisuite/chub`) or surface to master. See master SKILL.md § Context-hub protocol for the full workflow.
 
 ## Per-agent output paths ("Owns" column)
 
@@ -64,6 +65,20 @@ master -> am-research -> am-planning -> [am-assets if visual template] -> am-des
 | am-health (v0.18.0+) | `share/health/<date>.json` + `share/notes/05_health_*.md` |
 
 In v0.5.0+ any agent can technically read/write anywhere (`permission: "allow"`); the convention is to write only to the listed paths unless coordination requires more.
+
+## Tool surface (v0.19.0+/v0.20.0+)
+
+Five tools (four MCP servers + the chub CLI) are wired into specialists as documented in their SKILL.md `allowed-tools`:
+
+| Tool | Type | Used by | Purpose |
+|---|---|---|---|
+| `browsermcp` | MCP | am-research (v0.18.0+) | Live-site research via headless browser |
+| `codebase-memory` | MCP | am-research, am-review, am-investigate, am-coder (v0.19.0+) | Graph-based code intelligence: symbol search, call-path tracing, complexity audit, blast-radius analysis |
+| `github` | MCP | am-ship (v0.19.0+) | PR creation + release verification (gh CLI retained as fallback) |
+| `testsprite` | MCP | am-coder (run), am-review (cite) (v0.19.0+, optional) | Post-build UI smoke tests for downstream projects with a running UI |
+| `chub` (context-hub) | CLI | all 10 agents (v0.20.0+, MANDATORY) | Library/API/SDK doc fetcher; install on-demand via `npm install -g @aisuite/chub`. See master SKILL.md § Context-hub protocol. |
+
+MCPs are enabled at the host level (parent `opencode.json`), not per-agent — so availability is environment-dependent. Each SKILL.md documents the fallback (grep/glob/gh) when the MCP isn't installed in the target project. The chub CLI is invoked via Bash and installed on-demand by any agent when missing.
 
 ## Task tracking
 
