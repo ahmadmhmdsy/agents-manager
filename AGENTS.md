@@ -1,6 +1,6 @@
 # AGENTS.md — context_gen
 
-This repo IS the **agents-manager controller**: an OpenCode multi-agent orchestration system. 6 specialist agents are defined in `opencode.jsonc` (master + research + planning + design + assets + coder + review). Walls are enforced by prose (v0.5.0+ soft walls — every agent has `permission: "allow"`), not by OpenCode's permission layer.
+This repo IS the **agents-manager controller**: an OpenCode multi-agent orchestration system. 9 specialist agents are defined in `opencode.jsonc` (master + research + planning + design + assets + coder + review + investigate + ship + health). Walls are enforced by prose (v0.5.0+ soft walls — every agent has `permission: "allow"`), not by OpenCode's permission layer.
 
 **Working in this repo:** when the task is to edit the controller itself (a specialist's `SKILL.md`, a release, a controller bug), edit directly — do NOT spawn the `master` agent. Master is for downstream projects that have installed the controller. The same hard rules still apply (no auto-commits, no skipping review, no editing other specialists' `SKILL.md` unless it's a deliberate controller redesign).
 
@@ -8,6 +8,19 @@ This repo IS the **agents-manager controller**: an OpenCode multi-agent orchestr
 
 ```
 master -> am-research -> am-planning -> [am-assets if visual template] -> am-design + am-coder (parallel) -> am-review
+                                                            |                            |
+                                                            v                            v
+                                                  [am-investigate]  <--- recommended by am-review for CRITICAL/HIGH
+                                                            |
+                                                            v
+                                                       am-coder (fix)
+                                                            |
+                                                            v
+                                                       am-review (re-validate)
+                                                            |
+                                                            v
+                                                       am-ship (release)
+                                                       am-health (score)
 ```
 
 - **master** orchestrates ONLY. Never codes, plans, designs, or reviews directly.
@@ -16,6 +29,9 @@ master -> am-research -> am-planning -> [am-assets if visual template] -> am-des
 - Review reports must be brutally honest. False PASS ships bugs; false FAIL just costs a fix loop.
 - Master runs a 5-question preflight before dispatching any specialist.
 - `am-assets` is dispatched at **Phase 3a** (between Planning and Build) only when the task uses a visual template that declares assets in its frontmatter AND no `assets/MANIFEST.json` exists yet. v0.16.0+ allows `am-design` and `am-coder` to run in parallel.
+- `am-investigate` is dispatched when am-review's report includes a `## Recommend am-investigate` block (CRITICAL/HIGH findings with unclear cause) OR when the user reports a bug directly.
+- `am-ship` is dispatched at Phase 5 release when the user says "ship" / "release" / "tag". Runs validation + VERSION bump + CHANGELOG block + tag + push. Idempotent.
+- `am-health` is dispatched on demand ("is this healthy?" / "run all checks") or at Phase 5 close when health tracking is enabled. Report-only — never fixes.
 - `agents_manager/extract/` is a non-roster on-demand skill (loaded by any specialist for "extract this to a template" requests). It is **not** registered in `opencode.jsonc`.
 
 ## Auto-routing
@@ -38,11 +54,14 @@ master -> am-research -> am-planning -> [am-assets if visual template] -> am-des
 |---|---|
 | master | `share/handoffs/`, `share/notes/99_decisions.md`, `tasks/` |
 | am-research | `share/notes/01_research_*.md` |
-| am-planning | `share/notes/02_plan_*.md`, `tasks/<id>.md` rows |
+| am-planning | `share/notes/02_plan_*.md`, `tasks/<id>.md` rows; v0.17.0+ also writes `share/notes/02_plan_review_*.md` for plan-mode review angles (plan-ceo / plan-eng / plan-design / plan-devex) |
 | am-design (v0.9.0+) | `share/design/<task-id>/**` |
 | am-assets (v0.9.0+, Phase 3a) | `assets/MANIFEST.json`, `share/notes/03a_assets_*.md`, `share/handoffs/03a_assets-to-coder-*.md` |
 | am-coder | source code, `share/notes/03_coder_summary_*.md` |
-| am-review | `share/reports/04_review_*.md` |
+| am-review | `share/reports/04_review_*.md`; v0.18.0+ also writes `## Recommend am-investigate` blocks when findings need root-cause work |
+| am-investigate (v0.18.0+) | `share/notes/04_investigate_*.md` |
+| am-ship (v0.18.0+) | `share/notes/05_ship_*.md`; edits `VERSION` + `agents_manager/CHANGELOG.md` |
+| am-health (v0.18.0+) | `share/health/<date>.json` + `share/notes/05_health_*.md` |
 
 In v0.5.0+ any agent can technically read/write anywhere (`permission: "allow"`); the convention is to write only to the listed paths unless coordination requires more.
 

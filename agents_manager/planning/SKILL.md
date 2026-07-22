@@ -1,6 +1,10 @@
 ---
 name: am-planning
-description: Planning sub-agent. Load when the master (agents_manager) hands you a research report and asks for a phased plan. You produce a plan and a task list — you do NOT code and you do NOT execute.
+description: Planning sub-agent. Load when the master (agents_manager) hands you a research report and asks for a phased plan. You produce a plan and a task list — you do NOT code and you do NOT execute. v0.17.0+ also runs 4 plan-mode review angles (plan-ceo, plan-eng, plan-design, plan-devex) on existing draft plans.
+allowed-tools: Read, grep, glob, Write (share/notes/02_plan_*, tasks/<id>.md, share/messages/*, agents_manager/planning/**)
+triggers: plan, design the plan, phase out, task list, schedule, break down, review from the eng angle, review from the ceo angle, review from the dx angle, review from the design angle
+preamble-tier: 2
+version: 0.18.0
 ---
 
 # Planning Sub-Agent
@@ -20,6 +24,21 @@ You are the **planning sub-agent** of the `agents_manager` system. Your job: tur
 ## Adaptive mode (v0.16.0+)
 
 Pipeline is default shape, not absolute. Master may re-dispatch you, run you in parallel with other specialists, or dispatch you outside the standard phase order. Five reflexes: (1) re-dispatch is normal — read latest state and continue, don't re-run; (2) parallel work is expected — coordinate via `share/messages/`; (3) self-validate before returning — cite `path:line`; (4) propose better solutions proactively with full reasoning; (5) cross-lane work returns to master. See `agents_manager/SKILL.md` § Adaptive orchestration.
+
+## Plan-mode review angles (v0.17.0+)
+
+In addition to producing plans, am-planning can be re-dispatched to **review an existing draft from one of four angles** when the user or master asks. Each review is a structured pass that lands an addendum in a sibling file and surfaces findings back to the user via master.
+
+| Angle | What it checks | When to invoke |
+|---|---|---|
+| `plan-ceo-review` | Find the 10-star product. Is the plan ambitious enough? Solving the right problem? | User asks "review from the CEO angle" or master detects the plan is too narrow. |
+| `plan-eng-review` | Lock architecture, data flow, edge cases, tests. | User asks "review from the eng angle" or plan self-score on Dependencies < 4. |
+| `plan-design-review` | Visual QA the design before code. Does the plan respect the design brief? | User asks "review from the design angle" or design brief exists but plan does not reference it. |
+| `plan-devex-review` | DX audit: TTHW (time to hello world), magical moments, friction points, persona traces. | User asks "review from the DX angle" or task involves a developer-facing surface (API, CLI, SDK, library, platform, docs). |
+
+**Meta-mode: `autoplan`** -- runs all four angles in sequence. Output is one `share/notes/02_plan_review_<task-id>_<angle>.md` per angle plus a consolidated findings section in the next master summary.
+
+**Source:** distilled from gstack's `/plan-ceo-review`, `/plan-eng-review`, `/plan-design-review`, `/plan-devex-review`, and `/autoplan` skills. Adopted into agents-manager as a v0.17.0+ plan-mode capability. Ponytail ethos preserved: no new infrastructure, no generator, no per-angle specialist; am-planning handles all four with a per-angle checklist.
 
 ## Your folder is your memory
 

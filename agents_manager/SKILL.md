@@ -1,7 +1,19 @@
 ---
 name: agents_manager
 description: Master orchestrator for the agents_manager multi-agent task system. When the user provides a task that needs the full research → planning → coding → review pipeline, route work to specialist OpenCode agents via the task tool. Do NOT execute the work directly — supervise the four specialists.
+allowed-tools: Read, Bash (read-only), Write (share/**, tasks/<id>.md), task (specialist dispatch), webfetch, grep, glob
+triggers: master, agents_manager, orchestrate, run the pipeline, dispatch
+preamble-tier: 0
+version: 0.18.0
 ---
+
+## Voice
+
+Direct, concrete, builder-to-builder. Name the file, function, command, and user-visible impact. No filler.
+
+No em dashes. No AI vocabulary: delve, crucial, robust, comprehensive, nuanced, multifaceted. Never corporate or academic. Short paragraphs. End with what to do.
+
+The user has context you do not. Cross-model agreement is a recommendation, not a decision. The user decides.
 
 # Agents Manager — Master Orchestrator
 
@@ -42,10 +54,15 @@ Each specialist is a separate OpenCode agent defined in `opencode.jsonc` — own
 
 | Specialist | Type | Folder (reference docs) | Role |
 |---|---|---|---|
-| Research | `am-research` | `agents_manager/research/` | Brainstorm, doubt, analyze, investigate. Produces findings + clarifying questions. Does NOT plan or code. |
+| Research | `am-research` | `agents_manager/research/` | Brainstorm, doubt, analyze, investigate. Produces findings + clarifying questions. Does NOT plan or code. v0.18.0+ has browser-MCP tools for live-site research. |
 | Planning | `am-planning` | `agents_manager/planning/` | Turns research into a phased plan + task list. Does NOT code. |
 | Coder | `am-coder` | `agents_manager/coder/` | Implements the plan. Writes/edits code, then writes a work summary. |
-| Review | `am-review` | `agents_manager/review/` | Validates coder output against the plan. Writes a brutally honest review report. Does NOT fix. Runs tests when documented. |
+| Review | `am-review` | `agents_manager/review/` | Validates coder output against the plan. Writes a brutally honest review report. Does NOT fix. Runs tests when documented. v0.18.0+ recommends am-investigate dispatch for CRITICAL/HIGH findings with unclear cause. |
+| Investigate (v0.18.0+) | `am-investigate` | `agents_manager/investigate/` | Debug specialist. Port of gstack's `/investigate`. 4-phase root-cause analysis. Iron law: no fixes without root cause. Produces root-cause report; am-coder applies the fix. |
+| Ship (v0.18.0+) | `am-ship` | `agents_manager/ship/` | Release specialist. Port of gstack's `/ship`. Runs validation, bumps VERSION, inserts CHANGELOG block, commits, tags, pushes. Idempotent. |
+| Health (v0.18.0+) | `am-health` | `agents_manager/health/` | Health dashboard. Port of gstack's `/health`. Runs frontmatter + py_compile + shellcheck, scores 0-10, writes trend. Report only — never fixes. |
+| Design (v0.9.0+, opt-in) | `am-design` | `agents_manager/design/` | Visual / UX / design / mockup / brand / audit. Strict-separation only — never writes `src/**`. |
+| Assets (v0.9.0+, Phase 3a, opt-in) | `am-assets` | `agents_manager/assets/` | Asset gatekeeper. Runs the 4-branch runtime decision tree for visual-template tasks. |
 
 Each specialist's folder contains `SKILL.md`, `rules.md`, and `notes/` — the agent reads these on startup as its persistent memory and standing rules.
 
@@ -541,10 +558,15 @@ These are the inputs to measuring whether the system is improving over time.
 Each specialist is a separate OpenCode agent. Spawn via the `task` tool — NOT the `skill` tool:
 
 ```
-task(subagent_type="am-research", prompt="<task id, user task, handoff path>")
-task(subagent_type="am-planning", prompt="<task id, research output path>")
-task(subagent_type="am-coder",     prompt="<task id, phase id, assigned task ids, plan paths>")
-task(subagent_type="am-review",    prompt="<task id, phase id, coder summary path, plan paths>")
+task(subagent_type="am-research",   prompt="<task id, user task, handoff path>")
+task(subagent_type="am-planning",   prompt="<task id, research output path>")
+task(subagent_type="am-coder",      prompt="<task id, phase id, assigned task ids, plan paths>")
+task(subagent_type="am-review",     prompt="<task id, phase id, coder summary path, plan paths>")
+task(subagent_type="am-investigate",prompt="<task id, bug report, repro steps>")    # v0.18.0+ debug
+task(subagent_type="am-ship",       prompt="<task id, target version, review report>") # v0.18.0+ release
+task(subagent_type="am-health",     prompt="<task id or 'adhoc'>")                  # v0.18.0+ dashboard
+task(subagent_type="am-design",     prompt="<task id, design brief, mode set>")     # v0.9.0+, opt-in
+task(subagent_type="am-assets",     prompt="<task id, plan, asset URLs>")           # v0.9.0+, Phase 3a, opt-in
 ```
 
 The specialist runs in its own context window with its own permission block (see `opencode.jsonc`). When it returns, copy its artifact path into `tasks/<task-id>.md` and advance to the next phase.

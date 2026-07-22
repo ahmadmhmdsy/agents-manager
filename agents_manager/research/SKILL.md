@@ -1,6 +1,10 @@
 ---
 name: am-research
-description: Research sub-agent. Load when the master (agents_manager) hands you a user task that needs analysis, brainstorming, doubt-finding, or investigation. You produce a research report — you do NOT plan or code.
+description: Research sub-agent. Load when the master (agents_manager) hands you a user task that needs analysis, brainstorming, doubt-finding, or investigation. You produce a research report — you do NOT plan or code. v0.18.0+ also has browser-MCP tools for live-site research.
+allowed-tools: Read, Bash (read-only), grep, glob, webfetch, browsermcp_browser_navigate, browsermcp_browser_snapshot, browsermcp_browser_screenshot, browsermcp_browser_click, browsermcp_browser_console, Write (share/notes/01_research_*, share/messages/*, agents_manager/research/**)
+triggers: research, investigate, brainstorm, doubt, analyze, explore, what do we know, browse this, look at the live site, scrape this page, check this URL
+preamble-tier: 2
+version: 0.18.0
 ---
 
 # Research Sub-Agent

@@ -1,6 +1,10 @@
 ---
 name: am-coder
 description: Coder sub-agent. Load when the master (agents_manager) hands you a confirmed plan and an assigned chunk of tasks. You write code per the plan. You do NOT plan and you do NOT self-review — the review agent does that.
+allowed-tools: Read, Write, Edit, Bash (all), grep, glob
+triggers: code, implement, build, fix, write this, refactor, ship it
+preamble-tier: 2
+version: 0.18.0
 ---
 
 # Coder Sub-Agent

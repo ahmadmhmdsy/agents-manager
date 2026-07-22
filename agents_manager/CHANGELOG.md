@@ -2,6 +2,67 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.18.0 — gstack adoption (frontmatter + voice + plan-mode reviews + investigate + ship + health + browser research) (2026-07-22)
+
+**Additive maintenance release.** v0.17.0 → v0.18.0.
+
+Bundle release: adopts gstack's controller-hygiene patterns (frontmatter standard, voice, plan-mode reviews) AND ports three of gstack's skills as new specialists (am-investigate, am-ship, am-health) AND gives am-research browser-MCP tools. Treated as one logical release ("adopt gstack patterns") rather than splitting v0.17.0 across two themes. No breaking changes. Existing v0.17.0 pipelines continue to work without modification — the 3 new specialists are dispatched only when the master (or user) opts in.
+
+### What's new
+
+1. **Frontmatter standard across all 11 SKILL.md files** — adopted from gstack. New frontmatter fields: `allowed-tools`, `triggers`, `preamble-tier`, `version`. Each agent now declares what it can use, when it triggers, what tier of preamble it gets, and which version it was last updated for. The pre-existing `name` + `description` remain the only fields the validator requires; the new fields are accepted silently. File count: 7 base specialists + master + 3 new (investigate, ship, health) = 11.
+2. **Voice block on master** — a new `## Voice` section in `agents_manager/SKILL.md` sets the prose convention for all downstream specialists: no em dashes, no AI vocabulary (delve, crucial, robust, comprehensive, nuanced, multifaceted), short paragraphs, end with what to do. Direct, concrete, builder-to-builder.
+3. **Plan-mode review angles (am-planning)** — four new review modes that am-planning can run on an existing draft plan, each surfacing findings to the user via master. Models after gstack's `plan-ceo-review`, `plan-eng-review`, `plan-design-review`, `plan-devex-review`. Plus `autoplan` meta-mode runs all four. Output lands in `share/notes/02_plan_review_<task-id>_<angle>.md`. No new infrastructure; am-planning handles all four with a per-angle checklist.
+4. **am-investigate** — debug specialist. Port of gstack's `/investigate`. 4-phase root-cause analysis (investigate, analyze, hypothesize, implement). Iron law: no fixes without root cause. Produces `share/notes/04_investigate_<task-id>.md` with cited evidence + recommended fix. am-coder applies the fix; am-review validates. Dispatched by master on bug reports OR when am-review flags `[CRITICAL]`/`[HIGH]` findings with unclear cause. Output: root cause + recommended fix line.
+5. **am-ship** — release specialist. Port of gstack's `/ship`. Runs the controller's lint suite (`validate-frontmatter.py` + `py_compile` + `shellcheck`), bumps VERSION, inserts the CHANGELOG block at the top of `agents_manager/CHANGELOG.md` (the rule we always forget — `release.yml` extracts this block as the GitHub Release body), commits, tags, pushes. Idempotent (re-run on already-tagged version = no-op). Stops hard on base-branch tagging, dirty working tree, validator failure, MAJOR/MINOR bump ambiguity.
+6. **am-health** — health dashboard specialist. Port of gstack's `/health`. Runs all 3 validators, scores each 0-10 against a documented rubric, writes a weighted composite (frontmatter 35% / python 35% / shell 30%) + trend file at `share/health/<date>.json` + markdown dashboard at `share/notes/05_health_<date>.md`. HARD GATE: report only, never fix.
+7. **am-research + browser infra** — added `browsermcp_browser_*` tools to am-research's allow list. The 7 gstack browse skills (`/browse`, `/qa`, `/design-review`, etc.) are NOT ported as specialists — they need a real headless Chromium daemon. Instead, am-research can now drive the opencode-installed `browsermcp` browser directly when research needs to look at a live site.
+8. **am-review → am-investigate handshake** — am-review's SKILL.md now has a `## Recommend am-investigate` section. When a `[CRITICAL]` or `[HIGH]` finding has an unclear cause, am-review writes a recommendation block; master dispatches `am-investigate` (not `am-coder`) for that finding. Specialists never spawn specialists — the recommendation is just text; master is the dispatcher.
+
+### Pipeline update
+
+Default pipeline (v0.16.0+) gains 3 optional dispatch points:
+
+```
+master -> am-research -> am-planning -> [am-assets] -> am-design + am-coder -> am-review
+                                                                    |            |
+                                                                    v            v
+                                                          [am-investigate] <- recommended for CRITICAL/HIGH
+                                                                    |
+                                                                    v
+                                                              am-coder (fix)
+                                                                    |
+                                                                    v
+                                                                am-review (re-validate)
+                                                                    |
+                                                                    v
+                                                                am-ship (release)
+                                                                  am-health (score)
+```
+
+`am-investigate`, `am-ship`, `am-health` are opt-in by master based on the user's request. The default pipeline still ends at `am-review` unless the user explicitly asks for ship / health or am-review flags an unclear bug.
+
+### Per-agent output paths (additions)
+
+| Agent | Output (new in v0.18.0) |
+|---|---|
+| am-investigate | `share/notes/04_investigate_<task-id>.md` |
+| am-ship | `share/notes/05_ship_<task-id>.md`, edits `VERSION` + `agents_manager/CHANGELOG.md` |
+| am-health | `share/health/<date>.json` + `share/notes/05_health_<date>.md` |
+
+### Skipped per ponytail (add when X)
+
+- **gstack's preamble/telemetry/AskUserQuestion machinery** (the gstack SKILL.md files are 900+ lines; ours are ~150). The Claude-Code host-assumptions (Conductor, gh CLI, WSL paths, `~/.claude/skills/gstack/`) are dropped. Add when: gstack patterns need full feature parity (unlikely — our controller has its own host).
+- **`/qa`, `/design-review`, `/devex-review`, `/canary`, `/scrape`, `/skillify`** — the 6 browser-driven gstack skills. Not ported because they need a Chromium daemon we don't ship. Add when: a downstream project has a UI to QA (then port `/browse` first).
+- **gbrain** — gstack's cross-machine session-memory sync (Supabase). Our `agents_manager/memory/` is local-only and serves the same purpose. Add when: we have a team on multiple machines (single-machine workflow has no sync problem).
+- **telemetry** — gstack's opt-in Supabase analytics. Privacy concerns + no infra. Add when: we have 50+ active installs and need usage data.
+
+### Validator
+
+`python3 scripts/validate-frontmatter.py` continues to validate 11 SKILL.md files (8 existing + 3 new: investigate, ship, health). All in `lenient` mode since `agents_manager/` is not under a `skills/` path. Validator only requires `name` + `description`; the new fields (`allowed-tools`, `triggers`, `preamble-tier`, `version: 0.18.0`) are accepted silently.
+
+---
+
 ## v0.17.0 — agent discipline (research upgrade + hardening) (2026-07-14)
 
 **Additive maintenance release. No breaking changes.** v0.16.0 → v0.17.0.

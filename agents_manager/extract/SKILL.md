@@ -1,6 +1,10 @@
 ---
 name: extract
 description: Extract a finished agents-manager project into a reusable template or tagged core knowledge. Load when the user says "extract", "template this", "convert to template", "extract the core knowledge", "what would I reuse from this?", or picks the Phase 5 "Extract" menu option. Any specialist can load this skill on demand; there is no dedicated roster slot.
+allowed-tools: Read, Write (templates/<slug>/, share/notes/03_extracted_*, share/templates/drafts/**, agents_manager/memory/**, agents_manager/extract/**), grep, glob, Bash (read-only + tests/verify.sh + scripts/validate-memory.sh)
+triggers: extract, template this, convert to template, extract the core knowledge, what would I reuse from this
+preamble-tier: 3
+version: 0.18.0
 ---
 
 # Extract Skill
