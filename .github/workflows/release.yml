@@ -47,6 +47,9 @@ jobs:
             "tasks"
             ".agents/skills/mavis-team"
             "bin"
+            "AGENTS.md"
+            "scripts"
+            "README.md"
           )
 
           git archive \

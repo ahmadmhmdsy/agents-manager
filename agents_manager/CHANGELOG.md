@@ -2,6 +2,23 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.20.1 — release packaging fix (AGENTS.md + scripts/ + README.md) (2026-07-22)
+
+**Packaging fix.** v0.20.0 → v0.20.1.
+
+`release.yml` allowlist now includes `AGENTS.md`, `scripts/`, and `README.md` so the release ZIP is self-contained for downstream projects. No code changes; no breaking changes.
+
+### What's new
+
+1. **AGENTS.md in release** — controller's primary user-facing doc (pipeline, hard rules, tool surface, per-agent output paths, release protocol, lint/verify commands) now ships in the ZIP. Without it, downstream users had no idea chub was mandatory or that MCPs were wired.
+2. **scripts/ in release** — `scripts/validate-frontmatter.py` now ships, so downstream users can re-run the validator locally.
+3. **README.md in release** — project overview ships with the ZIP.
+
+### Skipped per ponytail
+
+- Re-tagging v0.20.0 with the new allowlist — clean v0.20.1 PATCH is the safer history.
+- Adding docs/, templates/, examples/, LICENSE — out of scope for a packaging fix; downstream projects can clone master for those.
+
 ## v0.20.0 — context-hub (chub) integration (2026-07-22)
 
 **Additive capability release.** v0.19.0 → v0.20.0.
