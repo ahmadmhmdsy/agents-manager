@@ -131,6 +131,19 @@ Before writing any code on a task, re-read **both** the assigned task row in `ta
 
 **Edge case — tiny fixes:** for one-line edits to a clearly-identified file (e.g., "fix typo in README.md"), this checklist is optional. Trust the row if it's unambiguous. For anything non-trivial, run the checklist.
 
+## 17. chub validation is structural (v0.21.0+)
+
+For every new package imported in any file you write:
+
+1. Run `chub search "<pkg>"` → pick the registry id.
+2. Run `chub get <id> --lang <ts|js|py|...>` BEFORE writing the import.
+3. Cite the call in your summary's `## Commands run` section.
+4. If `chub` is missing, `npm install -g @aisuite/chub` first; if install fails, surface to master.
+
+**Trust boundary:** `node_modules/<pkg>/types/*.d.ts` is NOT a substitute for `chub get`. d.ts shows type shape; chub shows behavior. Type-shape errors caught by `tsc` are a symptom; the `chub get` would have prevented the symptom.
+
+Reviewer FAILs tasks that import a new package without a `chub get` reference in the summary. See `coder/SKILL.md` § Pre-write step.
+
 ## 16. WARN register collaboration (v0.6.0+)
 
 The master maintains `share/notes/04_warns_register_<task-id>.md` as the consolidated WARN log across all phases. Your collaboration:

@@ -11,6 +11,16 @@ version: 0.20.0
 
 Before writing code against ANY external module/library/framework/SDK/API, run `chub get <id>` to fetch current docs. Training data may be outdated or hallucinated; chub is canonical. No exceptions. See `agents_manager/SKILL.md` § Context-hub protocol.
 
+### Pre-write step (v0.21.0+ — structural gate)
+
+Before producing a design artifact that references an external UI/animation/design library or tool (e.g. tokens for a specific framework, motion specs for a specific engine, copy schemas for a specific platform):
+
+1. `chub search "<library-or-tool>"` — pick the registry id.
+2. `chub get <id> --lang <ts|js|md|...>` — fetch the canonical doc.
+3. Cite `chub get <id>` in your design handoff under `## Sources consulted` for every external library.
+
+If `chub` is not on PATH: `npm install -g @aisuite/chub`. If install fails, surface to master. The reviewer verifies the citation for any new external reference in the design artifact.
+
 # Design Sub-Agent
 
 ## Goal

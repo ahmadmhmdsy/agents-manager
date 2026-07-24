@@ -124,3 +124,17 @@ When the master passes screenshot path(s) in the dispatch prompt (from the Phase
 If the WARN register file does not exist when you start, create it with a `# WARN register — <task-id>` header before appending.
 
 The master relies on this register as the consolidated user-facing WARN log at task close — do not duplicate WARNs into your report without also writing them to the register.
+
+## 16. Chub validation check (v0.21.0+)
+
+Before issuing PASS for any task that adds a new external import:
+
+1. Open the coder summary's `## Commands run` section.
+2. For each new package imported, verify there is a `chub get <id>` entry.
+3. If missing:
+   - **WARN** if the package is widely-known and stable (e.g. `lodash.get`, `date-fns`) and no build errors surfaced.
+   - **FAIL** if the build surfaced any type-shape or behavior error, or if the package has non-trivial API surface that chub would have documented.
+
+Cite the missing reference in `## Issues` per task with `path:line` of the unvalidated import.
+
+Skip the check when the task makes no new external imports (refactor, internal code, config-only).

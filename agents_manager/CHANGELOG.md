@@ -2,6 +2,48 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.21.0 — chub-enforcement (structural gate) (2026-07-24)
+
+**Address upstream feedback.** v0.20.1 → v0.21.0.
+
+The v0.20.0+ chub rule was mandatory prose — agents in downstream projects read it, then skipped it (see `agents_manager/upstream-contrib/06_chub_enforcement_feedback.md`). A build session (preview-kit-demo) introduced 6 external deps (`@hpcc-js/wasm`, `@vue/compiler-sfc`, `mermaid`, `papaparse`, `js-yaml`, `pdfjs-dist`) without a single `chub get` call, falling back to `node_modules/<pkg>/types/*.d.ts`. This release promotes chub from prose to structural gate via three small changes.
+
+### What's new
+
+1. **chub installed by default** — `bin/agents-manager` (bash) and `bin/agents-manager.ps1` (PowerShell) install `chub` via `npm install -g @aisuite/chub` during the install workflow. Idempotent (skips if already on PATH, prints `OK chub (already on PATH)`). Warns and continues if install fails; agents fall back to the on-demand install path in master SKILL.md.
+2. **Pre-write step in specialist SKILL.md** — `am-coder`, `am-design`, `am-assets` get a concrete `### Pre-write step (v0.21.0+ — structural gate)` subsection making the chub workflow explicit (search → get → cite). The preamble was too easy to skim. Coder rule 17, design pre-write step, assets pre-write step all reference each other.
+3. **Reviewer gate** — `am-review` checks coder summaries for `chub get <id>` citations on new imports. Missing citation → WARN (widely-known stable packages) or FAIL (build-failed or non-trivial API). `coder/rules.md` rule 17 and `review/rules.md` rule 16 added to match.
+4. **AGENTS.md** chub rule paragraph updated to v0.21.0+ with the three enforcement points above.
+
+### How to verify
+
+1. Run `agents-manager install <target>` on a fresh target. Confirm `chub (context-hub):` step prints and `chub --help` works after install.
+2. Re-run `agents-manager install <target>`. Confirm the step prints `OK chub (already on PATH)`.
+3. Inspect `agents_manager/coder/SKILL.md` — confirm `### Pre-write step (v0.21.0+ — structural gate)` exists.
+4. Inspect `agents_manager/review/SKILL.md` — confirm `### Chub validation check (v0.21.0+ — review gate)` exists.
+5. `python3 scripts/validate-frontmatter.py` — all 11 SKILL.md frontmatters still valid.
+
+### Skipped per ponytail
+
+- **New `chub-validate` skill wrapper** — chub CLI is the canonical tool; one wrapper for one tool is ceremony. Specialists call `chub get` directly. See upstream proposal § "What changes" item 1.
+- **`## Validated packages (this turn)` handoff block + schema** — replaced with a simpler rule: coder cites `chub get <id>` in `Commands run`, reviewer checks it. Schema is over-engineering for a 1-line check. See upstream proposal item 2.
+- **`scripts/validate-handoff.py`** — see above. Reviewer judgment is sufficient for a 1-line check; structural CI catches what reviewers miss, and chub install is already a step the script doesn't need to validate.
+- **Failure-correlation log / `if-chub-had-been-called: yes` annotation** — premature telemetry. Add when there's enough monthly data to make a decision.
+- **`.chub-cache/<pkg>@<version>.md`** — chub already caches via `chub cache status`; second-lookup is sub-second. Don't duplicate state.
+
+### Files touched
+
+- bin/agents-manager (bash): 1 file — added `install_chub` function + call after skills chain
+- bin/agents-manager.ps1: 1 file — added `Install-Chub` function + call after skills chain
+- agents_manager/coder/SKILL.md: pre-write step subsection
+- agents_manager/design/SKILL.md: pre-write step subsection
+- agents_manager/assets/SKILL.md: pre-write step subsection
+- agents_manager/review/SKILL.md: Chub validation check subsection
+- agents_manager/coder/rules.md: rule 17 (chub validation is structural)
+- agents_manager/review/rules.md: rule 16 (chub validation check)
+- AGENTS.md: chub rule paragraph updated
+- agents_manager/CHANGELOG.md: this entry
+
 ## v0.20.1 — release packaging fix (AGENTS.md + scripts/ + README.md) (2026-07-22)
 
 **Packaging fix.** v0.20.0 → v0.20.1.

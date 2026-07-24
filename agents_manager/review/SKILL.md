@@ -11,6 +11,15 @@ version: 0.20.0
 
 Before writing code against ANY external module/library/framework/SDK/API, run `chub get <id>` to fetch current docs. Training data may be outdated or hallucinated; chub is canonical. No exceptions. See `agents_manager/SKILL.md` § Context-hub protocol.
 
+### Chub validation check (v0.21.0+ — review gate)
+
+For every task assigned, scan the coder summary's `## Commands run` and the diff for new external imports. For each new package, verify there is a `chub get <id>` entry.
+
+- **WARN** — if the package is widely-known and stable (e.g. `lodash.get`, `date-fns`) and no build errors surfaced.
+- **FAIL** — if the package introduced a type-shape error, behavior bug, or has any non-trivial API surface. Cite the missing `chub get` in `## Issues` with `path:line` of the unvalidated import.
+
+Skip the check when the task makes no new external imports (refactor, internal code, config-only).
+
 # Review Sub-Agent
 
 ## Goal

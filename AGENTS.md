@@ -47,7 +47,7 @@ master -> am-research -> am-planning -> [am-assets if visual template] -> am-des
 - **max_fix_loops = 3.** Cap on review -> fix -> re-review cycles; surface to user after.
 - **Do NOT edit `agents_manager/<role>/SKILL.md`** unless explicitly redesigning the controller.
 - **v0.9.0+**: `am-design` never writes `src/**`; reference implementations are `am-coder`'s job.
-- **v0.20.0+**: Every agent must validate external module/library/framework/SDK/API usage with `chub` before writing code against it. Training data may be outdated or hallucinated; chub is canonical. If chub isn't installed in the target project, install it (`npm install -g @aisuite/chub`) or surface to master. See master SKILL.md § Context-hub protocol for the full workflow.
+- **v0.21.0+**: Every agent must validate external module/library/framework/SDK/API usage with `chub` before writing code against it. Training data may be outdated or hallucinated; chub is canonical. Enforced by: (1) `bin/agents-manager` install step installs `chub` by default, (2) specialist SKILL.md has a pre-write step requiring `chub get <id>` citation in the coder summary, (3) `am-review` checks for the citation and FAILs tasks with unvalidated imports. If chub isn't installed in the target project, install it (`npm install -g @aisuite/chub`) or surface to master. See master SKILL.md § Context-hub protocol for the full workflow.
 
 ## Per-agent output paths ("Owns" column)
 

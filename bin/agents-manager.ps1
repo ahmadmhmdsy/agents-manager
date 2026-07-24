@@ -88,6 +88,32 @@ function Resolve-Target {
     (Resolve-Path $Path).Path
 }
 
+# Install chub (context-hub) globally via npm. Called during install (v0.21.0+).
+# Idempotent: skips if already on PATH. Warns and continues on failure; agents
+# fall back to the on-demand install path in agents_manager/SKILL.md.
+function Install-Chub {
+    param([bool]$DryRun)
+    if (Get-Command chub -ErrorAction SilentlyContinue) {
+        Write-Host "  OK   chub (already on PATH)"
+        return
+    }
+    if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+        warn "npm not on PATH - chub not installed. agents will fall back to on-demand install per master SKILL.md."
+        return
+    }
+    if ($DryRun) {
+        Write-Host "  WOULD run: npm install -g @aisuite/chub (dry run)"
+        return
+    }
+    Write-Host "  ..   npm install -g @aisuite/chub"
+    $output = & npm install -g @aisuite/chub 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        ok "chub installed"
+    } else {
+        warn "chub install failed. agents will try on-demand install per master SKILL.md."
+    }
+}
+
 # Parse a flag-style arg list: returns a hashtable with Target, DryRun, GitMode, Skills (or whatever flags).
 # Accepts both bash-style (--dry-run, --git=M, --skills=local) and PowerShell PascalCase (-DryRun, -Git M, -Skills local)
 # on every documented install flag. This makes the install subcommand accept the same args from both wrappers.
@@ -241,6 +267,11 @@ share/notes/99_progress_*.md
     } else {
         Skills-Add-Cmd @("--all", "--yes", "--$($p.Skills)")
     }
+
+    # chub (v0.21.0+): install by default so downstream agents don't skip on miss.
+    Write-Host ""
+    Write-Host "${BOLD}Chub (context-hub):${RESET}"
+    Install-Chub -DryRun $p.DryRun
 
     if ($p.DryRun) { Write-Host ""; Write-Host "DRY RUN complete - no changes were written."; return }
 

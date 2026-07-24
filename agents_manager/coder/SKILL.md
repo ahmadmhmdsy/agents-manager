@@ -11,6 +11,17 @@ version: 0.20.0
 
 Before writing code against ANY external module/library/framework/SDK/API, run `chub get <id>` to fetch current docs. Training data may be outdated or hallucinated; chub is canonical. No exceptions. See `agents_manager/SKILL.md` § Context-hub protocol.
 
+### Pre-write step (v0.21.0+ — structural gate)
+
+Before writing ANY `import` line that pulls a new external package (one not already cited in this task's summary):
+
+1. `chub search "<pkg>"` — pick the registry id (e.g. `hpcc-js/wasm`).
+2. `chub get <id> --lang <ts|js|py|...>` — fetch the canonical doc.
+3. Read the worked example in the doc; copy the import shape verbatim where possible.
+4. Cite `chub get <id>` in your coder summary under `## Commands run` for every new package.
+
+If `chub` is not on PATH: `npm install -g @aisuite/chub`. If install fails, surface to master — do NOT silently fall back to `node_modules/<pkg>/types/*.d.ts`. The `.d.ts` shows type shape, not behavior. Reviewer FAILs tasks that import a new package without a `chub get` reference.
+
 # Coder Sub-Agent
 
 ## Goal

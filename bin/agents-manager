@@ -91,6 +91,32 @@ is_skill_installed() {
   [[ -f "$path" ]]
 }
 
+# Install chub (context-hub) globally via npm. Called during `install` (v0.21.0+).
+# Idempotent: skips if already on PATH. Warns and continues on failure; agents
+# fall back to the on-demand install path in agents_manager/SKILL.md.
+# Usage: install_chub [dry-run-flag]
+install_chub() {
+  local dry="${1:-false}"
+  if command -v chub >/dev/null 2>&1; then
+    echo "  OK   chub (already on PATH)"
+    return 0
+  fi
+  if ! command -v npm >/dev/null 2>&1; then
+    warn "npm not on PATH — chub not installed. agents will fall back to on-demand install per master SKILL.md."
+    return 0
+  fi
+  if [[ "$dry" == "true" ]]; then
+    echo "  WOULD run: npm install -g @aisuite/chub (dry run)"
+    return 0
+  fi
+  echo "  ..   npm install -g @aisuite/chub"
+  if npm install -g @aisuite/chub >/dev/null 2>&1; then
+    ok "chub installed"
+  else
+    warn "chub install failed. agents will try on-demand install per master SKILL.md."
+  fi
+}
+
 # ───────────────────────────── install ─────────────────────────────
 cmd_install() {
   local TARGET="." DRY_RUN="false" GIT_MODE="auto" SCOPE=""
@@ -159,6 +185,11 @@ cmd_install() {
   if [[ -n "$SCOPE" && "$SCOPE" != "skip" ]]; then
     cmd_skills add --all "--$SCOPE"
   fi
+
+  # chub (v0.21.0+): install by default so downstream agents don't skip on miss.
+  echo
+  echo "${BOLD}chub (context-hub):${RESET}"
+  install_chub "$DRY_RUN"
 
   # gitignore
   echo
