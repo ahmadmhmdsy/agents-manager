@@ -2,6 +2,48 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.22.0 — chub-gate (opencode plugin + global skill) (2026-07-24)
+
+**Survive compaction.** v0.21.0 → v0.22.0.
+
+The v0.21.0 chub rule was a structural gate at install + write time, but agents still forgot chub after a long session because context compaction erases it. This release adds two layers that survive compaction: an opencode plugin that re-injects the reminder on every `experimental.session.compacting` event, and a discoverable skill (the `chub-validate` SKILL.md) that any agent can load on demand. Both ship with the install — project-local by default, globally installable for users without `agents-manager`.
+
+### What's new
+
+1. **Opencode plugin (`agents_manager/chub-gate/chub-gate.ts`)** — three hooks:
+   - `experimental.session.compacting` → push a condensed chub rule into `output.context` after every compaction (the survival mechanism).
+   - `tool.execute.before` on `edit` / `write` / `apply_patch` → log a nudge when the args payload contains a new external import (matches `import ... from "<pkg>"` and `@scope/pkg`).
+   - `tool.execute.after` on `bash` with `npm install` → log a nudge to call `chub get <id>` after install, before first use.
+2. **`chub-validate` skill (`agents_manager/chub-validate/SKILL.md`)** — discoverable, frontmatter-driven (`name`, `description` 1–1024 chars). Body teaches the chub protocol, anti-patterns (`.d.ts` fallback is a trap), and the `@hpcc-js/wasm` worked example.
+3. **`bin/agents-manager install` copies both** to the target project's `.opencode/plugins/` and `.opencode/skills/`. Idempotent (skips if file exists), dry-run-aware.
+4. **`--chub-global` flag** — copies the same plugin + skill to `~/.config/opencode/plugins/` and `~/.config/opencode/skills/`. Independent of `--skills` scope. Use case: opencode users who don't have `agents-manager` installed.
+5. **PowerShell parity** — `Install-ChubAssets -Global` in `bin/agents-manager.ps1` matches the bash path. `Parse-InstallFlags` accepts `--chub-global` and `-ChubGlobal`.
+6. **AGENTS.md** chub rule paragraph bumped to v0.22.0+ with the four enforcement points.
+
+### How to verify
+
+1. `agents-manager install <target>` — confirm `Chub-gate (plugin + skill):` section prints `OK .opencode/plugins/chub-gate.ts` and `OK .opencode/skills/chub-validate/SKILL.md`.
+2. `agents-manager install --dry-run --chub-global` — confirm `~/.config/opencode/plugins/chub-gate.ts` and `~/.config/opencode/skills/chub-validate/SKILL.md` print as `WOULD` lines.
+3. Open the target project in opencode, run a long session that triggers a compaction, inspect context — chub rule is present.
+4. Try `edit`/`write` an import for a fresh package — confirm a `chub-gate` log entry appears.
+5. `python3 scripts/validate-frontmatter.py agents_manager/chub-validate/SKILL.md` — passes (name + description valid).
+
+### Skipped per ponytail
+
+- **Bumping `agents-manager.py`** — Python UX is the deprecated install path; bash + ps1 are canonical. If users complain, port later.
+- **`check` subcommand updates** — `check` doesn't yet verify `.opencode/` paths. Add when the chub-gate plugin/skill become part of the standard install surface and `check` needs to gate on them.
+- **`check.sh` / `check.ps1` updates** — same.
+- **Plugin option for disabling on a per-project basis** — premature. If a downstream project needs to opt out, add `--no-chub-gate` flag in a follow-up.
+
+### Files touched
+
+- `agents_manager/chub-gate/chub-gate.ts`: NEW (96 lines)
+- `agents_manager/chub-validate/SKILL.md`: NEW (60 lines)
+- `bin/agents-manager` (bash): `install_chub_assets` function + `--chub-global` flag + call site (~50 lines)
+- `bin/agents-manager.ps1`: `Install-ChubAssets` nested function + `ChubGlobal` parsing in `Parse-InstallFlags` + call site (~50 lines)
+- `AGENTS.md`: chub rule paragraph bumped v0.21.0+ → v0.22.0+
+- `agents_manager/CHANGELOG.md`: this entry
+
 ## v0.21.0 — chub-enforcement (structural gate) (2026-07-24)
 
 **Address upstream feedback.** v0.20.1 → v0.21.0.

@@ -123,6 +123,7 @@ function Parse-InstallFlags {
     $DryRun = $false
     $GitMode = "auto"
     $Skills = "both"
+    $ChubGlobal = $false
     for ($i = 0; $i -lt $Rest.Count; $i++) {
         $a = $Rest[$i]
         switch -Regex ($a) {
@@ -138,11 +139,16 @@ function Parse-InstallFlags {
                 if ($i + 1 -lt $Rest.Count) { $Skills = $Rest[$i + 1].ToLower(); $i++ }
                 continue
             }
+            '^-{1,2}(chub-?global|ChubGlobal)(?:=(true|false))?$' {
+                if ($Matches.Count -gt 2 -and $Matches[2]) { $ChubGlobal = $Matches[2].ToLower() -eq 'true' }
+                else { $ChubGlobal = $true }
+                continue
+            }
             '^-'                 { err "unknown flag: $a"; return $null }
             default              { $Target = $a }
         }
     }
-    return @{ Target = $Target; DryRun = $DryRun; GitMode = $GitMode; Skills = $Skills }
+    return @{ Target = $Target; DryRun = $DryRun; GitMode = $GitMode; Skills = $Skills; ChubGlobal = $ChubGlobal }
 }
 
 function Install-Cmd {
@@ -173,6 +179,54 @@ function Install-Cmd {
         else {
             Copy-Item -Path (Join-Path $Src $Rel) -Destination $dest -Recurse -Force
             Write-Host "  OK   $Rel"
+        }
+    }
+
+    # Install chub-gate opencode plugin + chub-validate skill (v0.22.0+).
+    # Project-local by default; with -Global also copies to ~/.config/opencode/.
+    function Install-ChubAssets {
+        param([bool]$DryRun, [bool]$Global)
+        $pluginSrc = Join-Path $Src "agents_manager/chub-gate/chub-gate.ts"
+        $skillSrc  = Join-Path $Src "agents_manager/chub-validate/SKILL.md"
+        if (-not (Test-Path $pluginSrc) -or -not (Test-Path $skillSrc)) {
+            warn "chub-gate source not found at $pluginSrc or $skillSrc - skipping."
+            return
+        }
+        $pluginDst = Join-Path $T ".opencode/plugins/chub-gate.ts"
+        $skillDir  = Join-Path $T ".opencode/skills/chub-validate"
+        $skillDst  = Join-Path $skillDir "SKILL.md"
+        if (Test-Path $pluginDst) { Write-Host "  SKIP .opencode/plugins/chub-gate.ts (already exists)" }
+        elseif ($DryRun) { Write-Host "  COPY .opencode/plugins/chub-gate.ts (dry run)" }
+        else {
+            New-Item -Path (Split-Path $pluginDst) -ItemType Directory -Force | Out-Null
+            Copy-Item -Path $pluginSrc -Destination $pluginDst -Force
+            Write-Host "  OK   .opencode/plugins/chub-gate.ts"
+        }
+        if (Test-Path $skillDst) { Write-Host "  SKIP .opencode/skills/chub-validate/SKILL.md (already exists)" }
+        elseif ($DryRun) { Write-Host "  COPY .opencode/skills/chub-validate/SKILL.md (dry run)" }
+        else {
+            New-Item -Path $skillDir -ItemType Directory -Force | Out-Null
+            Copy-Item -Path $skillSrc -Destination $skillDst -Force
+            Write-Host "  OK   .opencode/skills/chub-validate/SKILL.md"
+        }
+        if (-not $Global) { return }
+        $gPluginDir = Join-Path $HOME ".config/opencode/plugins"
+        $gSkillDir  = Join-Path $HOME ".config/opencode/skills/chub-validate"
+        $gPluginDst = Join-Path $gPluginDir "chub-gate.ts"
+        $gSkillDst  = Join-Path $gSkillDir "SKILL.md"
+        if (Test-Path $gPluginDst) { Write-Host "  SKIP ~/.config/opencode/plugins/chub-gate.ts (already exists)" }
+        elseif ($DryRun) { Write-Host "  COPY ~/.config/opencode/plugins/chub-gate.ts (dry run)" }
+        else {
+            New-Item -Path $gPluginDir -ItemType Directory -Force | Out-Null
+            Copy-Item -Path $pluginSrc -Destination $gPluginDst -Force
+            Write-Host "  OK   ~/.config/opencode/plugins/chub-gate.ts"
+        }
+        if (Test-Path $gSkillDst) { Write-Host "  SKIP ~/.config/opencode/skills/chub-validate/SKILL.md (already exists)" }
+        elseif ($DryRun) { Write-Host "  COPY ~/.config/opencode/skills/chub-validate/SKILL.md (dry run)" }
+        else {
+            New-Item -Path $gSkillDir -ItemType Directory -Force | Out-Null
+            Copy-Item -Path $skillSrc -Destination $gSkillDst -Force
+            Write-Host "  OK   ~/.config/opencode/skills/chub-validate/SKILL.md"
         }
     }
 
@@ -272,6 +326,12 @@ share/notes/99_progress_*.md
     Write-Host ""
     Write-Host "${BOLD}Chub (context-hub):${RESET}"
     Install-Chub -DryRun $p.DryRun
+
+    # chub-gate plugin + chub-validate skill (v0.22.0+). Project-local by default;
+    # --chub-global also copies to ~/.config/opencode/.
+    Write-Host ""
+    Write-Host "${BOLD}Chub-gate (plugin + skill):${RESET}"
+    Install-ChubAssets -DryRun $p.DryRun -Global $p.ChubGlobal
 
     if ($p.DryRun) { Write-Host ""; Write-Host "DRY RUN complete - no changes were written."; return }
 

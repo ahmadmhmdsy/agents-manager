@@ -117,9 +117,73 @@ install_chub() {
   fi
 }
 
+# Install chub-gate opencode plugin + chub-validate skill (v0.22.0+).
+# Project-local: copies to <target>/.opencode/{plugins,skills}/. Idempotent.
+# With --chub-global: ALSO copies to ~/.config/opencode/{plugins,skills}/.
+# Usage: install_chub_assets <target_abs> <dry-run-flag> <global-flag>
+install_chub_assets() {
+  local target_abs="$1" dry="$2" global="$3"
+  local plugin_src="$SRC/agents_manager/chub-gate/chub-gate.ts"
+  local skill_src="$SRC/agents_manager/chub-validate/SKILL.md"
+
+  if [[ ! -f "$plugin_src" || ! -f "$skill_src" ]]; then
+    warn "chub-gate source not found at $plugin_src or $skill_src — skipping."
+    return 0
+  fi
+
+  # Project-local copy.
+  local plugin_dst="$target_abs/.opencode/plugins/chub-gate.ts"
+  local skill_dst_dir="$target_abs/.opencode/skills/chub-validate"
+  local skill_dst="$skill_dst_dir/SKILL.md"
+  if [[ -f "$plugin_dst" ]]; then
+    echo "  SKIP .opencode/plugins/chub-gate.ts (already exists)"
+  elif [[ "$dry" == "true" ]]; then
+    echo "  COPY .opencode/plugins/chub-gate.ts (dry run)"
+  else
+    mkdir -p "$(dirname "$plugin_dst")"
+    cp "$plugin_src" "$plugin_dst"
+    echo "  OK   .opencode/plugins/chub-gate.ts"
+  fi
+  if [[ -f "$skill_dst" ]]; then
+    echo "  SKIP .opencode/skills/chub-validate/SKILL.md (already exists)"
+  elif [[ "$dry" == "true" ]]; then
+    echo "  COPY .opencode/skills/chub-validate/SKILL.md (dry run)"
+  else
+    mkdir -p "$skill_dst_dir"
+    cp "$skill_src" "$skill_dst"
+    echo "  OK   .opencode/skills/chub-validate/SKILL.md"
+  fi
+
+  # Global copy if requested (for users without agents-manager).
+  if [[ "$global" == "true" ]]; then
+    local g_plugin_dir="$HOME/.config/opencode/plugins"
+    local g_skill_dir="$HOME/.config/opencode/skills/chub-validate"
+    local g_plugin_dst="$g_plugin_dir/chub-gate.ts"
+    local g_skill_dst="$g_skill_dir/SKILL.md"
+    if [[ -f "$g_plugin_dst" ]]; then
+      echo "  SKIP ~/.config/opencode/plugins/chub-gate.ts (already exists)"
+    elif [[ "$dry" == "true" ]]; then
+      echo "  COPY ~/.config/opencode/plugins/chub-gate.ts (dry run)"
+    else
+      mkdir -p "$g_plugin_dir"
+      cp "$plugin_src" "$g_plugin_dst"
+      echo "  OK   ~/.config/opencode/plugins/chub-gate.ts"
+    fi
+    if [[ -f "$g_skill_dst" ]]; then
+      echo "  SKIP ~/.config/opencode/skills/chub-validate/SKILL.md (already exists)"
+    elif [[ "$dry" == "true" ]]; then
+      echo "  COPY ~/.config/opencode/skills/chub-validate/SKILL.md (dry run)"
+    else
+      mkdir -p "$g_skill_dir"
+      cp "$skill_src" "$g_skill_dst"
+      echo "  OK   ~/.config/opencode/skills/chub-validate/SKILL.md"
+    fi
+  fi
+}
+
 # ───────────────────────────── install ─────────────────────────────
 cmd_install() {
-  local TARGET="." DRY_RUN="false" GIT_MODE="auto" SCOPE=""
+  local TARGET="." DRY_RUN="false" GIT_MODE="auto" SCOPE="" CHUB_GLOBAL="false"
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --dry-run) DRY_RUN="true"; shift ;;
@@ -128,6 +192,8 @@ cmd_install() {
       --skills|--scope) SCOPE="$2"; shift 2 ;;
       --skills=*) SCOPE="${1#--skills=}"; shift ;;
       --scope=*) SCOPE="${1#--scope=}"; shift ;;
+      --chub-global) CHUB_GLOBAL="true"; shift ;;
+      --chub-global=*) CHUB_GLOBAL="${1#--chub-global=}"; shift ;;
       --yes|-y) shift ;;
       -*) err "unknown flag: $1"; return 1 ;;
       *) TARGET="$1"; shift ;;
@@ -190,6 +256,12 @@ cmd_install() {
   echo
   echo "${BOLD}chub (context-hub):${RESET}"
   install_chub "$DRY_RUN"
+
+  # chub-gate plugin + chub-validate skill (v0.22.0+). Project-local by default;
+  # --chub-global also copies to ~/.config/opencode/.
+  echo
+  echo "${BOLD}chub-gate (plugin + skill):${RESET}"
+  install_chub_assets "$TARGET_ABS" "$DRY_RUN" "$CHUB_GLOBAL"
 
   # gitignore
   echo
