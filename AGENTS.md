@@ -86,6 +86,10 @@ MCPs are enabled at the host level (parent `opencode.json`), not per-agent — s
 - Phase log + sub-task rows live in `tasks/<id>.md`.
 - Each phase writes its own handoff/summary/report file (see "Owns" column above).
 
+## Context externalization (v0.23.0+)
+
+Long-running or context-heavy tasks use a per-task memory manifest at `share/notes/<task-id>_memory.md` to track artifacts pushed out of the live conversation window. Each specialist appends rows via `share/notes/_helpers/append_row.py` (atomic O_APPEND). Two modes: compress-only (ephemeral context) and save-then-compress (project artifacts that survive across sessions). Distinct from `agents_manager/memory/` (curated cross-session knowledge, ≤20 lines/entry, persisted); the manifest is per-task, ≤200 lines, lives with the task. See `agents_manager/SKILL.md` § Context externalization protocol for the canonical pattern.
+
 ## Controller dispatchers (v0.11.0+)
 
 Three install paths for putting agents-manager into a target project:
