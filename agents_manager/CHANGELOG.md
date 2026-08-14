@@ -2,6 +2,46 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.23.0 — context-externalization manifest (2026-08-14)
+
+**Treat the conversation window as expensive.** v0.22.0 → v0.23.0.
+
+A long task fills the context window. Compression helps, but loses specific artifacts (paths, purposes, loaders) the next agent needs. This release adds a per-task manifest discipline: when an artifact is externalized from the conversation, write it to `share/notes/`, append one row to `share/notes/<task-id>_memory.md` describing where the artifact lives, what it contains, and when to reload it. Any future agent reads the manifest, picks the artifact path, and `Read`s it back on demand — no need to keep it inline.
+
+### What's new
+
+1. **Per-task memory manifest** — `share/notes/<task-id>_memory.md`. One file per task. Append-only, ≤200 lines. 6-column table: `saved_at | saved_by | path | purpose | when_to_reload | loader`. Path uniqueness enforced by caller convention (read before append; update in place rather than duplicate).
+2. **Atomic append helper** — `share/notes/_helpers/append_row.py`. Stdlib-only Python 3. O_APPEND for OS-level row-write atomicity on small writes. Used by every specialist and the master.
+3. **Two save modes per specialist** — (a) **compress only** (ephemeral context), (b) **save-then-compress** (project artifacts that survive across sessions). Documented in each specialist's SKILL.md.
+4. **Multi-master discipline** — `saved_by` column carries the master id when more than one master is dispatching into the same project (`master-A/am-research`). Single-master deployments may omit the prefix.
+5. **Distinct from `agents_manager/memory/`** — the existing memory system is curated cross-session knowledge (≤20 lines/entry, persisted in `agents_manager/memory/`). The new manifest is per-task conversation externalization (≤200 lines, lives with the task). Two complementary layers; documented as siblings in every SKILL.md.
+6. **Example manifest** — `share/notes/T-DEMO_memory.md` as a worked reference (4 sample rows, 6-column table, discipline notes).
+
+### How to verify
+
+1. `python3 share/notes/_helpers/append_row.py /tmp/test.md "<row>"` — appends one line, exit 0.
+2. Inspect `share/notes/T-DEMO_memory.md` — 4 sample rows, 6 columns each, discipline notes present.
+3. Inspect any specialist's SKILL.md — `## Context externalization (v0.23.0+)` section present.
+4. Inspect `agents_manager/SKILL.md` — `## Context externalization protocol (v0.23.0+)` section present.
+5. `python3 scripts/validate-frontmatter.py` — all frontmatters still valid (no schema change).
+
+### Skipped per ponytail
+
+- **`ContextManager` class** — a class for one tool is ceremony. The append helper + caller-side convention is the smallest sufficient shape.
+- **Threshold heuristic (auto-summarize after N tokens)** — threshold is a guess. Caller judgment ("this artifact is too long for the next agent to see inline") is the right trigger.
+- **Manifest locking primitives (file locks, mutexes)** — atomic append + path uniqueness cover the actual failure modes. Locking is ceremony until we measure contention.
+- **`bin/install.py` updates** — the helper is a project-local file, not an installed asset. No installer change needed.
+- **README / EXAMPLES update** — premature. Add when the discipline has been used in 2+ downstream tasks.
+
+### Files touched
+
+- `share/notes/_helpers/append_row.py`: NEW (~20 lines, stdlib only)
+- `share/notes/T-DEMO_memory.md`: NEW (~22 lines, worked example)
+- 9 specialist SKILL.md: NEW `## Context externalization (v0.23.0+)` section (~10 lines each)
+- `agents_manager/SKILL.md`: NEW `## Context externalization protocol (v0.23.0+)` section (~12 lines)
+- `AGENTS.md`: NEW one-paragraph mention
+- `agents_manager/CHANGELOG.md`: this entry
+
 ## v0.22.0 — chub-gate (opencode plugin + global skill) (2026-07-24)
 
 **Survive compaction.** v0.21.0 → v0.22.0.
