@@ -2,6 +2,51 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.23.1 — finish v0.6.0 mavis-team migration + ship full `.agents/` library (2026-08-14)
+
+**Patch release.** Three workflow files referenced by current SKILL.md were dangling (not in the release ZIP). Fix.
+
+### What changed
+
+1. **Finished the v0.6.0 mavis-team migration.** The v0.6.0 entry said: *"Found 2 high-value orchestration docs (`mavis-team.md`, `verification-validation-system-prompt.md`) and 1 moderate-value (`SELF_REFLECTIVE_PROMPT_IMPROVEMENT_AGENT.md`). Moved `.agents/agent/mavis-team.md` → `.agents/skills/mavis-team/SKILL.md` for OpenCode skill discoverability."* Only mavis-team was migrated. The other two sat in `.agents/agent/` and `.agents/check-review/` — paths OpenCode doesn't auto-discover and the release allowlist didn't ship. Both are now in `.agents/skills/<name>/SKILL.md` with the same minimal OpenCode frontmatter mavis-team uses.
+2. **Ship the full `.agents/` library.** Updated `.github/workflows/release.yml` PATHS to include `.agents` recursively. The 21 reference files (`ci-validation.md`, `drift-detection.md`, `design/`, `python/`, `react/`, `shopify/`, `agent/planning-mode.md`, `agent/skills_guide&roadmap.md`, README) ship alongside the 3 skills. ~415KB total.
+
+### Migration map
+
+| Source | Destination |
+|---|---|
+| `.agents/agent/SELF_REFLECTIVE_PROMPT_IMPROVEMENT_AGENT - ready.md` (918 lines) | `.agents/skills/self-reflective-prompt/SKILL.md` (33663-byte body + 377-char description) |
+| `.agents/check-review/verification-validation-system-prompt.md` (1364 lines) | `.agents/skills/verification-validation/SKILL.md` (35325-byte body + 344-char description) |
+
+Originals deleted. References in `agents_manager/SKILL.md` (L496) and `agents_manager/review/SKILL.md` (L198) updated to new paths.
+
+### Skipped per ponytail
+
+- **Adding SKILL.md wrappers for the 21 non-skill reference files.** They're prompt material, not OpenCode-loadable skills. `.agents/skills/` only contains OpenCode-discoverable skills.
+- **Renaming the 21 reference files to kebab-case.** Out of scope; reference docs follow a different convention.
+- **Re-auditing which reference files are "still useful."** They were audited once (v0.6.0); revisiting is a separate task.
+
+### How to verify
+
+1. `unzip -l agents-manager-v0.23.1.zip | grep -E '\.agents/'` → should show `self-reflective-prompt/SKILL.md`, `verification-validation/SKILL.md`, plus all 21 reference files.
+2. Open `.agents/skills/self-reflective-prompt/SKILL.md` and `.agents/skills/verification-validation/SKILL.md` → first lines should be OpenCode frontmatter (`name`, `description`).
+3. `python3 scripts/validate-frontmatter.py` → should report 14 SKILL.md files passing (was 12 + 2 new).
+4. `grep "Pattern borrowed from" agents_manager/SKILL.md agents_manager/review/SKILL.md` → should resolve to `.agents/skills/<name>/SKILL.md` paths.
+
+### Files touched (7)
+
+- **NEW:** `.agents/skills/self-reflective-prompt/SKILL.md` (33663-byte body)
+- **NEW:** `.agents/skills/verification-validation/SKILL.md` (35325-byte body)
+- **DELETED:** `.agents/agent/SELF_REFLECTIVE_PROMPT_IMPROVEMENT_AGENT - ready.md`
+- **DELETED:** `.agents/check-review/verification-validation-system-prompt.md`
+- `agents_manager/SKILL.md` — L496 reference updated
+- `agents_manager/review/SKILL.md` — L198 reference updated
+- `.github/workflows/release.yml` — PATHS extended (3 new entries)
+- `VERSION` — `0.23.0` → `0.23.1`
+- `agents_manager/CHANGELOG.md` — this entry
+
+**Net effect:** Both SKILL.md-referenced workflows now ship and are OpenCode-discoverable. Full `.agents/` reference library ships alongside. ~415KB ZIP delta.
+
 ## v0.23.0 — context-externalization manifest (2026-08-14)
 
 **Treat the conversation window as expensive.** v0.22.0 → v0.23.0.

@@ -195,7 +195,7 @@ Fill the `## Self-critique` section before returning. If you cannot honestly ans
 
 ## Severity rubric (for individual findings)
 
-The per-task verdict uses PASS / WARN / FAIL. For specific issues found within a task, classify each by severity so the master and user know what to fix first. Pattern borrowed from `verification-validation-system-prompt.md` (`/.agents/check-review/`).
+The per-task verdict uses PASS / WARN / FAIL. For specific issues found within a task, classify each by severity so the master and user know what to fix first. Pattern borrowed from `verification-validation-system-prompt.md` (now at `.agents/skills/verification-validation/SKILL.md`).
 
 | Severity | Definition | Per-task verdict impact | Action timeline |
 |---|---|---|---|

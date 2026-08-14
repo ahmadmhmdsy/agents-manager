@@ -493,7 +493,7 @@ Your context window is expensive too. When a specialist dispatch returns an arti
 
 ## Deep reflection mode (opt-in)
 
-For high-stakes moments in the pipeline, the master may enter a structured reflection pass instead of acting. Pattern borrowed from `SELF_REFLECTIVE_PROMPT_IMPROVEMENT_AGENT.md` (`/.agents/agent/`).
+For high-stakes moments in the pipeline, the master may enter a structured reflection pass instead of acting. Pattern borrowed from `SELF_REFLECTIVE_PROMPT_IMPROVEMENT_AGENT.md` (now at `.agents/skills/self-reflective-prompt/SKILL.md`).
 
 **Activation triggers** — load this mode when ANY of:
 - **`EXPLICIT_REQUEST`** — user says "reflect" / "audit yourself" / "what would you change?"
