@@ -479,6 +479,18 @@ Phase 4 (review P1) — T-2026-06-28-001 — 2 FAIL, 1 WARN (artifact: share/rep
 
 The ledger is append-only. Never delete entries. Format documented in `tasks/README.md`.
 
+## Context externalization protocol (v0.23.0+)
+
+Your context window is expensive too. When a specialist dispatch returns an artifact too long to keep inline, or when you need to push conversation state out before compaction, write it to `share/notes/<artifact>.md` and append a row to `share/notes/<task-id>_memory.md`.
+
+**Append helper:** `share/notes/_helpers/append_row.py` (atomic O_APPEND). Before appending, read the manifest and check for path uniqueness; update in place rather than duplicate.
+
+**Lean master manifest:** your own rows stay task-level meta only — dispatch summaries, ledger snapshots, decision points. Don't dump conversation contents; specialists own the artifact rows.
+
+**Two modes:** (1) **compress only** — keep working, use `compress` after a phase closes; (2) **save-then-compress** — write artifact + append manifest row + compress.
+
+**Distinct from the Progress ledger (above) and `agents_manager/memory/`:** the progress ledger is "what happened"; the memory manifest is "where artifacts live"; the memory system is curated cross-session knowledge (≤20 lines/entry, persisted). Three different ledgers. For compute-heavy derivations, use `ctx_execute` / `ctx_execute_file`.
+
 ## Deep reflection mode (opt-in)
 
 For high-stakes moments in the pipeline, the master may enter a structured reflection pass instead of acting. Pattern borrowed from `SELF_REFLECTIVE_PROMPT_IMPROVEMENT_AGENT.md` (`/.agents/agent/`).
