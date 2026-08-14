@@ -47,6 +47,55 @@ Originals deleted. References in `agents_manager/SKILL.md` (L496) and `agents_ma
 
 **Net effect:** Both SKILL.md-referenced workflows now ship and are OpenCode-discoverable. Full `.agents/` reference library ships alongside. ~415KB ZIP delta.
 
+## v0.23.2 — agent self-reflection protocol (2026-08-14)
+
+**Patch release.** After every dispatch, specialists reflect on what surprised them, what to try next time, and what they'd change about their approach. Reflections are written to a new `agents_manager/<role>/notes/reflections/` path — sibling to the existing `semantic/` and `episodic/` folders. Master reflects per-pipeline, not per-task.
+
+### What changed
+
+1. **Reflection template (3 sections, ≤20 lines).** Each specialist's output contract now ends with a `**Post-task reflection**` bullet pointing to `agents_manager/<role>/notes/reflections/<task-id>.md`. The reflection file has three sections: *What surprised me*, *What to try next time*, *What I'd change about my approach*. ≤20 lines per entry (same constraint as semantic/episodic).
+2. **Optional 6-block structured form.** Specialists MAY invoke the `self-reflective-prompt` skill (now OpenCode-discoverable as of v0.23.1) for the structured 6-block prompt-improvement output. Kept ≤10 lines extra, appended to the 3-section base.
+3. **Master reflects per-pipeline, not per-task.** New `## Post-pipeline reflection (v0.23.2+)` section in `agents_manager/SKILL.md`. Master writes one reflection per `tasks/<id>.md` closure at Phase 4 PASS or user-accepted WARNs. Captures orchestration lessons (preflight gaps, dispatch re-asks, fix-loop patterns, user-pause moments) invisible to specialists.
+4. **Dispatch return line updated.** Each specialist adds `Memory written: <path>` (or `No memory write: <reason>`) to the return line — same convention as semantic/episodic. Master adds `Pipeline reflection written: <path>` at pipeline close.
+5. **No auto-edit.** v0.23.2 only writes reflections. SKILL.md auto-edit remains disallowed (soft-walls forbid it; deferred to v0.24.0 if reflections prove useful).
+
+### Why
+
+Reflections are how agents get better over time. Without them, every agent restarts cold each task. With them, the orchestrator can spot patterns (recurring surprises, repeated next-time experiments, drift in approach) and propose controller improvements via the user. The existing `max_fix_loops=3` and WARN register catch failures mid-task; reflections capture learning after-task. Different signal, complementary layer.
+
+### Skipped per ponytail
+
+- **Auto-edit SKILL.md from reflections** — would let a specialist modify its own prompt. Contradicts soft-wall architecture (`Master can edit only its own SKILL.md`). Deferred to v0.24.0 with explicit user-gated approval.
+- **Master aggregation / cross-task synthesis** — would parse N reflections into a controller-improvement proposal. The data isn't there yet. Wait until ~5 reflections accumulate, then design.
+- **Adding `reflections/` to `release.yml` allowlist** — file lives in `agents_manager/<role>/notes/reflections/`, which already ships via the `agents_manager` allowlist. No release.yml change needed.
+- **Validator change** — `scripts/validate-memory.sh` already enforces ≤20 lines and the frontmatter schema. Reflections inherit both. No validator change.
+
+### How to verify
+
+1. After any specialist dispatch, `cat agents_manager/<role>/notes/reflections/<task-id>.md` → should exist, ≤20 lines, 3 sections.
+2. After pipeline close, `cat agents_manager/master/notes/reflections/<task-id>.md` → should exist, ≤20 lines, 3 sections.
+3. `python3 scripts/validate-memory.sh` (or whatever the canonical validator is) → no errors.
+4. Dispatch return line includes `Memory written: <path>`.
+
+### Files touched (12)
+
+- `agents_manager/research/SKILL.md` — reflection bullet in `## What you must produce`
+- `agents_manager/planning/SKILL.md` — reflection bullet in `## What you must produce`
+- `agents_manager/design/SKILL.md` — reflection bullet in `## What you must produce`
+- `agents_manager/assets/SKILL.md` — reflection bullet in `## What you produce`
+- `agents_manager/coder/SKILL.md` — reflection bullet in `## What you must produce`
+- `agents_manager/review/SKILL.md` — reflection bullet in `## What you must produce`
+- `agents_manager/investigate/SKILL.md` — reflection bullet in `## What you must produce`
+- `agents_manager/ship/SKILL.md` — reflection bullet in `## What you must produce`
+- `agents_manager/health/SKILL.md` — reflection bullet in `## What you must produce`
+- `agents_manager/SKILL.md` (master) — new `## Post-pipeline reflection (v0.23.2+)` section
+- `agents_manager/memory/README.md` — `reflections/` documented as third sibling under `notes/`
+- `agents_manager/CHANGELOG.md` — this entry
+- `VERSION` — `0.23.1` → `0.23.2`
+- **NEW:** `agents_manager/master/notes/reflections/T-DEMO_pipeline_reflection.md` — example filled-in reflection
+
+**Net effect:** Specialists and master now write a single ≤20-line reflection after each task / pipeline close. The orchestrator can spot patterns over time. Auto-edit remains off — humans approve controller changes via the existing deep-reflection / 99_decisions.md channels.
+
 ## v0.23.0 — context-externalization manifest (2026-08-14)
 
 **Treat the conversation window as expensive.** v0.22.0 → v0.23.0.

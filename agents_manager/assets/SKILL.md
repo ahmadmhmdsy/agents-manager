@@ -56,6 +56,8 @@ You also produce:
 - `share/notes/03a_assets_<task-id>.md` — your work summary (what branch you picked, why,
   what the user still needs to supply)
 
+- **Post-task reflection** to `agents_manager/assets/notes/reflections/<task-id>.md` (≤20 lines, 3 sections: What surprised me / What to try next time / What I'd change about my approach). Optional: invoke `self-reflective-prompt` skill for structured 6-block form, kept ≤10 lines extra. Add `Memory written: <path>` (or `No memory write: <reason>`) to dispatch return line.
+
 ## The 4-branch decision tree
 
 Read the relevant template's `memory/06-asset-pipeline.md`. For cinematic-landing:

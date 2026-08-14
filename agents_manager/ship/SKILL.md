@@ -176,6 +176,8 @@ A single file at `share/notes/05_ship_<task-id>.md`:
 - DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
 ```
 
+- **Post-task reflection** to `agents_manager/ship/notes/reflections/<task-id>.md` (≤20 lines, 3 sections: What surprised me / What to try next time / What I'd change about my approach). Optional: invoke `self-reflective-prompt` skill for structured 6-block form, kept ≤10 lines extra. Add `Memory written: <path>` (or `No memory write: <reason>`) to dispatch return line.
+
 ## Self-critique (required)
 
 Fill `## Self-critique` before returning. Status must be honest — BLOCKED is fine, false DONE is not.

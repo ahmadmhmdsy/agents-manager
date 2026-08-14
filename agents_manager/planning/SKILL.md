@@ -157,6 +157,8 @@ Path: `share/notes/02_plan_high_<task-id>.md`
 - **What did I assume without evidence?** <bullets>
 ```
 
+- **Post-task reflection** to `agents_manager/planning/notes/reflections/<task-id>.md` (≤20 lines, 3 sections: What surprised me / What to try next time / What I'd change about my approach). Optional: invoke `self-reflective-prompt` skill for structured 6-block form, kept ≤10 lines extra. Add `Memory written: <path>` (or `No memory write: <reason>`) to dispatch return line.
+
 ### 2. Phased plan
 Path: `share/notes/02_plan_phases_<task-id>.md`
 

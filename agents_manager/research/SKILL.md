@@ -114,6 +114,8 @@ share/notes/01_research_<task-id>.md
 ```
 (In parallel-research mode, you may write `share/notes/01_research_<task-id>_angle-<name>.md` and the master will merge.)
 
+- **Post-task reflection** to `agents_manager/research/notes/reflections/<task-id>.md` (≤20 lines, 3 sections: What surprised me / What to try next time / What I'd change about my approach). Optional: invoke `self-reflective-prompt` skill for structured 6-block form, kept ≤10 lines extra. Add `Memory written: <path>` (or `No memory write: <reason>`) to dispatch return line.
+
 Use this template:
 
 ```markdown

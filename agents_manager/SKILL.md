@@ -356,6 +356,16 @@ Before advancing, the master also runs a structural check on the sub-agent's out
 
 If validation fails, the master tells the user and either asks the user how to proceed or calls the sub-agent again with a fix instruction.
 
+## Post-pipeline reflection (v0.23.2+)
+
+After the pipeline closes (PASS at Phase 4 OR user-accepted WARNs at Phase 4 close), write a reflection to `agents_manager/master/notes/reflections/<task-id>.md` (≤20 lines, 3 sections: What surprised me / What to try next time / What I'd change about my approach). Per-pipeline, not per-task — one reflection per `tasks/<id>.md` closure.
+
+This is the master-level counterpart to each specialist's per-task reflection. It captures orchestration lessons (preflight gaps, dispatch re-asks, fix-loop patterns, user-pause moments) that wouldn't be visible in any single specialist's reflection.
+
+Optional: invoke `self-reflective-prompt` skill for the structured 6-block form, kept ≤10 lines extra.
+
+Surfaced in the pipeline-close chat: `Pipeline reflection written: <path>` (or `No reflection write: <reason>`).
+
 ## Pause-and-ask hook
 
 The master is not a black box. If, at any point during execution, the master encounters a choice that:

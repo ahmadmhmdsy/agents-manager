@@ -143,6 +143,8 @@ Write the one-line fix am-coder will apply. If the fix requires more than a smal
 
 Do NOT edit source code. Do NOT write the fix into the file. Hand it back to master.
 
+- **Post-task reflection** to `agents_manager/investigate/notes/reflections/<task-id>.md` (≤20 lines, 3 sections: What surprised me / What to try next time / What I'd change about my approach). Optional: invoke `self-reflective-prompt` skill for structured 6-block form, kept ≤10 lines extra. Add `Memory written: <path>` (or `No memory write: <reason>`) to dispatch return line.
+
 ## Self-critique (required)
 
 Fill `## Self-critique` before returning. Confidence must be honest — HIGH only when you traced the failing path end-to-end with a verified reproduction.

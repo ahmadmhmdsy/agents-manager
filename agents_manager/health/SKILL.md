@@ -142,6 +142,8 @@ If `share/health/` is empty: `trend` = `{ "vs_prev": "n/a", "vs_7d_avg": "n/a" }
 
 You do not edit source code, even if the validator output shows a one-line fix. Surface findings in priority order. Master (or the user) decides whether to dispatch `am-coder`. This is the contract — violating it is a process failure.
 
+- **Post-task reflection** to `agents_manager/health/notes/reflections/<task-id>.md` (≤20 lines, 3 sections: What surprised me / What to try next time / What I'd change about my approach). Optional: invoke `self-reflective-prompt` skill for structured 6-block form, kept ≤10 lines extra. Add `Memory written: <path>` (or `No memory write: <reason>`) to dispatch return line.
+
 ## Self-critique (required)
 
 Fill `## Self-critique` before returning. If a validator didn't run, say why. If a finding was misclassified, flag it for re-review.

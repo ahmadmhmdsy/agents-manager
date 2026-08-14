@@ -173,8 +173,10 @@ share/reports/04_review_<task-id>_<phase>.md
 ## Self-critique
 - **Did I do my job?** <yes/partial/no>
 - **What might I have missed?** <bullets — files I didn't open, tests I didn't run>
-- **What did I assume without evidence?** <bullets>
+  - **What did I assume without evidence?** <bullets>
 ```
+
+- **Post-task reflection** to `agents_manager/review/notes/reflections/<task-id>.md` (≤20 lines, 3 sections: What surprised me / What to try next time / What I'd change about my approach). Optional: invoke `self-reflective-prompt` skill for structured 6-block form, kept ≤10 lines extra. Add `Memory written: <path>` (or `No memory write: <reason>`) to dispatch return line.
 
 ## Run-tests protocol (required when a command is documented)
 

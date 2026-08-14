@@ -13,7 +13,7 @@ last_verified: 2026-07-03
 
 ## Overview
 
-The agents_manager memory system has three scopes: `agents_manager/memory/global/` (cross-project facts, master-written), `agents_manager/memory/projects/<slug>/` (per-project knowledge, master-written), and `agents_manager/<role>/notes/{semantic,episodic}/` (per-role expertise, specialist-written). This README is the SINGLE source of truth for the schema and protocol — every per-role README links here.
+The agents_manager memory system has three scopes: `agents_manager/memory/global/` (cross-project facts, master-written), `agents_manager/memory/projects/<slug>/` (per-project knowledge, master-written), and `agents_manager/<role>/notes/{semantic,episodic,reflections}/` (per-role expertise, specialist-written). This README is the SINGLE source of truth for the schema and protocol — every per-role README links here.
 
 ## Three scopes
 
@@ -21,7 +21,7 @@ The agents_manager memory system has three scopes: `agents_manager/memory/global
 |-------|--------|-------|--------------|
 | Global | `agents_manager/memory/global/` | master | Cross-project facts; first source on re-entry. |
 | Project | `agents_manager/memory/projects/<slug>/` | master | Per-project knowledge; second source on re-entry. `<slug>` defaults to `basename $PWD`; override via `agents_manager/.active-project`. |
-| Role | `agents_manager/<role>/notes/{semantic,episodic}/` | the specialist themselves | Per-role expertise; third source on re-entry. `episodic/<task-id>.md` for continuity on the same task; `semantic/` for curated insights. |
+| Role | `agents_manager/<role>/notes/{semantic,episodic,reflections}/` | the specialist themselves | Per-role expertise; third source on re-entry. `episodic/<task-id>.md` for continuity on the same task; `semantic/` for curated insights; `reflections/<task-id>.md` for post-task self-reflection (v0.23.2+). |
 
 Read order on re-entry: **global → project → role** (highest-leverage first).
 
@@ -78,7 +78,10 @@ Each specialist reads on re-entry, in order:
 2. `agents_manager/memory/projects/<active-slug>/*.md` — ≤200 lines; same order.
 3. `agents_manager/<this-role>/notes/semantic/*.md` — ≤200 lines; curated insights.
 4. `agents_manager/<this-role>/notes/episodic/<task-id>.md` — past notes on the same task; skim for continuity.
-5. **Optional soft filter (v0.15.0+):** if your current task declares `tech_stack:` or `domain:` tags, prefer memory entries whose own `tech_stack:` / `domain:` frontmatter matches. Specialist judgment, NOT a hard gate — unfiltered reading is still correct.
+
+5. `agents_manager/<this-role>/notes/reflections/<task-id>.md` — past post-task self-reflections; skim for self-improvement signals (v0.23.2+).
+
+6. **Optional soft filter (v0.15.0+):** if your current task declares `tech_stack:` or `domain:` tags, prefer memory entries whose own `tech_stack:` / `domain:` frontmatter matches. Specialist judgment, NOT a hard gate — unfiltered reading is still correct.
 
 Master has a third source: `share/notes/99_progress_<task-id>.md` (existing progress-ledger convention), same 200-line cap.
 
@@ -125,7 +128,7 @@ For global-scope entries, no slug filter applies — global is intentionally cro
 
 ## Validator
 
-`scripts/validate-memory.sh` (ships in chunk 3 / P3.3) lints every `.md` under `agents_manager/memory/{global,projects}/` and `agents_manager/<role>/notes/{semantic,episodic}/`. Checks: frontmatter `--- ... ---` block closes; required keys (`scope`, `topic`, `status`, `created`, `last_verified`) present; `scope ∈ {global, project, role}`; `status ∈ {active, superseded}`; `created` and `last_verified` parse as YYYY-MM-DD; when `status: superseded`, `superseded_by:` resolves to an existing file.
+`scripts/validate-memory.sh` (ships in chunk 3 / P3.3) lints every `.md` under `agents_manager/memory/{global,projects}/` and `agents_manager/<role>/notes/{semantic,episodic,reflections}/`. Checks: frontmatter `--- ... ---` block closes; required keys (`scope`, `topic`, `status`, `created`, `last_verified`) present; `scope ∈ {global, project, role}`; `status ∈ {active, superseded}`; `created` and `last_verified` parse as YYYY-MM-DD; when `status: superseded`, `superseded_by:` resolves to an existing file.
 
 Exit codes: `0` = no issues; `1` = at least one issue. Run after every write batch.
 

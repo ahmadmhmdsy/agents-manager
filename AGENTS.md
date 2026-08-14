@@ -90,6 +90,10 @@ MCPs are enabled at the host level (parent `opencode.json`), not per-agent — s
 
 Long-running or context-heavy tasks use a per-task memory manifest at `share/notes/<task-id>_memory.md` to track artifacts pushed out of the live conversation window. Each specialist appends rows via `share/notes/_helpers/append_row.py` (atomic O_APPEND). Two modes: compress-only (ephemeral context) and save-then-compress (project artifacts that survive across sessions). Distinct from `agents_manager/memory/` (curated cross-session knowledge, ≤20 lines/entry, persisted); the manifest is per-task, ≤200 lines, lives with the task. See `agents_manager/SKILL.md` § Context externalization protocol for the canonical pattern.
 
+## Post-task self-reflection (v0.23.2+)
+
+After every dispatch, each specialist writes a ≤20-line reflection to `agents_manager/<role>/notes/reflections/<task-id>.md` (3 sections: *What surprised me* / *What to try next time* / *What I'd change about my approach*). Master reflects per-pipeline at Phase 4 PASS or user-accepted WARNs, capturing orchestration lessons (preflight gaps, dispatch re-asks, fix-loop patterns, user-pause moments). Reflections are write-only — no auto-edit of SKILL.md. Over time, accumulated reflections let the orchestrator spot patterns and propose controller improvements via the existing `99_decisions.md` channel. Optional: invoke the `self-reflective-prompt` skill for the structured 6-block form, kept ≤10 lines extra.
+
 ## Controller dispatchers (v0.11.0+)
 
 Three install paths for putting agents-manager into a target project:

@@ -180,6 +180,8 @@ Edit `tasks/<task-id>.md`:
 - Set `Status` to `done` / `partial` / `skipped` per row.
 - Fill `Coder` with the summary path.
 
+- **Post-task reflection** to `agents_manager/coder/notes/reflections/<task-id>.md` (≤20 lines, 3 sections: What surprised me / What to try next time / What I'd change about my approach). Optional: invoke `self-reflective-prompt` skill for structured 6-block form, kept ≤10 lines extra. Add `Memory written: <path>` (or `No memory write: <reason>`) to dispatch return line.
+
 ## Self-critique (required)
 
 Fill the `## Self-critique` section before returning. If you cannot answer it honestly, your work is not ready to hand off.
