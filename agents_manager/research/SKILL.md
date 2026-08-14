@@ -80,6 +80,14 @@ If you did not write memory, say so explicitly: `Memory written: none (no durabl
 - **≤20 lines per entry.** If your insight is longer, split it or compress it.
 - **Hard cap.** If a scope exceeds 200 lines, stop reading and report to master — that's a 90-day sweep signal.
 
+## Context externalization (v0.23.0+)
+
+Your context window is expensive. When you finish an artifact too long for the next agent to see inline, write it to `share/notes/<artifact>.md` and append a row to `share/notes/<task-id>_memory.md` (append-only, ≤200 lines). Row format: `saved_at | saved_by | path | purpose | when_to_reload | loader` (6 tab-separated fields). Append via `share/notes/_helpers/append_row.py` (atomic O_APPEND). **Before appending, read the manifest; if your `path` exists, update its purpose/loader in place — never duplicate.**
+
+**Two modes:** (1) **compress only** — keep working, use `compress` after a phase closes; (2) **save-then-compress** — write artifact + append manifest row + compress. (1) is ephemeral; (2) survives across sessions.
+
+**Distinct from `agents_manager/memory/` (curated cross-session knowledge, ≤20 lines/entry, persisted):** this manifest is per-task, ≤200 lines, lives with the task. Two complementary layers. For compute-heavy derivations, use `ctx_execute` / `ctx_execute_file`.
+
 ## Inputs you will receive
 
 The master agent will give you:
