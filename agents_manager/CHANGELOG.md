@@ -47,6 +47,52 @@ Originals deleted. References in `agents_manager/SKILL.md` (L496) and `agents_ma
 
 **Net effect:** Both SKILL.md-referenced workflows now ship and are OpenCode-discoverable. Full `.agents/` reference library ships alongside. ~415KB ZIP delta.
 
+## v0.24.0 — local override layer (2026-08-14)
+
+**Minor release.** Adds the `.local.md` convention: downstream projects can now customize any of the 10 SKILL.md files (master + 9 specialists) without losing their changes on `agents-manager update`. Convention only — no dispatcher changes yet.
+
+### What changed
+
+1. **`.local.md` addendum convention.** Each of the 10 SKILL.md files (master + 9 specialists) ends with a new `## Local overrides (v0.24.0+)` section that instructs the agent: if a `SKILL.local.md` exists alongside `SKILL.md`, read it as an addendum before applying any instructions. The `.local.md` is your project's customization layer; it survives `agents-manager update` invocations.
+2. **Zero dispatcher changes.** The existing SKIP-if-exists behavior in `bin/agents-manager copy_safe()` already preserves `.local.md` files across updates. No new logic — just a documented convention the agent reads at boot.
+3. **REMOVE convention drafted but not enforced.** v0.24.0 only supports ADD via `.local.md`. To remove an upstream rule, document it as `## Override: disable <rule-name>` in your `.local.md` (the dispatcher ignores this for now; full REMOVE support in a future release).
+4. **No breaking change.** Projects that don't customize keep working exactly as before. Existing customized SKILL.md files (where users edit the upstream directly) keep their behavior — they just need to either keep editing in place or migrate to `.local.md` (see Skipped below).
+
+### Why
+
+The v0.23.x line shipped new behavior (context externalization, self-reflection, workflow migration). Downstream projects have been customizing SKILL.md files in place, knowing that `agents-manager update` would clobber them. v0.24.0 fixes that: customize via `.local.md`, keep your edits across updates.
+
+### Skipped per ponytail (deferred to v0.24.1+)
+
+- **Solution 1 — rename-and-merge migration path.** For projects currently customizing in place, an opt-in `--migrate-local` flag in `bin/agents-manager` that detects customized files, renames them to `.local.md`, and pulls fresh upstream. ~50 lines of dispatcher logic. The migration is one-time; users can also do it manually by renaming `SKILL.md` → `SKILL.local.md` and re-running install.
+- **`.local.md` for non-SKILL files.** JSON, YAML, scripts in `bin/` can adopt the same convention (`.local.json`, `.local.yaml`) but the value is lower — users edit those rarely and accept update friction. Document if anyone asks.
+- **REMOVE enforcement.** The `## Override: disable <rule-name>` syntax is documented in each footer but not enforced. A future minor release will make the dispatcher strip matching sections on update.
+- **`.agents/skills/<name>/`** — owned by `npx skills` (not `agents-manager update`). Out of scope.
+
+### How to verify
+
+1. Run `agents-manager install` on a fresh project. Edit `agents_manager/coder/SKILL.local.md` and add a 1-line rule. Run `agents-manager update` (any new version). The `.local.md` file is preserved.
+2. Open any specialist SKILL.md. Confirm the `## Local overrides (v0.24.0+)` section is present and contains the path to its `.local.md`.
+3. Dispatch the agent. Confirm it reads both `SKILL.md` and `SKILL.local.md` (visible in the agent's tool-call log if a `.local.md` exists).
+
+### Files touched (13)
+
+- `agents_manager/SKILL.md` (master) — `## Local overrides (v0.24.0+)` footer
+- `agents_manager/research/SKILL.md` — footer
+- `agents_manager/planning/SKILL.md` — footer
+- `agents_manager/design/SKILL.md` — footer
+- `agents_manager/assets/SKILL.md` — footer
+- `agents_manager/coder/SKILL.md` — footer
+- `agents_manager/review/SKILL.md` — footer
+- `agents_manager/investigate/SKILL.md` — footer
+- `agents_manager/ship/SKILL.md` — footer
+- `agents_manager/health/SKILL.md` — footer
+- `AGENTS.md` — one-paragraph mention in the memory section
+- `agents_manager/CHANGELOG.md` — this entry
+- `VERSION` — `0.23.2` → `0.24.0`
+
+**Net effect:** Downstream projects can now customize any SKILL.md via `.local.md`. The convention is documented in every footer. Existing projects keep working unchanged. Solution 1 (migration path) is the next ship.
+
 ## v0.23.2 — agent self-reflection protocol (2026-08-14)
 
 **Patch release.** After every dispatch, specialists reflect on what surprised them, what to try next time, and what they'd change about their approach. Reflections are written to a new `agents_manager/<role>/notes/reflections/` path — sibling to the existing `semantic/` and `episodic/` folders. Master reflects per-pipeline, not per-task.

@@ -344,3 +344,9 @@ Write JSONL entries to `share/notes/00_trace_<task-id>.jsonl` via `scripts/appen
 If you are am-review and `action=complete`, set `--verdict` to `PASS`, `WARN`, or `FAIL`.
 
 Do not include the full report content in `notes` — one line of human context only. Schema: `{ts, task_id, agent, phase, action, files_touched[], verdict, notes}`. See `docs/TRACE.md` for the full schema, when-to-write table, and example trace.
+
+## Local overrides (v0.24.0+)
+
+If `agents_manager/design/SKILL.local.md` exists alongside this file, read it as an addendum before applying any instructions. `.local.md` is your project's customization layer — it survives `agents-manager update` invocations. Default content of this file is upstream behavior; your .local.md adds project-specific rules on top.
+
+To remove an upstream rule, document it as `## Override: disable <rule-name>` in your .local.md (v0.24.0 only supports ADD; explicit REMOVE coming later).

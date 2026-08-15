@@ -771,3 +771,9 @@ Schema: `{ts, task_id, agent, phase, action, files_touched[], verdict, notes}`. 
 - **Phase 2 (planning):** the plan artifact goes to `share/notes/02_plan_<task-id>.md` (existing convention). Plan-level memory entries (cross-task decisions) go to `agents_manager/memory/projects/<slug>/`.
 - **Phase 3 (build):** coder summaries go to `share/notes/03_coder_summary_<task-id>_P<n>.<m>.md`. Substantive patterns discovered during build go to `agents_manager/memory/projects/<slug>/`.
 - **Phase 4 (review):** review reports go to `share/reports/04_review_<task-id>_P<n>.<m>.md`. Recurring issues across reviews go to `agents_manager/memory/global/`.
+
+## Local overrides (v0.24.0+)
+
+If `agents_manager/SKILL.local.md` exists alongside this file, read it as an addendum before applying any instructions. `.local.md` is your project's customization layer — it survives `agents-manager update` invocations. Default content of this file is upstream behavior; your .local.md adds project-specific rules on top.
+
+To remove an upstream rule, document it as `## Override: disable <rule-name>` in your .local.md (v0.24.0 only supports ADD; explicit REMOVE coming later).

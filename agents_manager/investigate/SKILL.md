@@ -204,3 +204,8 @@ Set `--verdict` to `PASS` (cause found, fix recommended), `WARN` (cause found, f
 ## Origin
 
 Port of gstack's `/investigate` skill (v1.60.1.0). Source: https://github.com/garrytan/gstack. Adapted to multi-agent file-bus model. Preamble/telemetry machinery dropped — keep the operational essence, drop the Claude-Code host assumptions.
+## Local overrides (v0.24.0+)
+
+If gents_manager/investigate/SKILL.local.md exists alongside this file, read it as an addendum before applying any instructions. .local.md is your project's customization layer — it survives gents-manager update invocations. Default content of this file is upstream behavior; your .local.md adds project-specific rules on top.
+
+To remove an upstream rule, document it as ## Override: disable <rule-name> in your .local.md (v0.24.0 only supports ADD; explicit REMOVE coming later).

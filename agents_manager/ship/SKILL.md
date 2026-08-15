@@ -241,3 +241,8 @@ Set `--verdict` to `PASS` (release shipped), `WARN` (shipped with concerns), or 
 ## Origin
 
 Port of gstack's `/ship` skill (v1.60.1.0). Source: https://github.com/garrytan/gstack. Adapted to agents-manager's controller-style release flow (CHANGELOG block + tag + push, no GitHub-PR dance — that's handled by `release.yml`).
+## Local overrides (v0.24.0+)
+
+If gents_manager/ship/SKILL.local.md exists alongside this file, read it as an addendum before applying any instructions. .local.md is your project's customization layer — it survives gents-manager update invocations. Default content of this file is upstream behavior; your .local.md adds project-specific rules on top.
+
+To remove an upstream rule, document it as ## Override: disable <rule-name> in your .local.md (v0.24.0 only supports ADD; explicit REMOVE coming later).
