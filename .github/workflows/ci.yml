@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run frontmatter validator (strict on /skills/ paths, lenient elsewhere)
+      - name: Run frontmatter validator (all 15 SKILL.md files, v0.25.0+)
         run: |
           set -e
           python3 scripts/validate-frontmatter.py \
@@ -53,7 +53,15 @@ jobs:
             agents_manager/coder/SKILL.md \
             agents_manager/review/SKILL.md \
             agents_manager/design/SKILL.md \
-            .agents/skills/mavis-team/SKILL.md
+            agents_manager/assets/SKILL.md \
+            agents_manager/investigate/SKILL.md \
+            agents_manager/ship/SKILL.md \
+            agents_manager/health/SKILL.md \
+            agents_manager/extract/SKILL.md \
+            agents_manager/chub-validate/SKILL.md \
+            .agents/skills/mavis-team/SKILL.md \
+            .agents/skills/self-reflective-prompt/SKILL.md \
+            .agents/skills/verification-validation/SKILL.md
 
   bash-lint:
     name: bash-lint (shellcheck)
@@ -181,6 +189,16 @@ jobs:
             echo "OK: examples/README.md"
           fi
           exit $FAIL
+
+  validate-prompts:
+    name: validate-prompts (build-prompts.py --check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check that opencode.jsonc specialist prompts match _GLOBAL_PROMPT.md + role addenda
+        run: |
+          set -e
+          python3 scripts/build-prompts.py --check
 
   lint-design:
     name: lint-design (advisory — does not fail CI)

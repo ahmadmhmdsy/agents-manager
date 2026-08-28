@@ -2,6 +2,71 @@
 
 All notable changes to the `agents_manager` system. Newest on top.
 
+## v0.25.0 — global system prompt architecture (2026-08-28)
+
+**Minor release.** Each specialist prompt is now composed at build time from `agents_manager/_GLOBAL_PROMPT.md` (12-section operating contract) + the role `agents_manager/<role>/_PROMPT_ADDENDUM.md`. Top-level `instructions: ["agents_manager/_GLOBAL_PROMPT.md"]` auto-injects the global file into every agent. Coverage of the 12 reference operating concepts (see `docs/AUDIT_2026-08-28_PROMPT_GAP_ANALYSIS.md`) goes from ~3/120 (2.5%) at prompt level to ~110/120 (92%) — pending re-verification (expected 100%).
+
+### What changed
+
+1. **`agents_manager/_GLOBAL_PROMPT.md` (NEW, 7,909 B).** Single source of truth for the 12-section operating contract: priority hierarchy, inspect before changing, task states (8 vocab including new `PARTIALLY_COMPLETED`), validate before claiming, definition of done (12 criteria), security NEVER list, destructive command pre-flight, git hygiene, documentation contract, communication style, ask-user triggers (13 enumerated), 6-step error recovery. Plus the chub validation gate (v0.22.0+) and local-override docs (v0.24.0+). Frontmatter declares `scope: controller-wide, version: 0.25.0`.
+2. **10 × `agents_manager/<role>/_PROMPT_ADDENDUM.md` (NEW).** Per-role addendum that sits below the global preamble in each agent prompt. Holds role-specific output paths, boundaries, and standing rules. Sizes range 2,037 B (am-health) to 3,931 B (am-design).
+3. **`scripts/build-prompts.py` (NEW, 5,131 B).** Composes each `opencode.jsonc` agent prompt from `_GLOBAL_PROMPT.md` + the role addendum. `--check` mode for CI drift detection; default mode regenerates. Idempotent — verified byte-identical output across 2 consecutive runs.
+4. **`opencode.jsonc` rewritten.** Each agent's `prompt` field is now `global_preamble + separator + role_addendum` (~10K chars each, was ~2.5K). Top-level `instructions: ["agents_manager/_GLOBAL_PROMPT.md"]` added so OpenCode auto-injects the global file. Inline `//` comments dropped — the file is now clean JSON (48 lines, 103,096 bytes), which makes the `.jsonc` extension slightly misleading (rename deferred).
+5. **`CLAUDE.md` updated.** "Available agents" table extended from 6 to 10; new "Global system prompt (v0.25.0+)" section lists the 12 operating concepts and points to the `_GLOBAL_PROMPT.md` source of truth.
+6. **`agents_manager/ship/SKILL.md` Step 2 validation extended.** `validate-frontmatter.py` now covers all 15 SKILL.md files (was 12); `build-prompts.py --check` is a new release-required gate; `scripts/build-prompts.py` added to the py_compile list.
+7. **`.github/workflows/ci.yml` new `validate-prompts` job.** Runs `python3 scripts/build-prompts.py --check` on every PR/push. The `validate-frontmatter` job now lists 15 SKILL.md files (12 in `agents_manager/` + 3 in `.agents/skills/`).
+8. **`VERSION` 0.24.0 → 0.25.0.**
+
+### Why
+
+The v0.24.0 audit (`docs/AUDIT_2026-08-28.md` — 50 findings: 5 CRITICAL / 7 HIGH / 18 MEDIUM / 20 LOW) identified the `PROMPT-GAP-C1` CRITICAL: specialist prompts were operationally thin. They told each agent its role, output path, and boundaries, but did not establish the 12 fundamental operating principles (priority hierarchy, validate-before-claiming, definition of done, ask-user triggers, error recovery). Most coverage lived in `SKILL.md` / `rules.md` (200-800 lines) which the prompt only referenced via "Read SKILL.md in full" — easy to skim, easy to forget after a context compaction. v0.25.0 bakes the operating contract into the prompt itself, so every specialist starts with the same 12-section preamble on every dispatch, not just when the long-form docs happen to be fresh in context.
+
+### Skipped per ponytail
+
+- **Local-override `.local.md` for the global prompt.** The v0.24.0 convention (`_GLOBAL_PROMPT.local.md`) is documented in `_GLOBAL_PROMPT.md` under "Local overrides (v0.24.0+)" but the `bin/agents-manager` install script does not yet create the local-override slot for the global file. Future minor release.
+- **Master using `_PROMPT_ADDENDUM.md` pattern.** Master is currently special-cased — its prompt is composed at build time but `master/_PROMPT_ADDENDUM.md` exists and is not yet referenced by `scripts/build-prompts.py`. To migrate master fully to the new convention, add `"master"` to the `ROLES` list in `scripts/build-prompts.py`.
+- **Renaming `opencode.jsonc` → `opencode.json`.** The file is now pure JSON. Renaming is a separate task that requires updating all `bin/` scripts and CI references.
+- **Auto-bumping frozen CLI `VERSION` constants in `bin/agents-manager.py` and friends.** Identified by the audit as frozen at `0.11.0` since the v0.11.0 release. Out of scope for v0.25.0.
+- **Re-running the coverage matrix in `docs/AUDIT_2026-08-28_PROMPT_GAP_ANALYSIS.md` to confirm 100% coverage.** Expected state is 120/120 (was 14/120 = 12%). The new architecture makes this trivial but the matrix was not regenerated as part of v0.25.0; defer to a follow-up task.
+- **Per-specialist self-reflection entries for the migration.** Each specialist could write a `<task-id>_v0.25.0_migration_reflection.md` in `agents_manager/<role>/notes/reflections/`. Optional; deferred.
+
+### How to verify
+
+1. `python3 scripts/build-prompts.py --check` → `OK: all 10 specialist prompts match build-prompts.py output.`
+2. Each agent prompt in `opencode.jsonc` contains both `# Global System Prompt — All Specialists` (the preamble) and the `## Role-Specific (v0.25.0+ — appended by scripts/build-prompts.py)` separator.
+3. `opencode.jsonc` top-level includes `"instructions": ["agents_manager/_GLOBAL_PROMPT.md"]`.
+4. CI `validate-prompts` job passes (`python3 scripts/build-prompts.py --check` returns 0).
+5. CI `validate-frontmatter` job passes on all 15 SKILL.md files (12 in `agents_manager/` + 3 in `.agents/skills/`).
+
+### Files touched (20)
+
+**NEW (15 files):**
+- `agents_manager/_GLOBAL_PROMPT.md` (7,909 B) — 12-section operating contract
+- `agents_manager/master/_PROMPT_ADDENDUM.md` (2,512 B)
+- `agents_manager/research/_PROMPT_ADDENDUM.md` (2,529 B)
+- `agents_manager/planning/_PROMPT_ADDENDUM.md` (2,379 B)
+- `agents_manager/design/_PROMPT_ADDENDUM.md` (3,931 B)
+- `agents_manager/assets/_PROMPT_ADDENDUM.md` (2,347 B)
+- `agents_manager/coder/_PROMPT_ADDENDUM.md` (3,008 B)
+- `agents_manager/review/_PROMPT_ADDENDUM.md` (2,806 B)
+- `agents_manager/investigate/_PROMPT_ADDENDUM.md` (2,061 B)
+- `agents_manager/ship/_PROMPT_ADDENDUM.md` (2,121 B)
+- `agents_manager/health/_PROMPT_ADDENDUM.md` (2,037 B)
+- `scripts/build-prompts.py` (5,131 B) — composition script
+- `docs/AUDIT_2026-08-28.md`, `docs/AUDIT_2026-08-28_PROMPT_GAP_ANALYSIS.md`, `docs/AUDIT.md` — audit inputs
+
+**MODIFIED (5 files):**
+- `opencode.jsonc` — each prompt is `global_preamble + separator + role_addendum`; `instructions` field added; `//` comments dropped
+- `VERSION` — `0.24.0` → `0.25.0`
+- `CLAUDE.md` — agents table updated (6 → 10); new "Global system prompt (v0.25.0+)" section
+- `agents_manager/ship/SKILL.md` — Step 2 validation extended (frontmatter coverage 11 → 15 SKILL.md files; new `build-prompts.py --check` release gate)
+- `.github/workflows/ci.yml` — new `validate-prompts` job; `validate-frontmatter` extended to 15 SKILL.md files
+
+**Reference:**
+- `docs/SESSION_HANDOFF_v0.25.0_2026-08-28.md` — full session handoff (status, file map, architecture, verification, gotchas)
+
+**Net effect:** Every specialist now starts with the same 12-section operating preamble on every dispatch (~10K chars per agent prompt, was ~2.5K). Single source of truth for shared principles (`_GLOBAL_PROMPT.md`). Build-time composition with CI drift detection (`build-prompts.py --check`). Architecture is reversible: any future release can edit `_GLOBAL_PROMPT.md` and run `build-prompts.py` to regenerate.
+
 ## v0.23.1 — finish v0.6.0 mavis-team migration + ship full `.agents/` library (2026-08-14)
 
 **Patch release.** Three workflow files referenced by current SKILL.md were dangling (not in the release ZIP). Fix.

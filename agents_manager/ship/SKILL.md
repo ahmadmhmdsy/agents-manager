@@ -65,11 +65,30 @@ If branch is the base branch (e.g. `main`): STOP. Abort — never tag the base d
 Run the controller's lint suite (per `AGENTS.md` § Lint / verify):
 
 ```bash
-# Frontmatter
-python3 scripts/validate-frontmatter.py
+# Frontmatter (all 14 SKILL.md files)
+python3 scripts/validate-frontmatter.py \
+  agents_manager/SKILL.md \
+  agents_manager/research/SKILL.md \
+  agents_manager/planning/SKILL.md \
+  agents_manager/coder/SKILL.md \
+  agents_manager/review/SKILL.md \
+  agents_manager/design/SKILL.md \
+  agents_manager/assets/SKILL.md \
+  agents_manager/investigate/SKILL.md \
+  agents_manager/ship/SKILL.md \
+  agents_manager/health/SKILL.md \
+  agents_manager/extract/SKILL.md \
+  agents_manager/chub-validate/SKILL.md \
+  .agents/skills/mavis-team/SKILL.md \
+  .agents/skills/self-reflective-prompt/SKILL.md \
+  .agents/skills/verification-validation/SKILL.md
+
+# Global prompt drift check (v0.25.0+)
+# Exit 1 if opencode.jsonc specialist prompts don't match _GLOBAL_PROMPT.md + role addenda.
+python3 scripts/build-prompts.py --check
 
 # Python (controller scripts)
-python3 -m py_compile bin/agents-manager.py bin/install.py bin/standalone-installer/install.py
+python3 -m py_compile bin/agents-manager.py bin/install.py bin/standalone-installer/install.py scripts/build-prompts.py
 
 # Bash (CRLF normalize first)
 npx --yes shellcheck <(python3 -c "open('bin/agents-manager','rb').read().replace(b'\r\n',b'\n').decode().encode()")

@@ -44,15 +44,42 @@ Defined in `opencode.jsonc` with soft walls (v0.5.0+). Each agent has `permissio
 | `am-research` | agent | Brainstorm, doubt, analyze, investigate | `share/notes/01_research_*.md` |
 | `am-planning` | agent | Turn research into a phased plan + task list | `share/notes/02_plan_*.md`, `tasks/<id>.md` rows |
 | `am-design` (v0.9.0+) | agent | Visual / UX / brand / mockup / audit — never `src/**` | `share/design/<task-id>/**` |
+| `am-assets` (v0.9.0+, Phase 3a) | agent | Asset gatekeeper — runs 4-branch runtime decision tree for visual templates | `assets/MANIFEST.json`, `share/notes/03a_assets_*.md` |
 | `am-coder` | agent | Implement assigned tasks | source code, `share/notes/03_coder_summary_*.md` |
 | `am-review` | agent | Verify coder work, produce per-task verdicts | `share/reports/04_review_*.md` |
+| `am-investigate` (v0.18.0+) | agent | Debug specialist — 4-phase root-cause analysis (no fixes without root cause) | `share/notes/04_investigate_*.md` |
+| `am-ship` (v0.18.0+) | agent | Release specialist — validation + VERSION bump + CHANGELOG + tag + push | `share/notes/05_ship_*.md`, `VERSION`, `agents_manager/CHANGELOG.md` |
+| `am-health` (v0.18.0+) | agent | Health dashboard — frontmatter + py_compile + shellcheck, scores 0-10 | `share/health/<date>.json`, `share/notes/05_health_*.md` |
+
+Plus a non-roster `extract` skill (`agents_manager/extract/SKILL.md`) that any specialist loads on demand for converting finished projects to templates.
+
+**v0.25.0+:** Each agent's `prompt` field is composed at build time from `agents_manager/_GLOBAL_PROMPT.md` (12-section operating contract) + the role's `agents_manager/<role>/_PROMPT_ADDENDUM.md`. Run `python3 scripts/build-prompts.py --check` to verify no drift. See [Global system prompt](#global-system-prompt-v0250) below.
+
+### Global system prompt (v0.25.0+)
+
+Every specialist's prompt starts with the same 12-section operating contract (`agents_manager/_GLOBAL_PROMPT.md`):
+
+1. **Priority hierarchy** — system safety > repo constraints > user requirements > project conventions > judgment
+2. **Inspect before changing** — read prior-phase artifacts + dispatch prompt + repo state
+3. **Task states** — `PLANNED` / `IN_PROGRESS` / `WAITING_FOR_USER` / `BLOCKED` / `VALIDATING` / `COMPLETED` / `PARTIALLY_COMPLETED` / `FAILED`
+4. **Validate before claiming success** — never claim a test passed unless it actually passed
+5. **Definition of done** — 12 explicit criteria (behavior, conventions, inputs, errors, security, preservation, tests, checks, docs, no secrets, diff review, limitations)
+6. **Security NEVER list** — never expose secrets, disable auth, eval without justification, etc.
+7. **Destructive command pre-flight** — explain, identify, checkpoint, confirm
+8. **Git hygiene** — never force-push, rewrite history, delete branches without authorization
+9. **Documentation contract** — update docs when behavior changes
+10. **Communication style** — pre/during/post-coding; use exact labels (`PASS` / `FAIL` / `SKIPPED` / `BLOCKED`)
+11. **Ask user when uncertain** — 13 enumerated trigger conditions
+12. **Error handling 6-step** — identify, capture, root-cause, smallest fix, re-validate, report
+
+The role-specific addendum (`agents_manager/<role>/_PROMPT_ADDENDUM.md`) sits below the global preamble and supplies the role's output path, boundaries, and standing rules. Override globally with `agents_manager/_GLOBAL_PROMPT.local.md` (per v0.24.0 local-override convention).
 
 Walls are soft in v0.5.0+. Each agent's `SKILL.md` declares its boundaries as a prose contract; the LLM is expected to honor them. See [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md) for the architectural rationale.
 
 ## Project structure
 
 ```
-agents_manager/        — controller: 1 master + 5 specialists (research, planning, design, coder, review), each with SKILL.md + rules.md
+agents_manager/        — controller: 1 master + 9 specialists (research, planning, design, assets, coder, review, investigate, ship, health) + extract skill, each with SKILL.md + rules.md. v0.25.0+: specialist prompts compose from `agents_manager/_GLOBAL_PROMPT.md` (12-section operating contract) + each role's `_PROMPT_ADDENDUM.md`. Run `python3 scripts/build-prompts.py --check` to verify.
 share/                 — inter-agent communication bus (handoffs, notes, reports, design/, messages/)
 tasks/                 — canonical task tracker (one .md per task id)
 research_doc/          — long-term research notes and decision records
