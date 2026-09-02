@@ -1,13 +1,13 @@
 # agents-manager
 
 [![CI](https://github.com/ahmadmhmdsy/agents-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmadmhmdsy/agents-manager/actions/workflows/ci.yml)
-[![Release v0.16.0](https://img.shields.io/badge/release-v0.16.0-blue)](https://github.com/ahmadmhmdsy/agents-manager/releases/tag/v0.16.0)
+[![Release v0.25.0](https://img.shields.io/badge/release-v0.25.0-blue)](https://github.com/ahmadmhmdsy/agents-manager/releases/tag/v0.25.0)
 [![License MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Upstream patch contributions](https://img.shields.io/badge/upstream-2%20patches-purple)](docs/UPSTREAM-CONTRIB.md)
 
-> **Status:** v0.16.0 — soft walls + adaptive orchestration (pipeline is default shape, not absolute rule). API may change between minor versions until v1.0.0.
+> **Status:** v0.25.0 — global system prompt architecture (12-section operating contract auto-injected into every specialist). Soft walls + adaptive orchestration (pipeline is default shape, not absolute rule). API may change between minor versions until v1.0.0.
 
-A multi-agent task orchestration system built on [OpenCode](https://opencode.ai)'s agent system. One **master agent** routes work through **six specialist agents** (research → planning → design → assets → coder → review), each with its own context window and a dedicated role.
+A multi-agent task orchestration system built on [OpenCode](https://opencode.ai)'s agent system. One **master agent** routes work through **nine specialist agents** (research → planning → design → assets → coder → review → investigate → ship → health), each with its own context window and a dedicated role.
 
 ## Quick install
 
@@ -191,27 +191,30 @@ USER TASK
                               v0.6.0+: optionally runs smoke test if API key provided
 ```
 
-## The seven agents
+## The ten agents
 
 | Agent | Type | What it does | Hard wall (v0.5.0+ soft) |
 |---|---|---|---|
 | **master** | orchestrator | Routes work, gates on user confirmation, enforces `max_fix_loops = 3`. Adaptive mode (v0.16.0+): pipeline is default shape, not rule. | Cannot implement, plan, design, code, or review; only edits its own `agents_manager/SKILL.md` |
-| **am-research** | specialist | Brainstorm, analyze, surface unknowns | Read-only — cannot write code or configs |
-| **am-planning** | specialist | Phased plan + Complexity block + task table | No bash, no code edits |
+| **am-research** | specialist | Brainstorm, analyze, surface unknowns (v0.17.0+: landscape scan + parallel web search + license stance) | Read-only — cannot write code or configs |
+| **am-planning** | specialist | Phased plan + Complexity block + task table (v0.16.0+: 4 plan-mode review angles) | No bash, no code edits |
 | **am-design** (v0.9.0+) | specialist | 12-mode design: mockups, tokens, brand, audit, copy, locale, audit | Never writes `src/**`; never edits other specialists' folders |
 | **am-assets** (v0.12.0+) | specialist | Asset gatekeeper at Phase 3a; 4-branch runtime decision tree (video pipeline / video file / stills / nothing) | Never writes `src/**`; never edits templates; never touches other specialists' folders |
-| **am-coder** | specialist | Implement assigned tasks | Cannot edit other specialists' folders or controller config; only its own `agents_manager/coder/**` |
-| **am-review** | specialist | Per-task verdicts with evidence | Cannot edit source code; tests only |
+| **am-coder** | specialist | Implement assigned tasks (v0.19.0+: codebase-memory for similar-code lookup; v0.21.0+: chub pre-write step) | Cannot edit other specialists' folders or controller config; only its own `agents_manager/coder/**` |
+| **am-review** | specialist | Per-task verdicts with evidence (v0.19.0+: codebase-memory for blast radius; v0.21.0+: chub citation gate) | Cannot edit source code; tests only |
+| **am-investigate** (v0.18.0+) | specialist | Debug specialist — 4-phase root-cause analysis (no fixes without root cause) | Cannot apply fixes; recommends only |
+| **am-ship** (v0.18.0+) | specialist | Release specialist — validation + VERSION bump + CHANGELOG + tag + push (idempotent) | Cannot modify user files outside release surface |
+| **am-health** (v0.18.0+) | specialist | Health dashboard — frontmatter + py_compile + shellcheck, scores 0-10 (HARD GATE: report only, never fix) | Read-only by design |
 
 Walls are soft — enforced by each agent reading its `SKILL.md` boundaries + the inline prompt's Can/Can't list, not by OpenCode's permission layer. See [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md) for the v0.5.0 architectural change rationale.
 
 ## Permissions model (v0.5.0+ — soft walls)
 
-All 7 agents have `permission: "allow"` in `opencode.jsonc`. OpenCode's permission layer is **not used** to enforce walls. Each agent's `SKILL.md` declares its boundaries as a soft contract — the LLM is expected to honor them.
+All 10 agents have `permission: "allow"` in `opencode.jsonc`. OpenCode's permission layer is **not used** to enforce walls. Each agent's `SKILL.md` declares its boundaries as a soft contract — the LLM is expected to honor them.
 
 | Agent | Reads | Writes | Dispatches | Bash |
 |---|---|---|---|---|
-| **master** | anything | anything (own orchestration doc by convention) | all 6 specialists | read-only by convention |
+| **master** | anything | anything (own orchestration doc by convention) | all 9 specialists | read-only by convention |
 | **am-research** | anything | anything (own folder by convention) | — | read-only by convention |
 | **am-planning** | anything | anything (own folder by convention) | — | read-only by convention |
 | **am-design** | anything | anything (own folder by convention) | — | read-only by convention |
@@ -311,10 +314,10 @@ agents-manager/
 ├── README.md                       ← this file (GitHub landing)
 ├── CONTRIBUTING.md                 ← v1.0.0 contributor guide (2026-07-04)
 ├── LICENSE                         ← MIT
-├── opencode.jsonc                  ← 7 agents + permission blocks (master + 6 specialists)
+├── opencode.jsonc                  ← 10 agents + permission blocks (master + 9 specialists)
 ├── CLAUDE.md                       ← auto-routing rule
 ├── AGENTS.md                       ← project-orientation doc
-├── agents_manager/                 ← controller (master + 6 specialists: research, planning, design, assets, coder, review)
+├── agents_manager/                 ← controller (master + 9 specialists: research, planning, design, assets, coder, review, investigate, ship, health)
 │   ├── master/SKILL.md             ← master's orchestration protocol (adaptive mode in v0.16.0+)
 │   ├── memory/                     ← 3-scope memory tree (v0.13.0+): global/ + projects/ + per-role notes/
 │   └── upstream-contrib/           ← MiniMax-M3 contribution patches (v0.6.0 + v0.7.0 + cinematic-landing)
@@ -344,7 +347,7 @@ The v0.4.0 → v0.4.1 era exposed three OpenCode permission-layer edge cases (wr
 
 No — not in v0.7.0. The OpenCode permission-layer globs in `opencode.jsonc` are root-relative (e.g., `share/**`, `tasks/**`). They resolve against the project root, not the install directory. Nesting breaks the path resolution. **Root-level install only** is supported.
 
-### How do I add an 8th agent? (or: how was `am-design` added in v0.9.0, `am-assets` in v0.12.0?)
+### How do I add an 11th agent? (or: how was `am-design` added in v0.9.0, `am-assets` in v0.12.0, `am-investigate`/`am-ship`/`am-health` in v0.18.0?)
 
 The v0.9.0 + v0.12.0 PRs each added a worked example. Same recipe applies to any future agent:
 
@@ -393,6 +396,18 @@ Per-agent opt-in: set one agent's `permission` back to a hard-wall block (copy f
 
 | Version | Date | Theme | Highlights |
 |---|---|---|---|
+| **v0.25.0** | 2026-08-28 | Global system prompt architecture | Each agent's `prompt` field composed from `_GLOBAL_PROMPT.md` (12-section operating contract) + role `_PROMPT_ADDENDUM.md`; `scripts/build-prompts.py --check` CI gate; per-agent ~10K char prompts; ~110/120 (92%) prompt-level coverage of the 12 reference operating concepts |
+| **v0.24.0** | 2026-08-14 | Local override layer | `.local.md` addendum convention lets downstream projects customize any of 10 SKILL.md files without losing changes on `agents-manager update`; ADD-only in v0.24.0 |
+| **v0.23.2** | 2026-08-14 | Agent self-reflection | Specialists write ≤20-line reflections to `agents_manager/<role>/notes/reflections/<task-id>.md` after every dispatch; master reflects per-pipeline at Phase 4 PASS or user-accepted WARNs |
+| **v0.23.1** | 2026-08-14 | Workflow migration + `.agents/` library | SELF_REFLECTIVE + verification-validation migrated to `.agents/skills/<name>/SKILL.md` (OpenCode discoverable, in release ZIP); release.yml allowlist extended; ~415 KB ZIP delta |
+| **v0.23.0** | 2026-08-14 | Context externalization manifest | Per-task memory manifest at `share/notes/<task-id>_memory.md`; atomic O_APPEND helper; two modes (compress-only + save-then-compress); distinct from `agents_manager/memory/` |
+| **v0.22.0** | 2026-07-24 | chub-gate (survive compaction) | OpenCode plugin re-injects chub rule after every `experimental.session.compacting` event; `chub-validate` SKILL.md discoverable; `bin/agents-manager install` copies both |
+| **v0.21.0** | 2026-07-24 | chub-enforcement (structural gate) | chub installed by default; pre-write step in specialist SKILL.md; review gate checks for `chub get <id>` citations on new imports |
+| **v0.20.1** | 2026-07-22 | Release packaging fix | Include `AGENTS.md` + `scripts/` + `README.md` in release ZIP (were missing) |
+| **v0.20.0** | 2026-07-22 | Context-hub (chub) integration | chub CLI mandatory for external module/library decisions (5-step protocol); complements codebase-memory; installable via `npm install -g @aisuite/chub` |
+| **v0.19.0** | 2026-07-22 | MCP tool surface | Wired `codebase-memory` (am-research/am-review/am-investigate/am-coder) + `github` (am-ship) + `testsprite` (am-coder) MCPs; `browsermcp` wired in v0.18.0 |
+| **v0.18.0** | 2026-07-22 | gstack adoption | Frontmatter standard + voice + plan-mode reviews + 3 new specialists (am-investigate, am-ship, am-health) + am-research gets browser MCP tools; bundles with v0.17.0 |
+| **v0.17.0** | 2026-07-14 | Agent discipline | Untrusted-content boundary clause (prompt-injection-via-content hardening) + JSONL trace log + research landscape scan mandate + parallel web search + license stance |
 | **v0.16.0** | 2026-07-05 | Adaptive orchestration | Pipeline reframed as default shape (not absolute rule); 5 authority levers (complexity triage, re-dispatch, parallel, review-any, propose-better); adaptive-mode reflex added to all 7 agents |
 | **v0.15.0** | 2026-07-04 | Extract-to-template | `agents_manager/extract/` specialist + extract-skill-as-non-roster-soft-skill recipe; closes WARN-9 from `04_review_T-2026-07-03-003` |
 | **v0.14.1** | 2026-07-04 | am-research enhancements | Populated `research/resources/` (6 files) + seeded `notes/episodic/` (3 backfilled); 2 new protocol sections + 2 rules (confidence scoring + handoff); `scripts/backfill-research-metrics.sh` ships |
@@ -422,7 +437,7 @@ MIT — see [`LICENSE`](LICENSE).
 
 ## Status
 
-**v0.16.0** is the latest release. The controller is functional and tested on 3 downstream projects (2 with full end-to-end runs) plus 7 internal task runs (`T-2026-07-03-001` through `T-2026-07-04-009`). Known scope:
+**v0.25.0** is the latest release. The controller is functional and tested on downstream projects plus internal task runs spanning v0.6.0 → v0.25.0. Known scope:
 
 - API may change between minor versions until v1.0.0.
 - Soft walls rely on LLM discipline; opt back into hard walls per agent if your project requires mechanical enforcement.
@@ -431,5 +446,9 @@ MIT — see [`LICENSE`](LICENSE).
 - Memory system (v0.13.0+) is opt-in: empty scaffold ships; first task on each clone writes content as it earns its keep. 90-day sweep runs at master's Phase 5 close when `phase_5_enabled: true`.
 - Visual templates (v0.12.0+) are opt-in: master dispatches `am-assets` only when the task uses a template that declares assets in its frontmatter AND no `MANIFEST.json` exists yet.
 - Adaptive orchestration (v0.16.0+) softens pipeline-as-rule to pipeline-as-default; the complexity triage table in `agents_manager/SKILL.md` decides the dispatch shape per task.
+- Context-hub (`chub`, v0.20.0+) is **mandatory** for external library/API/SDK decisions: every specialist runs `chub search` → `chub get <id>` before writing new imports, and cites `chub get <id>` in the coder summary. Survives context compaction via the chub-gate OpenCode plugin (v0.22.0+).
+- Context externalization (v0.23.0+) is opt-in: long tasks use a per-task memory manifest at `share/notes/<task-id>_memory.md` to track artifacts pushed out of the live conversation window.
+- Local overrides (v0.24.0+) let downstream projects customize any of the 10 SKILL.md files via `SKILL.local.md` addendum without losing changes on `agents-manager update`. ADD-only in v0.24.0.
+- Global system prompt (v0.25.0+) injects a 12-section operating contract into every specialist at build time; per-agent prompts are composed from `agents_manager/_GLOBAL_PROMPT.md` + role `_PROMPT_ADDENDUM.md` by `scripts/build-prompts.py`.
 
 See [`agents_manager/CHANGELOG.md`](agents_manager/CHANGELOG.md) for full change history and [`share/notes/99_decisions.md`](share/notes/99_decisions.md) for append-only architectural decisions logged since v0.13.0.

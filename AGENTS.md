@@ -1,6 +1,6 @@
 # AGENTS.md — context_gen
 
-This repo IS the **agents-manager controller**: an OpenCode multi-agent orchestration system. 9 specialist agents are defined in `opencode.jsonc` (master + research + planning + design + assets + coder + review + investigate + ship + health). Walls are enforced by prose (v0.5.0+ soft walls — every agent has `permission: "allow"`), not by OpenCode's permission layer.
+This repo IS the **agents-manager controller**: an OpenCode multi-agent orchestration system. **10 agents** are defined in `opencode.jsonc` (1 master + 9 specialists: research, planning, design, assets, coder, review, investigate, ship, health). Walls are enforced by prose (v0.5.0+ soft walls — every agent has `permission: "allow"`), not by OpenCode's permission layer.
 
 **Working in this repo:** when the task is to edit the controller itself (a specialist's `SKILL.md`, a release, a controller bug), edit directly — do NOT spawn the `master` agent. Master is for downstream projects that have installed the controller. The same hard rules still apply (no auto-commits, no skipping review, no editing other specialists' `SKILL.md` unless it's a deliberate controller redesign).
 
